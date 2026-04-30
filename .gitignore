@@ -143,4 +143,4 @@ vite.config.ts.timestamp-*
 .vite/
 
 # Banco de dados
-v-commerce-crm-360\Base de Dados
+Base de Dados/
