@@ -25,4 +25,5 @@ export interface Contact {
   phone: string
   engagement: EngagementType
   engagementScore: number
+  createdAt: string // "DD/MM/YYYY"
 }

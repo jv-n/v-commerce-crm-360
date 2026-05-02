@@ -1,5 +1,5 @@
 import type { Column } from "@/components/organisms/DataTable/types"
-import type { Contact, EngagementType } from "@/types/contact"
+import type { Contact, ContactStatus, EngagementType } from "@/types/contact"
 import { StatusBadge } from "@/components/atoms/badge"
 import { ContactAvatar } from "@/components/atoms/avatar"
 import { cn } from "@/lib/utils"
@@ -11,15 +11,22 @@ const ENGAGEMENT: Record<EngagementType, { bar: string; text: string; width: str
   Promotor:      { bar: "bg-green-500",  text: "text-green-700",  width: "80%" },
   Neutro:        { bar: "bg-yellow-400", text: "text-yellow-600", width: "50%" },
   Detrator:      { bar: "bg-red-500",    text: "text-red-600",    width: "22%" },
-  "Nenhum NPS":  { bar: "bg-gray-200",   text: "text-gray-400",   width: "0%" },
+  "Nenhum NPS":  { bar: "bg-gray-200",   text: "text-gray-400",   width: "0%"  },
 }
 
+const ALL_STATUSES: ContactStatus[] = [
+  "Cliente Ativo", "Cliente VIP", "Em risco", "Lead", "Cliente Inativo", "Desativado",
+]
+
 export const contactColumns: Column<Contact>[] = [
+  // ── Info icon (decorative) ─────────────────────────────────────────────────
   {
     key: "info",
     header: "",
     render: () => <InfoOutlinedIcon sx={{ fontSize: 15, color: "#D1D5DB" }} />,
   },
+
+  // ── Nome ───────────────────────────────────────────────────────────────────
   {
     key: "name",
     header: "Nome",
@@ -28,10 +35,18 @@ export const contactColumns: Column<Contact>[] = [
       <span className="font-medium text-gray-900 truncate block max-w-[200px]">{c.name}</span>
     ),
   },
+
+  // ── Responsável — select filter ─────────────────────────────────────────────
   {
     key: "responsible",
     header: "Responsável",
     minWidth: "160px",
+    filter: {
+      type: "select",
+      label: "Responsável",
+      options: ["Luana Ferragut", "Ana Gomes", "Thiago Botelho"],
+      filterFn: (c, value) => c.responsible.name === value,
+    },
     render: (c) => (
       <div className="flex items-center gap-2">
         <ContactAvatar initials={c.responsible.initials} bgColor={c.responsible.bgColor} />
@@ -39,12 +54,22 @@ export const contactColumns: Column<Contact>[] = [
       </div>
     ),
   },
+
+  // ── Status — select filter (used as rightFilterKey) ─────────────────────────
   {
     key: "status",
     header: "Status",
     minWidth: "130px",
+    filter: {
+      type: "select",
+      label: "Todos os estados",
+      options: ALL_STATUSES,
+      filterFn: (c, value) => c.status === (value as ContactStatus),
+    },
     render: (c) => <StatusBadge status={c.status} />,
   },
+
+  // ── Última compra ──────────────────────────────────────────────────────────
   {
     key: "lastPurchase",
     header: "Última compra",
@@ -59,12 +84,25 @@ export const contactColumns: Column<Contact>[] = [
         <span className="text-xs text-gray-400">Nenhuma compra</span>
       ),
   },
+
+  // ── Compras — number-range filter ──────────────────────────────────────────
   {
     key: "purchases",
     header: "Compras",
     minWidth: "80px",
+    filter: {
+      type: "number-range",
+      label: "Compras",
+      filterFn: (c, min, max) => {
+        if (min != null && c.purchases < min) return false
+        if (max != null && c.purchases > max) return false
+        return true
+      },
+    },
     render: (c) => <span className="text-gray-800 font-medium">{c.purchases}</span>,
   },
+
+  // ── Contatos ───────────────────────────────────────────────────────────────
   {
     key: "contacts",
     header: "Contatos",
@@ -76,6 +114,22 @@ export const contactColumns: Column<Contact>[] = [
       </div>
     ),
   },
+
+  // ── Data de criação — select filter (hidden column) ────────────────────────
+  {
+    key: "createdAt",
+    header: "",
+    visible: false,
+    filter: {
+      type: "select",
+      label: "Data de criação",
+      options: ["2024", "2025", "2026"],
+      filterFn: (c, value) => c.createdAt.endsWith(value),
+    },
+    render: () => null,
+  },
+
+  // ── Engajamento ────────────────────────────────────────────────────────────
   {
     key: "engagement",
     header: "Engajamento",
@@ -92,6 +146,8 @@ export const contactColumns: Column<Contact>[] = [
       )
     },
   },
+
+  // ── Ações ──────────────────────────────────────────────────────────────────
   {
     key: "actions",
     header: "",

@@ -11,9 +11,7 @@ const TABS: Tab[] = [
   { id: "leads",   label: "Todos os Leads" },
 ]
 
-const FILTER_PILLS = ["Responsável", "Data de criação", "Compras"]
-
-function filterContacts(contacts: Contact[], tab: string): Contact[] {
+function filterByTab(contacts: Contact[], tab: string): Contact[] {
   if (tab === "clients")
     return contacts.filter(c =>
       ["Cliente Ativo", "Cliente VIP", "Cliente Inativo"].includes(c.status)
@@ -28,13 +26,13 @@ export function ContactsTable() {
 
   return (
     <DataTable
-      data={filterContacts(mockContacts, activeTab)}
+      data={filterByTab(mockContacts, activeTab)}
       columns={contactColumns}
       getRowId={(c) => c.id}
       tabs={TABS}
       activeTab={activeTab}
       onTabChange={setActiveTab}
-      filterPills={FILTER_PILLS}
+      rightFilterKey="status"
     />
   )
 }

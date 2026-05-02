@@ -16,6 +16,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Promotor",
     engagementScore: 85,
+    createdAt: "10/01/2026",
   },
   {
     id: "2",
@@ -28,6 +29,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Promotor",
     engagementScore: 91,
+    createdAt: "22/03/2026",
   },
   {
     id: "3",
@@ -40,6 +42,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Neutro",
     engagementScore: 50,
+    createdAt: "05/06/2026",
   },
   {
     id: "4",
@@ -52,6 +55,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Nenhum NPS",
     engagementScore: 0,
+    createdAt: "18/02/2026",
   },
   {
     id: "5",
@@ -64,6 +68,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Neutro",
     engagementScore: 48,
+    createdAt: "14/07/2025",
   },
   {
     id: "6",
@@ -76,6 +81,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Promotor",
     engagementScore: 88,
+    createdAt: "03/03/2025",
   },
   {
     id: "7",
@@ -88,6 +94,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Promotor",
     engagementScore: 82,
+    createdAt: "29/09/2025",
   },
   {
     id: "8",
@@ -100,6 +107,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Detrator",
     engagementScore: 18,
+    createdAt: "11/11/2025",
   },
   {
     id: "9",
@@ -112,6 +120,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Detrator",
     engagementScore: 22,
+    createdAt: "07/04/2024",
   },
   {
     id: "10",
@@ -124,6 +133,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Nenhum NPS",
     engagementScore: 0,
+    createdAt: "19/08/2024",
   },
   {
     id: "11",
@@ -136,6 +146,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Promotor",
     engagementScore: 79,
+    createdAt: "01/02/2026",
   },
   {
     id: "12",
@@ -148,6 +159,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Nenhum NPS",
     engagementScore: 0,
+    createdAt: "23/05/2025",
   },
   {
     id: "13",
@@ -160,6 +172,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Promotor",
     engagementScore: 92,
+    createdAt: "16/04/2026",
   },
   {
     id: "14",
@@ -172,6 +185,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Neutro",
     engagementScore: 45,
+    createdAt: "30/06/2025",
   },
   {
     id: "15",
@@ -184,6 +198,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Promotor",
     engagementScore: 76,
+    createdAt: "08/10/2025",
   },
   {
     id: "16",
@@ -196,6 +211,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Detrator",
     engagementScore: 15,
+    createdAt: "12/03/2024",
   },
   {
     id: "17",
@@ -208,6 +224,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Promotor",
     engagementScore: 84,
+    createdAt: "27/01/2026",
   },
   {
     id: "18",
@@ -220,6 +237,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Nenhum NPS",
     engagementScore: 0,
+    createdAt: "14/09/2024",
   },
   {
     id: "19",
@@ -232,6 +250,7 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Promotor",
     engagementScore: 88,
+    createdAt: "05/11/2025",
   },
   {
     id: "20",
@@ -244,5 +263,6 @@ export const mockContacts: Contact[] = [
     phone: "(99) 8877.66554",
     engagement: "Detrator",
     engagementScore: 12,
+    createdAt: "22/02/2024",
   },
 ]
