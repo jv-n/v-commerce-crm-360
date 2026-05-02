@@ -19,7 +19,7 @@ import BookmarkBorderOutlinedIcon from '@mui/icons-material/BookmarkBorderOutlin
 import ContactPageOutlinedIcon from '@mui/icons-material/ContactPageOutlined';
 import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
-import DashboardOutlinedIcon from '@mui/icons-material/DashboardOutlined';
+import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 
 export default function AppFrame() {
@@ -61,7 +61,7 @@ export default function AppFrame() {
             case "Products":
                 return <Inventory2OutlinedIcon sx={{ color: iconColor("/products")} }/>;
             case "Dashboard":
-                return <DashboardOutlinedIcon sx={{ color: iconColor("/dashboard")} }/>;
+                return <LeaderboardIcon sx={{ color: iconColor("/dashboard")} }/>;
             case "Book":
                 return <MenuBookOutlinedIcon sx={{color: iconColor(title.toLowerCase())}}/>;
             case "Chat":
