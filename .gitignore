@@ -162,3 +162,11 @@ dist-ssr
 
 # Banco de dados
 Base de Dados/
+
+# Silver CSVs exportados do Databricks (dados grandes, não versionados)
+data-engineering/silver-data-csvs/
+
+# Arquivo SQLite gerado pelo seed
+*.db
+*.db-shm
+*.db-wal
