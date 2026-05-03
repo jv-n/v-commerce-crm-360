@@ -143,12 +143,15 @@ def seed() -> None:
 
         print(f"  → {table_name:<30} {len(df):>8,} linhas", end="", flush=True)
 
+        # SQLite tem limite de 32766 variáveis por statement.
+        # Calculamos o chunksize máximo seguro com base no nº de colunas.
+        safe_chunk = max(1, 32766 // len(df.columns))
         df.to_sql(
             name=table_name,
             con=conn,
             if_exists="replace",
             index=False,
-            chunksize=10_000,
+            chunksize=safe_chunk,
             method="multi",
         )
 
