@@ -166,6 +166,12 @@ Base de Dados/
 # Silver CSVs exportados do Databricks (dados grandes, não versionados)
 data-engineering/silver-data-csvs/
 
+#Ambientes virtuais e variables de ambiente
+venv/
+.venv/
+env
+.env
+
 # Arquivo SQLite gerado pelo seed
 *.db
 *.db-shm
