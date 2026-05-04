@@ -1,6 +1,8 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.routes import userRouter
+
 app = FastAPI(
     title="V-Commerce CRM 360 API",
     description="API for V-Commerce CRM 360, a CRM solution for e-commerce businesses.",
@@ -15,6 +17,8 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(userRouter.router)
 
 @app.get("/", tags=["Health"])
 async def health_check():
