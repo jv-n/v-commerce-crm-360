@@ -1,11 +1,10 @@
 import type { Column } from "@/components/organisms/DataTable/types"
 import type { Contact, ContactStatus, EngagementType } from "@/types/contact"
 import { StatusBadge } from "@/components/atoms/badge"
-import { ContactAvatar } from "@/components/atoms/avatar"
 import { cn } from "@/lib/utils"
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined"
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined"
+
 
 const ENGAGEMENT: Record<EngagementType, { bar: string; text: string; width: string }> = {
   Promotor:      { bar: "bg-green-500",  text: "text-green-700",  width: "80%" },
@@ -36,25 +35,6 @@ export const contactColumns: Column<Contact>[] = [
     ),
   },
 
-  // ── Responsável — select filter ─────────────────────────────────────────────
-  {
-    key: "responsible",
-    header: "Responsável",
-    minWidth: "160px",
-    filter: {
-      type: "select",
-      label: "Responsável",
-      options: ["Luana Ferragut", "Ana Gomes", "Thiago Botelho"],
-      filterFn: (c, value) => c.responsible.name === value,
-    },
-    render: (c) => (
-      <div className="flex items-center gap-2">
-        <ContactAvatar initials={c.responsible.initials} bgColor={c.responsible.bgColor} />
-        <span className="text-gray-600 text-xs whitespace-nowrap">{c.responsible.name}</span>
-      </div>
-    ),
-  },
-
   // ── Status — select filter (used as rightFilterKey) ─────────────────────────
   {
     key: "status",
@@ -66,7 +46,7 @@ export const contactColumns: Column<Contact>[] = [
       options: ALL_STATUSES,
       filterFn: (c, value) => c.status === (value as ContactStatus),
     },
-    render: (c) => <StatusBadge status={c.status} />,
+    render: (c) => <StatusBadge status={c.status ?? "Cliente Ativo"} />,
   },
 
   // ── Última compra ──────────────────────────────────────────────────────────
@@ -124,7 +104,7 @@ export const contactColumns: Column<Contact>[] = [
       type: "select",
       label: "Data de criação",
       options: ["2024", "2025", "2026"],
-      filterFn: (c, value) => c.createdAt.endsWith(value),
+      filterFn: (c, value) => (c.createdAt ?? "").endsWith(value),
     },
     render: () => null,
   },
@@ -134,28 +114,23 @@ export const contactColumns: Column<Contact>[] = [
     key: "engagement",
     header: "Engajamento",
     minWidth: "140px",
+    filterOptional: true,
+    filter: {
+      type: "select",
+      label: "Engajamento",
+      options: ["Promotor", "Neutro", "Detrator", "Nenhum NPS"],
+      filterFn: (c, value) => c.engagement === (value as EngagementType),
+    },
     render: (c) => {
       const eng = ENGAGEMENT[c.engagement]
       return (
         <div className="flex flex-col gap-1 min-w-[110px]">
           <span className={cn("text-xs font-medium", eng.text)}>{c.engagement}</span>
           <div className="w-full bg-gray-100 rounded-full h-1.5">
-            <div className={cn("h-1.5 rounded-full", eng.bar)} style={{ width: eng.width }} />
+            <div className={cn("h-1.5 rounded-full", eng.bar)} style={{ width: `${c.engagementScore}%` }} />
           </div>
         </div>
       )
     },
-  },
-
-  // ── Ações ──────────────────────────────────────────────────────────────────
-  {
-    key: "actions",
-    header: "",
-    render: () => (
-      <button className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded px-2 py-1 transition-colors whitespace-nowrap">
-        <EditOutlinedIcon sx={{ fontSize: 13 }} />
-        Editar
-      </button>
-    ),
   },
 ]

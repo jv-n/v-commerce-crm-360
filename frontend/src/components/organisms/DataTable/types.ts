@@ -32,6 +32,8 @@ export interface Column<T> {
   minWidth?: string
   /** Set false to hide from table while keeping filter available */
   visible?: boolean
+  /** If true, filter is hidden by default and only shown when user adds it via "+" */
+  filterOptional?: boolean
   render: (row: T) => ReactNode
   filter?: FilterDef<T>
 }
@@ -39,6 +41,14 @@ export interface Column<T> {
 export interface Tab {
   id: string
   label: string
+}
+
+export interface ServerPagination {
+  total: number
+  page: number
+  pageSize: number
+  onPageChange: (page: number) => void
+  onPageSizeChange: (size: number) => void
 }
 
 export interface DataTableProps<T> {
@@ -50,4 +60,8 @@ export interface DataTableProps<T> {
   onTabChange?: (tabId: string) => void
   rowsPerPageOptions?: number[]
   defaultRowsPerPage?: number
+  /** When provided, disables internal pagination and uses these server-driven values */
+  serverPagination?: ServerPagination
+  /** Called whenever a filter changes; used by server-paginated tables to re-fetch */
+  onFiltersChange?: (filters: ActiveFilters) => void
 }
