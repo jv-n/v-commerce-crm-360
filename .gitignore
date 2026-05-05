@@ -163,8 +163,9 @@ dist-ssr
 # Banco de dados
 Base de Dados/
 
-# Silver CSVs exportados do Databricks (dados grandes, não versionados)
+# CSVs exportados do Databricks (dados grandes, não versionados)
 data-engineering/silver-data-csvs/
+data-engineering/gold-data-csvs/
 
 #Ambientes virtuais e variables de ambiente
 venv/
