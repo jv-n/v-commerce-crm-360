@@ -20,7 +20,7 @@ export function NumberRangeDropdown({ current, onApply, onClear }: NumberRangeDr
           value={min}
           onChange={e => setMin(e.target.value)}
           placeholder="Mín"
-          className="w-[72px] border border-gray-200 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
+          className="w-[72px] border border-gray-200 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-purple-300"
         />
         <span className="text-gray-400 text-sm">–</span>
         <input
@@ -28,13 +28,13 @@ export function NumberRangeDropdown({ current, onApply, onClear }: NumberRangeDr
           value={max}
           onChange={e => setMax(e.target.value)}
           placeholder="Máx"
-          className="w-[72px] border border-gray-200 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300"
+          className="w-[72px] border border-gray-200 rounded-md px-2 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-purple-300"
         />
       </div>
       <div className="flex gap-1.5">
         <button
           onClick={() => onApply(min ? Number(min) : null, max ? Number(max) : null)}
-          className="flex-1 bg-gray-900 text-white rounded-md py-1.5 text-xs font-medium hover:bg-gray-800 transition-colors"
+          className="flex-1 bg-purple-600 text-white rounded-md py-1.5 text-xs font-medium hover:bg-purple-700 transition-colors"
         >
           Aplicar
         </button>

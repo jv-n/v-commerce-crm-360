@@ -1,7 +1,7 @@
 import { useRef, useState } from "react"
 import { ProductsTable } from "@/components/molecules/ProductsTable"
 import type { ProductsTableHandle } from "@/components/molecules/ProductsTable"
-import { MdAddCircleOutline } from "react-icons/md"
+import AddCircleOutlineIcon from "@mui/icons-material/AddCircleOutlined"
 import UndoIcon from "@mui/icons-material/Undo"
 import RefreshIcon from "@mui/icons-material/Refresh"
 import { cn } from "@/lib/utils"
@@ -15,7 +15,7 @@ export default function Products() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Catálogo</h1>
         <button className="flex items-center gap-2 bg-[#F7EBFF] border border-[#D1B1E5] rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors">
-          <MdAddCircleOutline />
+          <AddCircleOutlineIcon sx={{ fontSize: 18 }} />
           Adicionar produto
         </button>
       </div>

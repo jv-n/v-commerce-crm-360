@@ -89,6 +89,8 @@ export function ContactsTable() {
       onTabChange={handleTabChange}
       onFiltersChange={handleFiltersChange}
       rightFilterKey="status"
+      headerClassName="bg-[#F0DDFD]"
+      dividersClassName="divide-[#9F83B2]"
       rowsPerPageOptions={[10, 25, 50]}
       serverPagination={{
         total,
