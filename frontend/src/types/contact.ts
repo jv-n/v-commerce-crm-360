@@ -8,22 +8,15 @@ export type ContactStatus =
 
 export type EngagementType = "Promotor" | "Neutro" | "Detrator" | "Nenhum NPS"
 
-export interface Responsible {
-  initials: string
-  name: string
-  bgColor: string
-}
-
 export interface Contact {
   id: string
-  name: string
-  responsible: Responsible
-  status: ContactStatus
+  name: string | null
+  status: ContactStatus | null
   lastPurchase: string | null
   purchases: number
-  email: string
-  phone: string
+  email: string | null
+  phone: string | null
   engagement: EngagementType
   engagementScore: number
-  createdAt: string // "DD/MM/YYYY"
+  createdAt: string | null
 }

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import type React from "react"
 
 // ─── Filter definitions (attached to Column) ─────────────────────────────────
 
@@ -32,6 +33,8 @@ export interface Column<T> {
   minWidth?: string
   /** Set false to hide from table while keeping filter available */
   visible?: boolean
+  /** If true, filter is hidden by default and only shown when user adds it via "+" */
+  filterOptional?: boolean
   render: (row: T) => ReactNode
   filter?: FilterDef<T>
 }
@@ -41,6 +44,14 @@ export interface Tab {
   label: string
 }
 
+export interface ServerPagination {
+  total: number
+  page: number
+  pageSize: number
+  onPageChange: (page: number) => void
+  onPageSizeChange: (size: number) => void
+}
+
 export interface DataTableProps<T> {
   data: T[]
   columns: Column<T>[]
@@ -48,8 +59,17 @@ export interface DataTableProps<T> {
   tabs?: Tab[]
   activeTab?: string
   onTabChange?: (tabId: string) => void
-  /** Column key whose filter appears on the right side of the tab bar */
   rightFilterKey?: string
   rowsPerPageOptions?: number[]
   defaultRowsPerPage?: number
+  /** When provided, disables internal pagination and uses these server-driven values */
+  serverPagination?: ServerPagination
+  /** Called whenever a filter changes; used by server-paginated tables to re-fetch */
+  onFiltersChange?: (filters: ActiveFilters) => void
+  noBorder?: boolean
+  headerClassName?: string
+  rowClassName?: string
+  dividersClassName?: string
+  expandedRowId?: string | null
+  renderExpandedRow?: (row: T) => React.ReactNode
 }
