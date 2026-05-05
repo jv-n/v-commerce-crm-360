@@ -164,7 +164,7 @@ dist-ssr
 # Banco de dados
 Base de Dados/
 
-# Silver CSVs exportados do Databricks (dados grandes, não versionados)
+# CSVs exportados do Databricks (dados grandes, não versionados)
 data-engineering/silver-data-csvs/
 data-engineering/gold-data-csvs/
 
@@ -173,6 +173,11 @@ venv/
 .venv/
 env
 .env
+
+.venv
+venv
+data-engineering/.venv
+data-engineering/venv
 
 # Arquivo SQLite gerado pelo seed
 *.db
