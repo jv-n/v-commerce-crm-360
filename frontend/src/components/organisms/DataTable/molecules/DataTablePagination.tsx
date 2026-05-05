@@ -46,7 +46,7 @@ export function DataTablePagination({
         <select
           value={rowsPerPage}
           onChange={e => onRowsPerPageChange(Number(e.target.value))}
-          className="border border-gray-200 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 bg-white"
+          className="border border-[#D1B1E5] rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 bg-[#F7EBFF]"
         >
           {rowsPerPageOptions.map(n => (
             <option key={n} value={n}>{n}</option>
@@ -71,7 +71,7 @@ export function DataTablePagination({
             className={cn(
               "w-8 h-8 text-sm rounded transition-colors",
               currentPage === page
-                ? "bg-gray-900 text-white"
+                ? "bg-[#F7EBFF] border border-[#D1B1E5] text-gray-600"
                 : "text-gray-600 hover:bg-gray-100"
             )}
           >
