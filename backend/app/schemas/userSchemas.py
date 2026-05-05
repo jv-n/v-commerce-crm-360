@@ -18,8 +18,5 @@ class UserUpdate(BaseModel):
 
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
-    
+
     id: str
-    
-    class Config:
-        orm_mode = True

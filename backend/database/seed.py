@@ -18,23 +18,26 @@ import time
 # ── Caminhos ──────────────────────────────────────────────────────────────────
 ROOT = Path(__file__).resolve().parents[2]
 CSV_DIR = ROOT / "data-engineering" / "silver-data-csvs"
+GOLD_CSV_DIR = ROOT / "data-engineering" / "gold-data-csvs"
 DB_PATH = Path(__file__).resolve().parent / "vcommerce.db"
 
 # ── Mapeamento CSV → tabela SQLite ────────────────────────────────────────────
-# (nome_do_arquivo_sem_extensao, nome_da_tabela_no_banco)
+# (nome_do_arquivo_sem_extensao, nome_da_tabela_no_banco, diretorio)
 TABLES = [
     # Dimensões (menores, carregadas primeiro)
-    ("dim_categorias_produto",  "dim_categorias_produto"),
-    ("dim_status_pedido",       "dim_status_pedido"),
-    ("dim_tipos_problema",      "dim_tipos_problema"),
-    ("dim_agentes_suporte",     "dim_agentes_suporte"),
-    ("dim_produtos",            "dim_produtos"),
-    ("dim_clientes",            "dim_clientes"),
+    ("dim_categorias_produto",  "dim_categorias_produto", CSV_DIR),
+    ("dim_status_pedido",       "dim_status_pedido",      CSV_DIR),
+    ("dim_tipos_problema",      "dim_tipos_problema",     CSV_DIR),
+    ("dim_agentes_suporte",     "dim_agentes_suporte",    CSV_DIR),
+    ("dim_produtos",            "dim_produtos",           CSV_DIR),
+    ("dim_clientes",            "dim_clientes",           CSV_DIR),
     # Fatos (maiores, dependem das dimensões)
-    ("ft_pedidos",              "ft_pedidos"),       # pode não existir ainda
-    ("ft_avaliacoes",           "ft_avaliacoes"),
-    ("ft_tickets_suporte",      "ft_tickets_suporte"),
-    ("ft_clickstream",          "ft_clickstream"),
+    ("ft_pedidos",              "ft_pedidos",             CSV_DIR),
+    ("ft_avaliacoes",           "ft_avaliacoes",          CSV_DIR),
+    ("ft_tickets_suporte",      "ft_tickets_suporte",     CSV_DIR),
+    ("ft_clickstream",          "ft_clickstream",         CSV_DIR),
+    # Gold (agregações prontas para o backend)
+    ("gold_cliente_360",        "gold_cliente_360",       GOLD_CSV_DIR),
 ]
 
 # Tipos explícitos para colunas problemáticas (evita inferência errada do pandas)
@@ -63,8 +66,8 @@ DTYPE_OVERRIDES: dict[str, dict] = {
 }
 
 
-def load_csv(stem: str) -> pd.DataFrame | None:
-    path = CSV_DIR / f"{stem}.csv"
+def load_csv(stem: str, csv_dir: Path) -> pd.DataFrame | None:
+    path = csv_dir / f"{stem}.csv"
     if not path.exists():
         print(f"  ⚠  {stem}.csv não encontrado — pulando.")
         return None
@@ -135,9 +138,9 @@ def seed() -> None:
     total_rows = 0
     start_total = time.time()
 
-    for stem, table_name in TABLES:
+    for stem, table_name, csv_dir in TABLES:
         t0 = time.time()
-        df = load_csv(stem)
+        df = load_csv(stem, csv_dir)
         if df is None:
             continue
 
