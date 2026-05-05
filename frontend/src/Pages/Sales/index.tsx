@@ -1,7 +1,7 @@
-import { ContactsTable } from "@/components/molecules/ContactsTable"
+import { SalesTable } from "@/components/organisms/SalesTable/salesTable"
 import AddCircleOutlinedIcon from "@mui/icons-material/AddCircleOutlined"
 
-export default function Contacts() {
+export default function Sales() {
   return (
     <div className="p-6 h-full flex flex-col gap-5 bg-gray-50 min-h-full">
       <div className="flex items-center justify-between">
@@ -11,7 +11,7 @@ export default function Contacts() {
           Adicionar Pedido
         </button>
       </div>
-      <ContactsTable />
+      <SalesTable />
     </div>
   )
 }

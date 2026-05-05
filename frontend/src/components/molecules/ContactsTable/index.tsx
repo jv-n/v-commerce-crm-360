@@ -32,7 +32,6 @@ export function ContactsTable() {
       tabs={TABS}
       activeTab={activeTab}
       onTabChange={setActiveTab}
-      rightFilterKey="status"
     />
   )
 }

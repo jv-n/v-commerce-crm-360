@@ -48,8 +48,6 @@ export interface DataTableProps<T> {
   tabs?: Tab[]
   activeTab?: string
   onTabChange?: (tabId: string) => void
-  /** Column key whose filter appears on the right side of the tab bar */
-  rightFilterKey?: string
   rowsPerPageOptions?: number[]
   defaultRowsPerPage?: number
 }

@@ -1,6 +1,4 @@
 import type { ReactNode } from "react"
-import AddIcon from "@mui/icons-material/Add"
-import TuneIcon from "@mui/icons-material/Tune"
 import CloseIcon from "@mui/icons-material/Close"
 
 interface DataTableFilterBarProps {
@@ -16,10 +14,6 @@ export function DataTableFilterBar({ children, activeFilterCount, onClearAll }: 
 
       {children}
 
-      <button className="p-1.5 text-gray-500 hover:text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50">
-        <AddIcon sx={{ fontSize: 14 }} />
-      </button>
-
       {activeFilterCount > 0 && (
         <button
           onClick={onClearAll}
@@ -30,10 +24,6 @@ export function DataTableFilterBar({ children, activeFilterCount, onClearAll }: 
         </button>
       )}
 
-      <button className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 ml-1">
-        <TuneIcon sx={{ fontSize: 15 }} />
-        Filtros avançados
-      </button>
     </div>
   )
 }

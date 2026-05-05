@@ -18,7 +18,6 @@ export function DataTable<T,>({
   tabs = [],
   activeTab,
   onTabChange,
-  rightFilterKey,
   rowsPerPageOptions = [10, 25, 50],
   defaultRowsPerPage = 10,
 }: DataTableProps<T>) {
@@ -29,8 +28,7 @@ export function DataTable<T,>({
   const { pageData, safePage, ...pageInfo } = pagination.paginate(filters.filteredData)
 
   const visibleColumns = columns.filter(c => c.visible !== false)
-  const filterPillCols = columns.filter(c => c.filter && c.key !== rightFilterKey)
-  const rightCol       = columns.find(c => c.key === rightFilterKey)
+  const filterPillCols = columns.filter(c => c.filter)
 
   const handleTabChange = (tabId: string) => {
     onTabChange?.(tabId)
@@ -88,7 +86,6 @@ export function DataTable<T,>({
             tabs={tabs}
             activeTab={activeTab}
             onTabChange={handleTabChange}
-            rightSlot={rightCol ? renderPill(rightCol.key, true) : undefined}
           />
         )}
 
