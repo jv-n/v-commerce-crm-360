@@ -173,6 +173,11 @@ venv/
 env
 .env
 
+.venv
+venv
+data-engineering/.venv
+data-engineering/venv
+
 # Arquivo SQLite gerado pelo seed
 *.db
 *.db-shm
