@@ -1,7 +1,6 @@
 import type { Column } from "@/components/organisms/DataTable/types"
 import type { Contact, ContactStatus, EngagementType } from "@/types/contact"
 import { StatusBadge } from "@/components/atoms/badge"
-import { ContactAvatar } from "@/components/atoms/avatar"
 import { cn } from "@/lib/utils"
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined"
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
@@ -36,25 +35,6 @@ export const contactColumns: Column<Contact>[] = [
     ),
   },
 
-  // ── Responsável — select filter ─────────────────────────────────────────────
-  {
-    key: "responsible",
-    header: "Responsável",
-    minWidth: "160px",
-    filter: {
-      type: "select",
-      label: "Responsável",
-      options: ["Luana Ferragut", "Ana Gomes", "Thiago Botelho"],
-      filterFn: (c, value) => c.responsible.name === value,
-    },
-    render: (c) => (
-      <div className="flex items-center gap-2">
-        <ContactAvatar initials={c.responsible.initials} bgColor={c.responsible.bgColor} />
-        <span className="text-gray-600 text-xs whitespace-nowrap">{c.responsible.name}</span>
-      </div>
-    ),
-  },
-
   // ── Status — select filter (used as rightFilterKey) ─────────────────────────
   {
     key: "status",
@@ -66,7 +46,7 @@ export const contactColumns: Column<Contact>[] = [
       options: ALL_STATUSES,
       filterFn: (c, value) => c.status === (value as ContactStatus),
     },
-    render: (c) => <StatusBadge status={c.status} />,
+    render: (c) => <StatusBadge status={c.status ?? "Cliente Ativo"} />,
   },
 
   // ── Última compra ──────────────────────────────────────────────────────────
@@ -124,7 +104,7 @@ export const contactColumns: Column<Contact>[] = [
       type: "select",
       label: "Data de criação",
       options: ["2024", "2025", "2026"],
-      filterFn: (c, value) => c.createdAt.endsWith(value),
+      filterFn: (c, value) => (c.createdAt ?? "").endsWith(value),
     },
     render: () => null,
   },
@@ -140,7 +120,7 @@ export const contactColumns: Column<Contact>[] = [
         <div className="flex flex-col gap-1 min-w-[110px]">
           <span className={cn("text-xs font-medium", eng.text)}>{c.engagement}</span>
           <div className="w-full bg-gray-100 rounded-full h-1.5">
-            <div className={cn("h-1.5 rounded-full", eng.bar)} style={{ width: eng.width }} />
+            <div className={cn("h-1.5 rounded-full", eng.bar)} style={{ width: `${c.engagementScore}%` }} />
           </div>
         </div>
       )

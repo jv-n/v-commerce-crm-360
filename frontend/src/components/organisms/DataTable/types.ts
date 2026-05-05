@@ -41,6 +41,14 @@ export interface Tab {
   label: string
 }
 
+export interface ServerPagination {
+  total: number
+  page: number
+  pageSize: number
+  onPageChange: (page: number) => void
+  onPageSizeChange: (size: number) => void
+}
+
 export interface DataTableProps<T> {
   data: T[]
   columns: Column<T>[]
@@ -52,4 +60,8 @@ export interface DataTableProps<T> {
   rightFilterKey?: string
   rowsPerPageOptions?: number[]
   defaultRowsPerPage?: number
+  /** When provided, disables internal pagination and uses these server-driven values */
+  serverPagination?: ServerPagination
+  /** Called whenever a filter changes; used by server-paginated tables to re-fetch */
+  onFiltersChange?: (filters: ActiveFilters) => void
 }

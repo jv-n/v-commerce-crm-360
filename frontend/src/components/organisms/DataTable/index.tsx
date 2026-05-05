@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import type { DataTableProps, SelectFilterDef } from "./types"
+import type { DataTableProps, SelectFilterDef, ServerPagination } from "./types"
 import { useFilterState, isFilterActive, formatActiveFilter } from "./hooks/useFilterState"
 import { useRowSelection } from "./hooks/useRowSelection"
 import { usePagination } from "./hooks/usePagination"
@@ -11,6 +11,19 @@ import { FilterPill } from "./atoms/FilterPill"
 import { SelectDropdown } from "./atoms/SelectDropdown"
 import { NumberRangeDropdown } from "./atoms/NumberRangeDropdown"
 
+function buildServerPageInfo(sp: ServerPagination, dataLength: number) {
+  const totalPages = Math.max(1, Math.ceil(sp.total / sp.pageSize))
+  return {
+    pageData:    null, // resolved below
+    safePage:    sp.page,
+    pageNumbers: Array.from({ length: totalPages }, (_, i) => i + 1),
+    startItem:   sp.total === 0 ? 0 : (sp.page - 1) * sp.pageSize + 1,
+    endItem:     Math.min(sp.page * sp.pageSize, sp.total),
+    totalItems:  sp.total,
+    _dataLength: dataLength,
+  }
+}
+
 export function DataTable<T,>({
   data,
   columns,
@@ -21,12 +34,16 @@ export function DataTable<T,>({
   rightFilterKey,
   rowsPerPageOptions = [10, 25, 50],
   defaultRowsPerPage = 10,
+  serverPagination,
+  onFiltersChange,
 }: DataTableProps<T>) {
-  const filters    = useFilterState(columns, data)
+  const filters    = useFilterState(columns, data, serverPagination ? onFiltersChange : undefined)
   const pagination = usePagination(defaultRowsPerPage)
   const selection  = useRowSelection(getRowId)
 
-  const { pageData, safePage, ...pageInfo } = pagination.paginate(filters.filteredData)
+  const { pageData, safePage, ...pageInfo } = serverPagination
+    ? { ...buildServerPageInfo(serverPagination, data.length), pageData: data }
+    : pagination.paginate(filters.filteredData)
 
   const visibleColumns = columns.filter(c => c.visible !== false)
   const filterPillCols = columns.filter(c => c.filter && c.key !== rightFilterKey)
@@ -114,10 +131,10 @@ export function DataTable<T,>({
         <DataTablePagination
           {...pageInfo}
           currentPage={safePage}
-          rowsPerPage={pagination.rowsPerPage}
+          rowsPerPage={serverPagination?.pageSize ?? pagination.rowsPerPage}
           rowsPerPageOptions={rowsPerPageOptions}
-          onPageChange={pagination.setCurrentPage}
-          onRowsPerPageChange={pagination.changeRowsPerPage}
+          onPageChange={serverPagination?.onPageChange ?? pagination.setCurrentPage}
+          onRowsPerPageChange={serverPagination?.onPageSizeChange ?? pagination.changeRowsPerPage}
         />
       </div>
     </>
