@@ -15,12 +15,16 @@ export function formatActiveFilter(f: ActiveFilter): string {
   return ""
 }
 
-export function useFilterState<T>(columns: Column<T>[], data: T[]) {
+export function useFilterState<T>(columns: Column<T>[], data: T[], onChange?: (f: ActiveFilters) => void) {
   const [activeFilters, setActiveFilters] = useState<ActiveFilters>({})
   const [openFilter, setOpenFilter]       = useState<string | null>(null)
 
   const setFilter = (key: string, value: ActiveFilter) => {
-    setActiveFilters(prev => ({ ...prev, [key]: value }))
+    setActiveFilters(prev => {
+      const next = { ...prev, [key]: value }
+      onChange?.(next)
+      return next
+    })
     setOpenFilter(null)
   }
 
@@ -28,12 +32,16 @@ export function useFilterState<T>(columns: Column<T>[], data: T[]) {
     setActiveFilters(prev => {
       const next = { ...prev }
       delete next[key]
+      onChange?.(next)
       return next
     })
     setOpenFilter(null)
   }
 
-  const clearAllFilters = () => setActiveFilters({})
+  const clearAllFilters = () => {
+    onChange?.({})
+    setActiveFilters({})
+  }
 
   const toggleOpenFilter = (key: string) =>
     setOpenFilter(prev => (prev === key ? null : key))

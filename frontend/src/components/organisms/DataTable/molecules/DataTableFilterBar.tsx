@@ -1,24 +1,73 @@
 import type { ReactNode } from "react"
+import { useState, useRef, useEffect } from "react"
 import AddIcon from "@mui/icons-material/Add"
 import TuneIcon from "@mui/icons-material/Tune"
 import CloseIcon from "@mui/icons-material/Close"
+
+interface OptionalFilter {
+  key: string
+  label: string
+}
 
 interface DataTableFilterBarProps {
   children: ReactNode
   activeFilterCount: number
   onClearAll: () => void
+  availableOptionalFilters: OptionalFilter[]
+  onAddFilter: (key: string) => void
 }
 
-export function DataTableFilterBar({ children, activeFilterCount, onClearAll }: DataTableFilterBarProps) {
+export function DataTableFilterBar({
+  children,
+  activeFilterCount,
+  onClearAll,
+  availableOptionalFilters,
+  onAddFilter,
+}: DataTableFilterBarProps) {
+  const [dropdownOpen, setDropdownOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!dropdownOpen) return
+    const handler = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        setDropdownOpen(false)
+      }
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [dropdownOpen])
+
   return (
     <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-gray-200 bg-gray-50/60 flex-wrap relative z-50">
       <span className="text-sm text-gray-400 font-medium">Filtrar por:</span>
 
       {children}
 
-      <button className="p-1.5 text-gray-500 hover:text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50">
-        <AddIcon sx={{ fontSize: 14 }} />
-      </button>
+      {availableOptionalFilters.length > 0 && (
+        <div className="relative" ref={ref}>
+          <button
+            onClick={() => setDropdownOpen(o => !o)}
+            className="p-1.5 text-gray-500 hover:text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50"
+          >
+            <AddIcon sx={{ fontSize: 14 }} />
+          </button>
+
+          {dropdownOpen && (
+            <div className="absolute top-full left-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-50 min-w-[160px]">
+              {availableOptionalFilters.map(f => (
+                <button
+                  key={f.key}
+                  onClick={() => { onAddFilter(f.key); setDropdownOpen(false) }}
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {activeFilterCount > 0 && (
         <button
