@@ -18,9 +18,10 @@ interface ServerFilters {
   purchasesMin: number | null
   purchasesMax: number | null
   createdYear:  string
+  engagement:   string
 }
 
-const EMPTY_FILTERS: ServerFilters = { status: "", purchasesMin: null, purchasesMax: null, createdYear: "" }
+const EMPTY_FILTERS: ServerFilters = { status: "", purchasesMin: null, purchasesMax: null, createdYear: "", engagement: "" }
 
 export function ContactsTable() {
   const [activeTab, setActiveTab]         = useState("all")
@@ -31,13 +32,13 @@ export function ContactsTable() {
   const [loading, setLoading]             = useState(true)
   const [serverFilters, setServerFilters] = useState<ServerFilters>(EMPTY_FILTERS)
 
-  const { status, purchasesMin, purchasesMax, createdYear } = serverFilters
+  const { status, purchasesMin, purchasesMax, createdYear, engagement } = serverFilters
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
 
-    fetchContacts({ page, pageSize, tab: activeTab, status, purchasesMin, purchasesMax, createdYear })
+    fetchContacts({ page, pageSize, tab: activeTab, status, purchasesMin, purchasesMax, createdYear, engagement })
       .then((res) => {
         if (cancelled) return
         setContacts(res.data)
@@ -47,7 +48,7 @@ export function ContactsTable() {
       .finally(() => { if (!cancelled) setLoading(false) })
 
     return () => { cancelled = true }
-  }, [page, pageSize, activeTab, status, purchasesMin, purchasesMax, createdYear])
+  }, [page, pageSize, activeTab, status, purchasesMin, purchasesMax, createdYear, engagement])
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId)
@@ -67,11 +68,13 @@ export function ContactsTable() {
     const sf = active["status"]
     const pf = active["purchases"]
     const cf = active["createdAt"]
+    const ef = active["engagement"]
     setServerFilters({
       status:       sf?.type === "select"       && sf.value !== ""  ? sf.value      : "",
       purchasesMin: pf?.type === "number-range"                     ? pf.min        : null,
       purchasesMax: pf?.type === "number-range"                     ? pf.max        : null,
       createdYear:  cf?.type === "select"       && cf.value !== ""  ? cf.value      : "",
+      engagement:   ef?.type === "select"       && ef.value !== ""  ? ef.value      : "",
     })
     setPage(1)
   }

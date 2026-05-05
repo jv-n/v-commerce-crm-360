@@ -16,6 +16,7 @@ interface ContactsParams {
   purchasesMin?: number | null
   purchasesMax?: number | null
   createdYear?: string
+  engagement?: string
 }
 
 interface RawContact {
@@ -64,6 +65,7 @@ export async function fetchContacts(params: ContactsParams): Promise<ContactsPag
     ...(params.purchasesMin != null    ? { purchases_min: String(params.purchasesMin)          } : {}),
     ...(params.purchasesMax != null    ? { purchases_max: String(params.purchasesMax)          } : {}),
     ...(params.createdYear             ? { created_year:  params.createdYear                   } : {}),
+    ...(params.engagement              ? { engagement:    params.engagement                     } : {}),
   })
 
   const res = await fetch(`/api/contacts/?${query}`)

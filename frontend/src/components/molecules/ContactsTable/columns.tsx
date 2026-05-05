@@ -4,7 +4,7 @@ import { StatusBadge } from "@/components/atoms/badge"
 import { cn } from "@/lib/utils"
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined"
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined"
+
 
 const ENGAGEMENT: Record<EngagementType, { bar: string; text: string; width: string }> = {
   Promotor:      { bar: "bg-green-500",  text: "text-green-700",  width: "80%" },
@@ -114,6 +114,13 @@ export const contactColumns: Column<Contact>[] = [
     key: "engagement",
     header: "Engajamento",
     minWidth: "140px",
+    filterOptional: true,
+    filter: {
+      type: "select",
+      label: "Engajamento",
+      options: ["Promotor", "Neutro", "Detrator", "Nenhum NPS"],
+      filterFn: (c, value) => c.engagement === (value as EngagementType),
+    },
     render: (c) => {
       const eng = ENGAGEMENT[c.engagement]
       return (
@@ -125,17 +132,5 @@ export const contactColumns: Column<Contact>[] = [
         </div>
       )
     },
-  },
-
-  // ── Ações ──────────────────────────────────────────────────────────────────
-  {
-    key: "actions",
-    header: "",
-    render: () => (
-      <button className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded px-2 py-1 transition-colors whitespace-nowrap">
-        <EditOutlinedIcon sx={{ fontSize: 13 }} />
-        Editar
-      </button>
-    ),
   },
 ]

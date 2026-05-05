@@ -18,6 +18,7 @@ def get_contacts(
     purchases_min: int | None = Query(None, ge=0),
     purchases_max: int | None = Query(None, ge=0),
     created_year: str = Query(""),
+    engagement: str = Query(""),
     db: Session = Depends(get_db),
 ):
     return ContactService.get_contacts(
@@ -30,4 +31,5 @@ def get_contacts(
         purchases_min=purchases_min,
         purchases_max=purchases_max,
         created_year=created_year,
+        engagement=engagement,
     )

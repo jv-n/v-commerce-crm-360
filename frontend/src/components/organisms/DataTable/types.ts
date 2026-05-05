@@ -32,6 +32,8 @@ export interface Column<T> {
   minWidth?: string
   /** Set false to hide from table while keeping filter available */
   visible?: boolean
+  /** If true, filter is hidden by default and only shown when user adds it via "+" */
+  filterOptional?: boolean
   render: (row: T) => ReactNode
   filter?: FilterDef<T>
 }

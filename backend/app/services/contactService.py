@@ -73,6 +73,7 @@ class ContactService:
         purchases_min: int | None = None,
         purchases_max: int | None = None,
         created_year: str = "",
+        engagement: str = "",
     ) -> ContactsPageOut:
         # tab "leads" não tem correspondência no gold — retorna vazio
         if tab == "leads":
@@ -105,6 +106,15 @@ class ContactService:
 
         if created_year:
             query = query.filter(DimCliente.data_cadastro.like(f"{created_year}%"))
+
+        if engagement:
+            if engagement == "Nenhum NPS":
+                query = query.filter(
+                    ~GoldCliente360.categoria_nps_predominante.in_(["Promotor", "Neutro", "Detrator"])
+                    | GoldCliente360.categoria_nps_predominante.is_(None)
+                )
+            else:
+                query = query.filter(GoldCliente360.categoria_nps_predominante == engagement)
 
         total = query.with_entities(func.count(GoldCliente360.id_cliente)).scalar()
 
