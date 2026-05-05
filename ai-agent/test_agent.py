@@ -95,8 +95,6 @@ async def run_interactive():
         return
 
     print(f"Banco conectado: {db.db_path.name}")
-    print(f"API Key: {api_key[:8]}...{api_key[-4:]}")
-    print(f"Sessão: {session_id}\n")
 
     perguntas_sugeridas = [
         "Qual foi a receita total dos últimos 3 meses?",
