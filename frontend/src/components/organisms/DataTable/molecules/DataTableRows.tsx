@@ -15,7 +15,7 @@ interface DataTableRowsProps<T> {
   headerClassName?: string
   rowClassName?: string
   dividersClassName?: string
-  expandedRowId?: string | null
+  expandedRowIds?: Set<string>
   renderExpandedRow?: (row: T) => ReactNode
 }
 
@@ -31,7 +31,7 @@ export function DataTableRows<T,>({
   headerClassName = "bg-gray-50",
   rowClassName = "",
   dividersClassName = "divide-gray-100",
-  expandedRowId,
+  expandedRowIds,
   renderExpandedRow,
 }: DataTableRowsProps<T>) {
   return (
@@ -62,7 +62,7 @@ export function DataTableRows<T,>({
           {pageData.map(row => {
             const id         = getRowId(row)
             const isSelected = selectedRows.has(id)
-            const isExpanded = expandedRowId === id
+            const isExpanded = expandedRowIds?.has(id) ?? false
             return (
               <Fragment key={id}>
                 <tr
