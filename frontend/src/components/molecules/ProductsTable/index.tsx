@@ -10,8 +10,8 @@ import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
 import CloseIcon from "@mui/icons-material/Close"
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined"
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined"
-import { MdOutlineTableChart } from "react-icons/md"
-import { BsStars } from "react-icons/bs"
+import TableChartOutlinedIcon from "@mui/icons-material/TableChartOutlined"
+import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome"
 
 const BR_REGIONS: Record<string, string[]> = {
   "Norte":        ["Acre", "Amapá", "Amazonas", "Pará", "Rondônia", "Roraima", "Tocantins"],
@@ -463,7 +463,7 @@ function ProductExpandedRow({ product }: { product: Product }) {
             <div className="pt-1 flex justify-end">
               <button className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors">
                 Faça uma pergunta
-                <BsStars style={{ color: "#818cf8" }} size={14} />
+                <AutoAwesomeIcon sx={{ color: "#818cf8", fontSize: 14 }} />
               </button>
             </div>
           </div>
@@ -620,7 +620,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
           : "border-transparent text-gray-500 hover:text-gray-700"
       )}
     >
-      <MdOutlineTableChart />
+      <TableChartOutlinedIcon sx={{ fontSize: 16 }} />
       {label}
     </button>
   )
@@ -731,7 +731,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
             )}
 
             <button className="p-1.5 text-gray-700 hover:bg-gray-100 rounded">
-              <MdOutlineTableChart size={16} />
+              <TableChartOutlinedIcon sx={{ fontSize: 16 }} />
             </button>
           </div>
         </div>

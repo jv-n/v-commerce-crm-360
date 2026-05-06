@@ -33,12 +33,10 @@ export function DataTable<T,>({
   tabs = [],
   activeTab,
   onTabChange,
-  rightFilterKey,
   rowsPerPageOptions = [10, 25, 50],
   defaultRowsPerPage = 10,
   serverPagination,
   onFiltersChange,
-  noBorder = false,
   headerClassName,
   rowClassName,
   dividersClassName,
@@ -56,9 +54,8 @@ export function DataTable<T,>({
     : pagination.paginate(filters.filteredData)
 
   const visibleColumns  = columns.filter(c => c.visible !== false)
-  const rightCol        = columns.find(c => c.key === rightFilterKey)
-
-  const mandatoryFilterCols = columns.filter(c => c.filter && !c.filterOptional && c.key !== rightFilterKey)
+  
+  const mandatoryFilterCols = columns.filter(c => c.filter && !c.filterOptional)
   const optionalFilterCols  = columns.filter(c => c.filter && c.filterOptional)
 
   const isActive = (key: string) => {
@@ -144,13 +141,12 @@ export function DataTable<T,>({
         <div className="fixed inset-0 z-40" onClick={() => filters.setOpenFilter(null)} />
       )}
 
-      <div className={cn("flex flex-col bg-white rounded-xl overflow-hidden", !noBorder && "border border-gray-200")}>
+      <div className={cn("flex flex-col bg-white overflow-hidden")}>
         {tabs.length > 0 && (
           <DataTableTabs
             tabs={tabs}
             activeTab={activeTab}
             onTabChange={handleTabChange}
-            rightSlot={rightCol ? renderPill(rightCol.key, true) : undefined}
           />
         )}
 

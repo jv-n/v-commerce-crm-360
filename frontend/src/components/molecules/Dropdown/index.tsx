@@ -10,7 +10,7 @@ export default function Dropdown({ title, buttonIcon, menuItems }: DropdownProps
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
-                <button className="flex items-center justify-center rounded-full text-sm text-foreground hover:bg-secondary-foreground">
+                <button className="flex items-center justify-center rounded-md w-7 h-7 text-sm text-foreground hover:ring hover:ring-primary transition duration-300">
                     {buttonIcon}
                 </button>
             </DropdownMenuTrigger>

@@ -35,7 +35,7 @@ export function DataTableRows<T,>({
   renderExpandedRow,
 }: DataTableRowsProps<T>) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-xl mt-4">
       <table className="w-full text-sm">
         <thead>
           <tr className={cn("border-b border-gray-200", headerClassName)}>

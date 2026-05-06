@@ -15,7 +15,7 @@ interface DataTableTabsProps {
 
 export function DataTableTabs({ tabs, activeTab, onTabChange, rightSlot }: DataTableTabsProps) {
   return (
-    <div className="flex items-center justify-between border-b border-gray-200 px-4">
+    <div className="flex items-center justify-between px-4 border-b border-gray-200">
       <div className="flex items-center">
         {tabs.map(tab => (
           <TabButton
