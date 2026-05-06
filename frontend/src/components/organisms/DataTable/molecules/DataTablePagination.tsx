@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
+import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft"
+import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight"
 import KeyboardDoubleArrowLeftIcon from "@mui/icons-material/KeyboardDoubleArrowLeft"
 import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight"
 
@@ -55,6 +57,14 @@ export function DataTablePagination({
       </div>
 
       <div className="flex items-center gap-0.5">
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="p-1.5 rounded hover:bg-gray-100 transition-colors text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <KeyboardArrowLeftIcon sx={{ fontSize: 18 }} />
+        </button>
+
         {totalWindows > 1 && pageWindow > 0 && (
           <button
             onClick={() => setPageWindow(w => w - 1)}
@@ -87,6 +97,14 @@ export function DataTablePagination({
             <KeyboardDoubleArrowRightIcon sx={{ fontSize: 18 }} />
           </button>
         )}
+
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="p-1.5 rounded hover:bg-gray-100 transition-colors text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <KeyboardArrowRightIcon sx={{ fontSize: 18 }} />
+        </button>
       </div>
 
       <span className="text-sm text-gray-500">
