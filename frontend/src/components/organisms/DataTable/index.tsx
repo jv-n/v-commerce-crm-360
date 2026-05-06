@@ -37,7 +37,6 @@ export function DataTable<T,>({
   defaultRowsPerPage = 10,
   serverPagination,
   onFiltersChange,
-  noBorder = false,
   headerClassName,
   rowClassName,
   dividersClassName,
@@ -56,6 +55,7 @@ export function DataTable<T,>({
 
   const visibleColumns  = columns.filter(c => c.visible !== false)
   
+  const mandatoryFilterCols = columns.filter(c => c.filter && !c.filterOptional)
   const optionalFilterCols  = columns.filter(c => c.filter && c.filterOptional)
 
   const isActive = (key: string) => {
@@ -66,7 +66,7 @@ export function DataTable<T,>({
   const shownOptionalCols = optionalFilterCols.filter(
     c => shownOptionalKeys.has(c.key) || isActive(c.key)
   )
-  const filterPillCols = [...shownOptionalCols]
+  const filterPillCols = [...mandatoryFilterCols, ...shownOptionalCols]
 
   const availableOptionalFilters = optionalFilterCols
     .filter(c => !shownOptionalKeys.has(c.key) && !isActive(c.key))
@@ -141,7 +141,7 @@ export function DataTable<T,>({
         <div className="fixed inset-0 z-40" onClick={() => filters.setOpenFilter(null)} />
       )}
 
-      <div className={cn("flex flex-col bg-white rounded-xl overflow-hidden", !noBorder && "border border-gray-200")}>
+      <div className={cn("flex flex-col bg-white overflow-hidden")}>
         {tabs.length > 0 && (
           <DataTableTabs
             tabs={tabs}

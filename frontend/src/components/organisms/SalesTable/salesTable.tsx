@@ -11,6 +11,11 @@ const TABS: Tab[] = [
   { id: "returned", label: "Pedidos devolvidos" },
 ]
 
+export type SalesTableHandle = {
+  undo:  () => void
+  reset: () => void
+}
+
 function filterByTab(sales: Sale[], tab: string): Sale[] {
   if (tab === "concluded")
     return sales.filter(c =>
@@ -21,8 +26,13 @@ function filterByTab(sales: Sale[], tab: string): Sale[] {
   return sales
 }
 
+
 export function SalesTable() {
   const [activeTab, setActiveTab] = useState("all")
+
+   const handleFiltersChange = () => {
+      
+    }
 
   return (
     <DataTable
@@ -32,6 +42,11 @@ export function SalesTable() {
       tabs={TABS}
       activeTab={activeTab}
       onTabChange={setActiveTab}
+      onFiltersChange={handleFiltersChange}
+      rightFilterKey="status"
+      rowsPerPageOptions={[10, 25, 50]}
+      headerClassName="bg-[#F0DDFD]"
+      dividersClassName="divide-[#9F83B2]"
     />
   )
 }

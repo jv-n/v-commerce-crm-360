@@ -1,7 +1,6 @@
 import type { ReactNode } from "react"
 import { useState, useRef, useEffect } from "react"
 import AddIcon from "@mui/icons-material/Add"
-import TuneIcon from "@mui/icons-material/Tune"
 import CloseIcon from "@mui/icons-material/Close"
 
 interface OptionalFilter {
@@ -39,7 +38,7 @@ export function DataTableFilterBar({
   }, [dropdownOpen])
 
   return (
-    <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-gray-200 flex-wrap relative z-50">
+    <div className="flex items-center gap-2.5 px-4 py-2.5 flex-wrap relative z-50">
       <span className="text-sm text-gray-800 font-bold">Filtrar por:</span>
 
       {children}
