@@ -72,7 +72,7 @@ export default function AppFrame() {
     }
 
     return (
-        <SidebarProvider defaultOpen={true} className="h-svh">
+        <SidebarProvider defaultOpen={true}>
             <Sidebar variant="inset" >
                 <SidebarHeader className="w-full align-center justify-center">
                     <img src="vcom360_icon.svg" alt="CRM Icon" height={80} width={80}/>
@@ -127,9 +127,9 @@ export default function AppFrame() {
                     </SidebarGroup>
                 </SidebarContent>
             </Sidebar>
-            <SidebarInset className="m-2 ml-0 rounded-xl overflow-hidden flex flex-col">
+            <SidebarInset className="m-2 ml-0 rounded-xl flex flex-col">
                 <AppNavbar />
-                <div className="flex-1 min-h-0 overflow-auto">
+                <div className="flex-1">
                     <Outlet />
                 </div>
             </SidebarInset>

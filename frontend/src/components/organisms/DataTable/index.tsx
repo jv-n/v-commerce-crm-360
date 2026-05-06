@@ -1,5 +1,6 @@
 import type { ReactNode } from "react"
 import { useState } from "react"
+import { cn } from "@/lib/utils"
 import type { DataTableProps, SelectFilterDef, ServerPagination } from "./types"
 import { useFilterState, isFilterActive, formatActiveFilter } from "./hooks/useFilterState"
 import { useRowSelection } from "./hooks/useRowSelection"
@@ -36,6 +37,12 @@ export function DataTable<T,>({
   defaultRowsPerPage = 10,
   serverPagination,
   onFiltersChange,
+  noBorder = false,
+  headerClassName,
+  rowClassName,
+  dividersClassName,
+  expandedRowId,
+  renderExpandedRow,
 }: DataTableProps<T>) {
   const filters    = useFilterState(columns, data, serverPagination ? onFiltersChange : undefined)
   const pagination = usePagination(defaultRowsPerPage)
@@ -80,9 +87,9 @@ export function DataTable<T,>({
   const renderPill = (colKey: string, alignRight = false, isOptional = false): ReactNode => {
     const col = columns.find(c => c.key === colKey)
     if (!col?.filter) return null
-    const def     = col.filter
-    const active  = filters.activeFilters[colKey]
-    const isActive = active && isFilterActive(active)
+    const def    = col.filter
+    const active = filters.activeFilters[colKey]
+    const active_ = active && isFilterActive(active)
 
     const handleClear = () => {
       filters.clearFilter(colKey)
@@ -115,7 +122,7 @@ export function DataTable<T,>({
       <FilterPill
         key={colKey}
         label={def.label}
-        activeValue={isActive ? formatActiveFilter(active!) : undefined}
+        activeValue={active_ ? formatActiveFilter(active!) : undefined}
         isOpen={filters.openFilter === colKey}
         onToggle={() => filters.toggleOpenFilter(colKey)}
         onClear={e => { e.stopPropagation(); handleClear() }}
@@ -134,7 +141,7 @@ export function DataTable<T,>({
         <div className="fixed inset-0 z-40" onClick={() => filters.setOpenFilter(null)} />
       )}
 
-      <div className="flex flex-col bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className={cn("flex flex-col bg-white rounded-xl overflow-hidden", !noBorder && "border border-gray-200")}>
         {tabs.length > 0 && (
           <DataTableTabs
             tabs={tabs}
@@ -162,6 +169,11 @@ export function DataTable<T,>({
           isAllSelected={selection.isPageAllSelected(pageData)}
           onToggleAll={() => selection.toggleAll(pageData)}
           onToggleRow={selection.toggleRow}
+          headerClassName={headerClassName}
+          rowClassName={rowClassName}
+          dividersClassName={dividersClassName}
+          expandedRowId={expandedRowId}
+          renderExpandedRow={renderExpandedRow}
         />
 
         <DataTablePagination

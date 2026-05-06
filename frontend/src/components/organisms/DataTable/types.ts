@@ -1,4 +1,5 @@
 import type { ReactNode } from "react"
+import type React from "react"
 
 // ─── Filter definitions (attached to Column) ─────────────────────────────────
 
@@ -58,10 +59,17 @@ export interface DataTableProps<T> {
   tabs?: Tab[]
   activeTab?: string
   onTabChange?: (tabId: string) => void
+  rightFilterKey?: string
   rowsPerPageOptions?: number[]
   defaultRowsPerPage?: number
   /** When provided, disables internal pagination and uses these server-driven values */
   serverPagination?: ServerPagination
   /** Called whenever a filter changes; used by server-paginated tables to re-fetch */
   onFiltersChange?: (filters: ActiveFilters) => void
+  noBorder?: boolean
+  headerClassName?: string
+  rowClassName?: string
+  dividersClassName?: string
+  expandedRowId?: string | null
+  renderExpandedRow?: (row: T) => React.ReactNode
 }

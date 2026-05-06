@@ -36,7 +36,6 @@ export function ContactsTable() {
 
   useEffect(() => {
     let cancelled = false
-    setLoading(true)
 
     fetchContacts({ page, pageSize, tab: activeTab, status, purchasesMin, purchasesMax, createdYear, engagement })
       .then((res) => {
@@ -51,15 +50,18 @@ export function ContactsTable() {
   }, [page, pageSize, activeTab, status, purchasesMin, purchasesMax, createdYear, engagement])
 
   const handleTabChange = (tabId: string) => {
+    setLoading(true)
     setActiveTab(tabId)
     setPage(1)
   }
 
   const handlePageChange = (newPage: number) => {
+    setLoading(true)
     setPage(newPage)
   }
 
   const handlePageSizeChange = (newSize: number) => {
+    setLoading(true)
     setPageSize(newSize)
     setPage(1)
   }
@@ -69,6 +71,7 @@ export function ContactsTable() {
     const pf = active["purchases"]
     const cf = active["createdAt"]
     const ef = active["engagement"]
+    setLoading(true)
     setServerFilters({
       status:       sf?.type === "select"       && sf.value !== ""  ? sf.value      : "",
       purchasesMin: pf?.type === "number-range"                     ? pf.min        : null,
@@ -88,6 +91,9 @@ export function ContactsTable() {
       activeTab={activeTab}
       onTabChange={handleTabChange}
       onFiltersChange={handleFiltersChange}
+      rightFilterKey="status"
+      headerClassName="bg-[#F0DDFD]"
+      dividersClassName="divide-[#9F83B2]"
       rowsPerPageOptions={[10, 25, 50]}
       serverPagination={{
         total,
