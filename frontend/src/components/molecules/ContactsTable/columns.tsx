@@ -17,12 +17,26 @@ const ALL_STATUSES: ContactStatus[] = [
   "Cliente Ativo", "Cliente VIP", "Em risco", "Lead", "Cliente Inativo", "Desativado",
 ]
 
-export const contactColumns: Column<Contact>[] = [
-  // ── Info icon (decorative) ─────────────────────────────────────────────────
+export function makeContactColumns(
+  expandedRowId: string | null,
+  onToggle: (id: string) => void,
+): Column<Contact>[] {
+  return [
+  // ── Info icon ──────────────────────────────────────────────────────────────
   {
     key: "info",
     header: "",
-    render: () => <InfoOutlinedIcon sx={{ fontSize: 15, color: "#D1D5DB" }} />,
+    render: (c) => (
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggle(c.id) }}
+        className="flex items-center justify-center"
+      >
+        <InfoOutlinedIcon sx={{
+          fontSize: 15,
+          color: expandedRowId === c.id ? "#7C3AED" : "#D1D5DB",
+        }} />
+      </button>
+    ),
   },
 
   // ── Nome ───────────────────────────────────────────────────────────────────
@@ -31,7 +45,12 @@ export const contactColumns: Column<Contact>[] = [
     header: "Nome",
     minWidth: "160px",
     render: (c) => (
-      <span className="font-medium text-gray-900 truncate block max-w-[200px]">{c.name}</span>
+      <button
+        onClick={() => onToggle(c.id)}
+        className="font-medium text-gray-900 truncate block max-w-[200px] text-left hover:text-purple-700 transition-colors"
+      >
+        {c.name}
+      </button>
     ),
   },
 
@@ -133,4 +152,5 @@ export const contactColumns: Column<Contact>[] = [
       )
     },
   },
-]
+  ]
+}
