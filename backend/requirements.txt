@@ -27,7 +27,7 @@ filelock==3.29.0
 fsspec==2026.4.0
 google-auth==2.50.0
 google-genai==1.74.0
-google-generativeai
+google-generativeai==0.8.6
 googleapis-common-protos==1.74.0
 greenlet==3.5.0
 griffe==2.0.2
@@ -68,7 +68,7 @@ packaging==26.2
 pandas==3.0.2
 pluggy==1.6.0
 prompt_toolkit==3.0.52
-protobuf==6.33.6
+protobuf==5.29.5
 pwdlib[argon2]
 pyasn1==0.6.3
 pyasn1_modules==0.4.2
@@ -106,7 +106,7 @@ typing-inspection==0.4.2
 typing_extensions==4.15.0
 urllib3==2.6.3
 uvicorn==0.32.1
-uvloop==0.22.1
+# uvloop==0.22.1  #Problema de compatibilidade com windows
 watchfiles==1.1.1
 wcwidth==0.7.0
 websockets==16.0
