@@ -65,16 +65,14 @@ export default function AppFrame() {
             case "Book":
                 return <MenuBookOutlinedIcon sx={{color: iconColor(title.toLowerCase())}}/>;
             case "Chat":
-                return <div className="w-6 h-6 rounded-full bg-transparent">
-                            <img src="v_ai.svg" alt="Chat Icon"/>
-                        </div>;
+                return <img src="v_ai.svg" alt="Chat Icon" height={40} width={40} />
             default:
-                return <div className="w-6 h-6 rounded-full bg-gray-500" />;
+                return <div className="w-6 h-6 rounded-md bg-gray-500" />;
         }
     }
 
     return (
-        <SidebarProvider defaultOpen={true} className="h-svh">
+        <SidebarProvider defaultOpen={true}>
             <Sidebar variant="inset" >
                 <SidebarHeader className="w-full align-center justify-center">
                     <img src="vcom360_icon.svg" alt="CRM Icon" height={80} width={80}/>
@@ -84,8 +82,8 @@ export default function AppFrame() {
                         <SidebarGroupContent>
                             <SidebarMenu className="gap-2">
                                 {sidebarItems1.map((item) => (
-                                    <SidebarMenuItem key={item.name}>
-                                        <SidebarMenuButton className={`${itemActive(item.path)} hover:bg-secondary-foreground rounded-full flex items-center justify-center`} asChild>
+                                    <SidebarMenuItem key={item.name} className="flex align-center justify-center">
+                                        <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
                                             <NavLink to={item.path}>
                                                 {setIcon(item.name)}
                                             </NavLink>
@@ -100,8 +98,8 @@ export default function AppFrame() {
                         <SidebarGroupContent>
                             <SidebarMenu className="gap-2">
                                 {sidebarItems2.map((item) => (
-                                    <SidebarMenuItem key={item.name}>
-                                        <SidebarMenuButton className={`${itemActive(item.path)} hover:bg-secondary-foreground rounded-full flex items-center justify-center`} asChild>
+                                    <SidebarMenuItem key={item.name} className="flex align-center justify-center">
+                                        <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
                                             <NavLink to={item.path}>
                                                 {setIcon(item.name)}
                                             </NavLink>
@@ -111,13 +109,13 @@ export default function AppFrame() {
                             </SidebarMenu>
                         </SidebarGroupContent>
                     </SidebarGroup>
-                    <SidebarSeparator className="bg-foreground/30" />
+                    <SidebarSeparator className="bg-foreground/30"/>
                     <SidebarGroup>
                         <SidebarGroupContent>
                             <SidebarMenu className="gap-2">
                                 {sidebarItems3.map((item) => (
-                                    <SidebarMenuItem key={item.name}>
-                                        <SidebarMenuButton className={`${itemActive(item.path)} hover:bg-secondary-foreground rounded-full flex items-center justify-center`} asChild>
+                                    <SidebarMenuItem key={item.name} className="flex align-center justify-center">
+                                        <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
                                             <NavLink to={item.path}>
                                                 {setIcon(item.name)}
                                             </NavLink>
@@ -129,9 +127,9 @@ export default function AppFrame() {
                     </SidebarGroup>
                 </SidebarContent>
             </Sidebar>
-            <SidebarInset className="m-2 ml-0 rounded-xl overflow-hidden flex flex-col">
+            <SidebarInset className="m-2 ml-0 rounded-xl flex flex-col">
                 <AppNavbar />
-                <div className="flex-1 min-h-0 overflow-auto">
+                <div className="flex-1">
                     <Outlet />
                 </div>
             </SidebarInset>
