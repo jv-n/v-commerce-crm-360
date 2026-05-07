@@ -1,6 +1,7 @@
-import React from "react";
+import React, { useState } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import AppNavbar from "@/components/molecules/AppNavbar";
+import AIChatSidebar from "@/components/molecules/AIChatSidebar";
 import {
     Sidebar,
     SidebarContent,
@@ -24,6 +25,7 @@ import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 
 export default function AppFrame() {
     const { pathname } = useLocation();
+    const [isAIOpen, setIsAIOpen] = useState(false);
 
     const itemActive = (path: string) => pathname === path ? "bg-primary" : "bg-background";
 
@@ -41,7 +43,7 @@ export default function AppFrame() {
 
     const sidebarItems3 = [
         { name: "Book", nav: true, path: "/book" },
-        { name: "Chat", nav: false, path: "/chat" },
+        { name: "Chat", nav: false, path: "" },
     ];
 
     const iconColor = (path: string) => {
@@ -115,11 +117,24 @@ export default function AppFrame() {
                             <SidebarMenu className="gap-2">
                                 {sidebarItems3.map((item) => (
                                     <SidebarMenuItem key={item.name} className="flex align-center justify-center">
-                                        <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
-                                            <NavLink to={item.path}>
+                                        {item.nav ? (
+                                            <SidebarMenuButton
+                                                className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
+                                                asChild
+                                            >
+                                                <NavLink to={item.path}>
+                                                    {setIcon(item.name)}
+                                                </NavLink>
+                                            </SidebarMenuButton>
+                                        ) : (
+                                            <SidebarMenuButton
+                                                className={`${isAIOpen ? "ring ring-primary" : ""} bg-background w-8 h-8 transition duration-400 hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
+                                                onClick={() => setIsAIOpen((prev) => !prev)}
+                                                title="Abrir assistente V.IA"
+                                            >
                                                 {setIcon(item.name)}
-                                            </NavLink>
-                                        </SidebarMenuButton>
+                                            </SidebarMenuButton>
+                                        )}
                                     </SidebarMenuItem>
                                 ))}
                             </SidebarMenu>
@@ -128,11 +143,18 @@ export default function AppFrame() {
                 </SidebarContent>
             </Sidebar>
             <SidebarInset className="m-2 ml-0 rounded-xl flex flex-col">
-                <AppNavbar />
+                <AppNavbar onOpenAI={() => setIsAIOpen((prev) => !prev)} />
                 <div className="flex-1">
                     <Outlet />
                 </div>
             </SidebarInset>
+
+            {/* Painel do assistente V.IA */}
+            <AIChatSidebar
+                open={isAIOpen}
+                onClose={() => setIsAIOpen(false)}
+                userName="Joao Victor"
+            />
         </SidebarProvider>
     );
 }
