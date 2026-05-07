@@ -37,6 +37,7 @@ export function DataTable<T,>({
   defaultRowsPerPage = 10,
   serverPagination,
   onFiltersChange,
+  onSearchChange,
   headerClassName,
   rowClassName,
   dividersClassName,
@@ -50,12 +51,17 @@ export function DataTable<T,>({
   const [searchOpen,  setSearchOpen]  = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
+  const handleSearchChange = (q: string) => {
+    setSearchQuery(q)
+    onSearchChange?.(q)
+  }
+
   const searchedData = useMemo(() => {
     if (!searchFn || !searchQuery.trim()) return data
     return data.filter(row => searchFn(row, searchQuery))
   }, [data, searchFn, searchQuery])
 
-  const filters    = useFilterState(columns, searchedData, serverPagination ? onFiltersChange : undefined)
+  const filters    = useFilterState(columns, searchedData, onFiltersChange)
   const pagination = usePagination(defaultRowsPerPage)
   const selection  = useRowSelection(getRowId)
 
@@ -166,8 +172,8 @@ export function DataTable<T,>({
             searchOpen={searchOpen}
             searchQuery={searchQuery}
             onSearchOpen={() => setSearchOpen(true)}
-            onSearchChange={setSearchQuery}
-            onSearchClose={() => { setSearchOpen(false); setSearchQuery("") }}
+            onSearchChange={handleSearchChange}
+            onSearchClose={() => { setSearchOpen(false); handleSearchChange("") }}
             searchPlaceholder={searchPlaceholder}
           />
         )}

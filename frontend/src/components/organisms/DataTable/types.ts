@@ -68,8 +68,10 @@ export interface DataTableProps<T> {
   defaultRowsPerPage?: number
   /** When provided, disables internal pagination and uses these server-driven values */
   serverPagination?: ServerPagination
-  /** Called whenever a filter changes; used by server-paginated tables to re-fetch */
+  /** Called whenever a column filter changes */
   onFiltersChange?: (filters: ActiveFilters) => void
+  /** Called whenever the search query changes */
+  onSearchChange?: (query: string) => void
   noBorder?: boolean
   headerClassName?: string
   rowClassName?: string
