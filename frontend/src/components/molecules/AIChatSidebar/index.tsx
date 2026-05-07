@@ -3,7 +3,6 @@ import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import CloseFullscreenOutlinedIcon from "@mui/icons-material/CloseFullscreenOutlined";
 import OpenInFullOutlinedIcon from "@mui/icons-material/OpenInFullOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
-import AttachFileOutlinedIcon from "@mui/icons-material/AttachFileOutlined";
 import AlternateEmailOutlinedIcon from "@mui/icons-material/AlternateEmailOutlined";
 import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
@@ -501,12 +500,6 @@ export default function AIChatSidebar({
                 />
                 <div className="flex items-center justify-between mt-2">
                   <div className="flex items-center gap-1">
-                    <button
-                      className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
-                      title="Anexar arquivo"
-                    >
-                      <AttachFileOutlinedIcon sx={{ fontSize: 16 }} />
-                    </button>
                     <button
                       className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
                       title="Mencionar"
