@@ -1,7 +1,29 @@
-from sqlalchemy import Float, String
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import Column, Integer, String, Float, ForeignKey
+from sqlalchemy.orm import relationship
 
 from database.database import Base
+
+
+class Product(Base):
+    __tablename__ = "products"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, index=True)
+    description: Mapped[str] = mapped_column(String, nullable=True)
+    price: Mapped[float] = mapped_column(Float)
+    stock: Mapped[int] = mapped_column(Integer)
+    category_id: Mapped[int] = mapped_column(Integer, ForeignKey("product_categories.id"))
+
+    category = relationship("ProductCategory", back_populates="products")
+
+
+class ProductCategory(Base):
+    __tablename__ = "product_categories"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    name: Mapped[str] = mapped_column(String, unique=True, index=True)
+
+    products = relationship("Product", back_populates="category")
 
 
 class GoldDesempenhoProduto(Base):
