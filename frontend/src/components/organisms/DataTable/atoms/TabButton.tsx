@@ -1,13 +1,14 @@
 import { cn } from "@/lib/utils"
-import TableRowsOutlinedIcon from "@mui/icons-material/TableRowsOutlined"
+import { MdOutlineTableChart } from "react-icons/md"
 
 interface TabButtonProps {
   label: string
   isActive: boolean
   onClick: () => void
+  count?: number
 }
 
-export function TabButton({ label, isActive, onClick }: TabButtonProps) {
+export function TabButton({ label, isActive, onClick, count }: TabButtonProps) {
   return (
     <button
       onClick={onClick}
@@ -18,8 +19,16 @@ export function TabButton({ label, isActive, onClick }: TabButtonProps) {
           : "border-transparent text-gray-400 hover:text-gray-600"
       )}
     >
-      <TableRowsOutlinedIcon sx={{ fontSize: 15 }} />
+      <MdOutlineTableChart size={15} />
       {label}
+      {count !== undefined && (
+        <span className={cn(
+          "text-xs px-1.5 py-0.5 rounded-full font-normal",
+          isActive ? "bg-gray-100 text-gray-600" : "bg-gray-100 text-gray-400"
+        )}>
+          {count}
+        </span>
+      )}
     </button>
   )
 }

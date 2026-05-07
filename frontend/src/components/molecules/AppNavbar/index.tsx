@@ -31,7 +31,7 @@ export default function AppNavbar() {
         <div className="flex items-center justify-between gap-2 px-4 h-14 bg-background rounded-md text-foreground shrink-0">
            <Field orientation="horizontal">
                 <SearchInput />
-                <button className="flex items-center justify-center rounded-full h-8 w-8 text-sm text-foreground hover:bg-secondary-foreground"
+                <button className="flex items-center justify-center rounded-md h-8 w-8 text-sm text-foreground hover:ring hover:ring-primary transition duration-300"
                     onClick={() => {alert("Search not implemented yet")}}>
                     <AddOutlinedIcon sx={{ color: "#74FF60" }} />
                 </button>

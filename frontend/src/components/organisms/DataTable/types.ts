@@ -13,6 +13,9 @@ export interface SelectFilterDef<T> {
 export interface NumberRangeFilterDef<T> {
   type: "number-range"
   label: string
+  minBound?: number
+  maxBound?: number
+  variant?: "slider"
   filterFn: (row: T, min: number | null, max: number | null) => boolean
 }
 
@@ -29,7 +32,7 @@ export type ActiveFilters           = Record<string, ActiveFilter>
 
 export interface Column<T> {
   key: string
-  header: string
+  header: ReactNode
   minWidth?: string
   /** Set false to hide from table while keeping filter available */
   visible?: boolean
@@ -42,6 +45,7 @@ export interface Column<T> {
 export interface Tab {
   id: string
   label: string
+  count?: number
 }
 
 export interface ServerPagination {
@@ -70,6 +74,10 @@ export interface DataTableProps<T> {
   headerClassName?: string
   rowClassName?: string
   dividersClassName?: string
-  expandedRowId?: string | null
+  expandedRowIds?: Set<string>
   renderExpandedRow?: (row: T) => React.ReactNode
+  filterBarExtra?: React.ReactNode
+  tabsRightSlot?: React.ReactNode
+  searchFn?: (row: T, query: string) => boolean
+  searchPlaceholder?: string
 }
