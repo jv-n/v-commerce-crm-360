@@ -12,3 +12,18 @@ class ProductSchema(BaseModel):
 
     class Config:
         from_attributes = True
+
+
+class ProductCreateSchema(BaseModel):
+    id_produto: str
+    nome_produto: str
+    categoria: str
+    preco: float
+    estoque_disponivel: int
+
+
+class ProductUpdateSchema(BaseModel):
+    nome_produto: str | None = None
+    categoria: str | None = None
+    preco: float | None = None
+    estoque_disponivel: int | None = None
