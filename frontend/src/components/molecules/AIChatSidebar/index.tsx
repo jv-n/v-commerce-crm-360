@@ -21,6 +21,7 @@ import {
   type ConversationSummary,
   type ConversationDetail,
 } from "@/lib/api/agent";
+import { MarkdownText } from "@/lib/renderMarkdown";
 
 // ── Tipos ────────────────────────────────────────────────────────────────────
 
@@ -581,12 +582,7 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             : undefined
         }
       >
-        {msg.content.split("\n").map((line, j, arr) => (
-          <span key={j}>
-            {line}
-            {j < arr.length - 1 && <br />}
-          </span>
-        ))}
+        <MarkdownText content={msg.content} />
 
         {msg.role === "assistant" && msg.sources && msg.sources.length > 0 && (
           <div className="mt-2 pt-2 border-t border-gray-200">
