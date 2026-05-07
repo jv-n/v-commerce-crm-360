@@ -1,74 +1,60 @@
 import type { Column } from "@/components/organisms/DataTable/types"
 import { StatusBadge } from "./tableComponents/badge"
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined"
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
-import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import ArrowForwardIcon from "@mui/icons-material/ArrowForward"
 import type { Sale, SaleStatus } from "@/types/sale"
 
+const ALL_STATUSES: SaleStatus[] = ["Aprovado", "Processando", "Recusado", "Reembolsado"]
 
-const ALL_STATUSES: SaleStatus[] = [
-  "Em andamento", "Concluída", "Falha", "Reembolsada", "Cancelada"
+const ALL_CATEGORIES = [
+  "Eletronicos", "Brinquedos", "Vestuario", "Esportes",
+  "Casa", "Moveis", "Beleza", "Automotivo", "Indefinida",
 ]
 
+const ALL_PAYMENT_METHODS = ["Boleto", "Pix", "Cartão"]
+
+function formatBRL(value: number): string {
+  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+}
+
 export const saleColumns: Column<Sale>[] = [
-  // ── Info icon (decorative) ─────────────────────────────────────────────────
-  {
-    key: "info",
-    header: "",
-    render: () => <InfoOutlinedIcon sx={{ fontSize: 15, color: "#D1D5DB" }} />,
-  },
-
-  // ── Nome ───────────────────────────────────────────────────────────────────
-  {
-    key: "client",
-    header: "Cliente",
-    minWidth: "160px",
-    render: (c) => (
-      <span className="font-medium text-gray-900 truncate block max-w-[200px]">{c.client_name}</span>
-    ),
-  },
-
-  // ── Responsável — select filter ─────────────────────────────────────────────
   {
     key: "product",
     header: "Produto",
-    minWidth: "160px",
+    minWidth: "180px",
     render: (c) => (
-       <span className="font-medium text-gray-900 truncate block max-w-[200px]">{c.product}</span>
+      <span className="font-medium text-gray-900 truncate block max-w-[220px]">{c.product}</span>
     ),
   },
 
-  // ── Quantidade ───────────────────────────────────────────────────────────────
   {
-    key: "amount",
-    header: "Quantidade",
-    minWidth: "100px",
-    render: (c) => <span className="text-gray-800 font-medium">{c.amount}</span>,
+    key: "categoria",
+    header: "Categoria",
+    minWidth: "130px",
+    filter: {
+      type: "select",
+      label: "Todas as categorias",
+      options: ALL_CATEGORIES,
+      filterFn: (c, value) => c.categoria === value,
+    },
+    render: (c) => (
+      <span className="text-gray-600 text-sm">{c.categoria ?? "—"}</span>
+    ),
   },
 
-  // ── Data pedido ──────────────────────────────────────────────────────────
+  {
+    key: "value",
+    header: "Valor",
+    minWidth: "110px",
+    render: (c) => (
+      <span className="font-medium text-gray-800">{formatBRL(c.value)}</span>
+    ),
+  },
+
   {
     key: "saleDate",
     header: "Data do pedido",
     minWidth: "130px",
-    filter: {
-      type: "number-range",
-      label: "Todas as datas",
-      filterFn: (c, min, max) => {
-        if(!min && !max) return true
-        const [day, month, year] = c.date.split("/").map(Number)
-        const saleDate = new Date(year, month - 1, day).getTime()
-        if(min) {
-          const minDate = new Date(min).getTime()
-          if(saleDate < minDate) return false
-        }
-        if(max) {
-          const maxDate = new Date(max).getTime()
-          if(saleDate > maxDate) return false
-        }
-        return true
-      }
-    },
     render: (c) =>
       c.date ? (
         <div className="flex items-center gap-1.5 text-gray-600">
@@ -76,25 +62,23 @@ export const saleColumns: Column<Sale>[] = [
           <span className="text-xs">{c.date}</span>
         </div>
       ) : (
-        <span className="text-xs text-gray-400">Nenhuma compra</span>
+        <span className="text-xs text-gray-400">—</span>
       ),
   },
 
-  // ── Status — select filter (used as rightFilterKey) ─────────────────────────
   {
     key: "status",
     header: "Status",
-    minWidth: "120px",
+    minWidth: "130px",
     filter: {
       type: "select",
-      label: "Todos os estados",
+      label: "Todos os status",
       options: ALL_STATUSES,
       filterFn: (c, value) => c.status === (value as SaleStatus),
     },
     render: (c) => <StatusBadge status={c.status} />,
   },
 
-  // ── Método de pagamento — select filter ───────────────────────────────────
   {
     key: "paymentMethod",
     header: "Método de pagamento",
@@ -102,18 +86,15 @@ export const saleColumns: Column<Sale>[] = [
     filter: {
       type: "select",
       label: "Todos os métodos",
-      options: ["Cartão de Crédito", "Boleto Bancário", "Pix", "Transferência"],
+      options: ALL_PAYMENT_METHODS,
       filterFn: (c, value) => c.payment_method === value,
     },
-    render: (c) => <span className="text-gray-800">{c.payment_method}</span>,
+    render: (c) => <span className="text-gray-700 text-sm">{c.payment_method}</span>,
   },
 
-  // ── Forward icon (decorative) ─────────────────────────────────────────────────
   {
     key: "forward",
     header: "",
-    render: () => (
-    <ArrowForwardIcon sx={{ fontSize: 15, color: "#D1D5DB" }} />
-  ),
+    render: () => <ArrowForwardIcon sx={{ fontSize: 15, color: "#D1D5DB" }} />,
   },
 ]
