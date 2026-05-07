@@ -26,6 +26,7 @@ import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 export default function AppFrame() {
     const { pathname } = useLocation();
     const [isAIOpen, setIsAIOpen] = useState(false);
+    const [isAIExpanded, setIsAIExpanded] = useState(false);
 
     const itemActive = (path: string) => pathname === path ? "bg-primary" : "bg-background";
 
@@ -142,7 +143,10 @@ export default function AppFrame() {
                     </SidebarGroup>
                 </SidebarContent>
             </Sidebar>
-            <SidebarInset className="m-2 ml-0 rounded-xl flex flex-col">
+            <SidebarInset
+                className="m-2 ml-0 rounded-xl flex flex-col transition-all duration-300"
+                style={{ marginRight: isAIOpen ? (isAIExpanded ? "648px" : "488px") : "8px" }}
+            >
                 <AppNavbar onOpenAI={() => setIsAIOpen((prev) => !prev)} />
                 <div className="flex-1">
                     <Outlet />
@@ -154,6 +158,8 @@ export default function AppFrame() {
                 open={isAIOpen}
                 onClose={() => setIsAIOpen(false)}
                 userName="Joao Victor"
+                isExpanded={isAIExpanded}
+                onExpandedChange={setIsAIExpanded}
             />
         </SidebarProvider>
     );

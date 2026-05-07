@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from "react";
+import CloseFullscreenOutlinedIcon from "@mui/icons-material/CloseFullscreenOutlined";
 import ChatBubbleOutlineOutlinedIcon from "@mui/icons-material/ChatBubbleOutlineOutlined";
 import OpenInFullOutlinedIcon from "@mui/icons-material/OpenInFullOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
@@ -12,19 +13,22 @@ interface AIChatSidebarProps {
   open: boolean;
   onClose: () => void;
   userName?: string;
+  isExpanded?: boolean;
+  onExpandedChange?: (expanded: boolean) => void;
 }
 
 export default function AIChatSidebar({
   open,
   onClose,
   userName = "você",
+  isExpanded = false,
+  onExpandedChange,
 }: AIChatSidebarProps) {
   const [sessionId] = useState<string>(() => crypto.randomUUID());
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
-  const [isExpanded, setIsExpanded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -119,7 +123,7 @@ export default function AIChatSidebar({
       {/* Painel */}
       <div
         className={`
-          fixed top-0 right-0 h-full z-40 flex flex-col
+          fixed top-0 right-0 h-full z-[60] flex flex-col
           bg-white shadow-2xl
           transition-all duration-300 ease-in-out
           ${open ? "translate-x-0" : "translate-x-full"}
@@ -149,11 +153,14 @@ export default function AIChatSidebar({
               <ChatBubbleOutlineOutlinedIcon sx={{ fontSize: 18 }} />
             </button>
             <button
-              onClick={() => setIsExpanded((p) => !p)}
+              onClick={() => onExpandedChange?.(!isExpanded)}
               className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
               title={isExpanded ? "Reduzir" : "Expandir"}
             >
-              <OpenInFullOutlinedIcon sx={{ fontSize: 16 }} />
+              {isExpanded
+                ? <CloseFullscreenOutlinedIcon sx={{ fontSize: 16 }} />
+                : <OpenInFullOutlinedIcon sx={{ fontSize: 16 }} />
+              }
             </button>
             <button
               onClick={onClose}
