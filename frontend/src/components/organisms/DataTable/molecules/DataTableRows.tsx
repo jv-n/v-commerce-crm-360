@@ -18,7 +18,7 @@ interface DataTableRowsProps<T> {
   headerClassName?: string
   rowClassName?: string
   dividersClassName?: string
-  expandedRowId?: string | null
+  expandedRowIds?: Set<string>
   renderExpandedRow?: (row: T) => ReactNode
   sortKey?: string | null
   sortDir?: "asc" | "desc"
@@ -37,14 +37,14 @@ export function DataTableRows<T,>({
   headerClassName = "bg-gray-50",
   rowClassName = "",
   dividersClassName = "divide-gray-100",
-  expandedRowId,
+  expandedRowIds,
   renderExpandedRow,
   sortKey,
   sortDir,
   onSort,
 }: DataTableRowsProps<T>) {
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto rounded-xl mt-4">
       <table className="w-full text-sm">
         <thead>
           <tr className={cn("border-b border-gray-200", headerClassName)}>
@@ -94,7 +94,7 @@ export function DataTableRows<T,>({
           {pageData.map(row => {
             const id         = getRowId(row)
             const isSelected = selectedRows.has(id)
-            const isExpanded = expandedRowId === id
+            const isExpanded = expandedRowIds?.has(id) ?? false
             return (
               <Fragment key={id}>
                 <tr

@@ -26,19 +26,17 @@ DB_PATH      = Path(__file__).resolve().parent / "vcommerce.db"
 # (nome_do_arquivo_sem_extensao, nome_da_tabela_no_banco)
 SILVER_TABLES = [
     # Dimensões (menores, carregadas primeiro)
-    ("dim_categorias_produto",  "dim_categorias_produto", CSV_DIR),
-    ("dim_status_pedido",       "dim_status_pedido",      CSV_DIR),
-    ("dim_tipos_problema",      "dim_tipos_problema",     CSV_DIR),
-    ("dim_agentes_suporte",     "dim_agentes_suporte",    CSV_DIR),
-    ("dim_produtos",            "dim_produtos",           CSV_DIR),
-    ("dim_clientes",            "dim_clientes",           CSV_DIR),
+    ("dim_categorias_produto",  "dim_categorias_produto"),
+    ("dim_status_pedido",       "dim_status_pedido"),
+    ("dim_tipos_problema",      "dim_tipos_problema"),
+    ("dim_agentes_suporte",     "dim_agentes_suporte"),
+    ("dim_produtos",            "dim_produtos"),
+    ("dim_clientes",            "dim_clientes"),
     # Fatos (maiores, dependem das dimensões)
-    ("ft_pedidos",              "ft_pedidos",             CSV_DIR),
-    ("ft_avaliacoes",           "ft_avaliacoes",          CSV_DIR),
-    ("ft_tickets_suporte",      "ft_tickets_suporte",     CSV_DIR),
-    ("ft_clickstream",          "ft_clickstream",         CSV_DIR),
-    # Gold (agregações prontas para o backend)
-    ("gold_cliente_360",        "gold_cliente_360",       GOLD_CSV_DIR),
+    ("ft_pedidos",              "ft_pedidos"),
+    ("ft_avaliacoes",           "ft_avaliacoes"),
+    ("ft_tickets_suporte",      "ft_tickets_suporte"),
+    ("ft_clickstream",          "ft_clickstream"),
 ]
 
 # ── Tabelas Gold ──────────────────────────────────────────────────────────────
@@ -50,6 +48,9 @@ GOLD_TABLES = [
     ("gold_analise_suporte_por_tipo",   "gold_analise_suporte_por_tipo"),
     ("gold_analise_suporte_por_agente", "gold_analise_suporte_por_agente"),
     ("gold_satisfacao_nps",             "gold_satisfacao_nps"),
+    ("gold_pedidos_detalhado",          "gold_pedidos_detalhado"),
+    ("gold_pedidos_por_status",         "gold_pedidos_por_status"),
+    ("gold_vendas_mensais",             "gold_vendas_mensais"),
 ]
 
 # ── Tipos explícitos por tabela ───────────────────────────────────────────────

@@ -13,6 +13,9 @@ export interface SelectFilterDef<T> {
 export interface NumberRangeFilterDef<T> {
   type: "number-range"
   label: string
+  minBound?: number
+  maxBound?: number
+  variant?: "slider"
   filterFn: (row: T, min: number | null, max: number | null) => boolean
 }
 
@@ -37,7 +40,7 @@ export type ActiveFilters           = Record<string, ActiveFilter>
 
 export interface Column<T> {
   key: string
-  header: string
+  header: ReactNode
   minWidth?: string
   /** Set false to hide from table while keeping filter available */
   visible?: boolean
@@ -54,6 +57,7 @@ export interface Column<T> {
 export interface Tab {
   id: string
   label: string
+  count?: number
 }
 
 export interface ServerPagination {
@@ -76,13 +80,18 @@ export interface DataTableProps<T> {
   defaultRowsPerPage?: number
   /** When provided, disables internal pagination and uses these server-driven values */
   serverPagination?: ServerPagination
-  /** Called whenever a filter changes; used by server-paginated tables to re-fetch */
+  /** Called whenever a column filter changes */
   onFiltersChange?: (filters: ActiveFilters) => void
-  onSortChange?: (key: string | null, dir: "asc" | "desc") => void
+  /** Called whenever the search query changes */
+  onSearchChange?: (query: string) => void
   noBorder?: boolean
   headerClassName?: string
   rowClassName?: string
   dividersClassName?: string
-  expandedRowId?: string | null
+  expandedRowIds?: Set<string>
   renderExpandedRow?: (row: T) => React.ReactNode
+  filterBarExtra?: React.ReactNode
+  tabsRightSlot?: React.ReactNode
+  searchFn?: (row: T, query: string) => boolean
+  searchPlaceholder?: string
 }

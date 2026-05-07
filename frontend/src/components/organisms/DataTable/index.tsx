@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
-import { useState } from "react"
+import { useState, useMemo } from "react"
 import { cn } from "@/lib/utils"
-import type { DataTableProps, SelectFilterDef, ServerPagination } from "./types"
+import type { DataTableProps, SelectFilterDef, NumberRangeFilterDef, ServerPagination } from "./types"
 import { useFilterState, isFilterActive, formatActiveFilter } from "./hooks/useFilterState"
 import { useRowSelection } from "./hooks/useRowSelection"
 import { usePagination } from "./hooks/usePagination"
@@ -34,20 +34,35 @@ export function DataTable<T,>({
   tabs = [],
   activeTab,
   onTabChange,
-  rightFilterKey,
   rowsPerPageOptions = [10, 25, 50],
   defaultRowsPerPage = 10,
   serverPagination,
   onFiltersChange,
-  onSortChange,
-  noBorder = false,
+  onSearchChange,
   headerClassName,
   rowClassName,
   dividersClassName,
-  expandedRowId,
+  expandedRowIds,
   renderExpandedRow,
+  filterBarExtra,
+  tabsRightSlot,
+  searchFn,
+  searchPlaceholder,
 }: DataTableProps<T>) {
-  const filters    = useFilterState(columns, data, serverPagination ? onFiltersChange : undefined)
+  const [searchOpen,  setSearchOpen]  = useState(false)
+  const [searchQuery, setSearchQuery] = useState("")
+
+  const handleSearchChange = (q: string) => {
+    setSearchQuery(q)
+    onSearchChange?.(q)
+  }
+
+  const searchedData = useMemo(() => {
+    if (!searchFn || !searchQuery.trim()) return data
+    return data.filter(row => searchFn(row, searchQuery))
+  }, [data, searchFn, searchQuery])
+
+  const filters    = useFilterState(columns, searchedData, onFiltersChange)
   const pagination = usePagination(defaultRowsPerPage)
   const selection  = useRowSelection(getRowId)
 
@@ -81,9 +96,8 @@ export function DataTable<T,>({
     : pagination.paginate(sortedData(filters.filteredData))
 
   const visibleColumns  = columns.filter(c => c.visible !== false)
-  const rightCol        = columns.find(c => c.key === rightFilterKey)
-
-  const mandatoryFilterCols = columns.filter(c => c.filter && !c.filterOptional && c.key !== rightFilterKey)
+  
+  const mandatoryFilterCols = columns.filter(c => c.filter && !c.filterOptional)
   const optionalFilterCols  = columns.filter(c => c.filter && c.filterOptional)
 
   const isActive = (key: string) => {
@@ -162,6 +176,9 @@ export function DataTable<T,>({
         current={active?.type === "number-range" ? { min: active.min, max: active.max } : null}
         onApply={(min, max) => { filters.setFilter(colKey, { type: "number-range", min, max }); pagination.resetPage() }}
         onClear={handleClear}
+        minBound={(def as NumberRangeFilterDef<T>).minBound}
+        maxBound={(def as NumberRangeFilterDef<T>).maxBound}
+        variant={(def as NumberRangeFilterDef<T>).variant}
       />
     )
 
@@ -188,13 +205,19 @@ export function DataTable<T,>({
         <div className="fixed inset-0 z-40" onClick={() => filters.setOpenFilter(null)} />
       )}
 
-      <div className={cn("flex flex-col bg-white rounded-xl overflow-hidden", !noBorder && "border border-gray-200")}>
+      <div className={cn("flex flex-col bg-white overflow-hidden")}>
         {tabs.length > 0 && (
           <DataTableTabs
             tabs={tabs}
             activeTab={activeTab}
             onTabChange={handleTabChange}
-            rightSlot={rightCol ? renderPill(rightCol.key, true) : undefined}
+            rightSlot={tabsRightSlot}
+            searchOpen={searchOpen}
+            searchQuery={searchQuery}
+            onSearchOpen={() => setSearchOpen(true)}
+            onSearchChange={handleSearchChange}
+            onSearchClose={() => { setSearchOpen(false); handleSearchChange("") }}
+            searchPlaceholder={searchPlaceholder}
           />
         )}
 
@@ -204,6 +227,7 @@ export function DataTable<T,>({
             onClearAll={() => { filters.clearAllFilters(); pagination.resetPage(); setShownOptionalKeys(new Set()) }}
             availableOptionalFilters={availableOptionalFilters}
             onAddFilter={addOptionalFilter}
+            extra={filterBarExtra}
           >
             {filterPillCols.map(col => renderPill(col.key, false, col.filterOptional))}
           </DataTableFilterBar>
@@ -220,7 +244,7 @@ export function DataTable<T,>({
           headerClassName={headerClassName}
           rowClassName={rowClassName}
           dividersClassName={dividersClassName}
-          expandedRowId={expandedRowId}
+          expandedRowIds={expandedRowIds}
           renderExpandedRow={renderExpandedRow}
           sortKey={sortKey}
           sortDir={sortDir}
