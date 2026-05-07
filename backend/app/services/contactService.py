@@ -1,8 +1,11 @@
+import uuid
+from datetime import date
+
 from sqlalchemy.orm import Session
-from sqlalchemy import func
+from sqlalchemy import func, asc, desc
 
 from app.models.contactModel import GoldCliente360, DimCliente
-from app.schemas.contactSchemas import ContactOut, ContactsPageOut
+from app.schemas.contactSchemas import ContactOut, ContactsPageOut, ContactCreate, ContactUpdate
 
 # Valores de segmento_cliente no gold → ContactStatus no frontend
 _SEGMENTO_MAP = {
@@ -63,6 +66,59 @@ def _to_contact_out(gold: GoldCliente360, dim: DimCliente | None) -> ContactOut:
 
 class ContactService:
     @staticmethod
+    def create_contact(db: Session, data: ContactCreate) -> ContactOut:
+        contact_id = str(uuid.uuid4())
+        today = date.today().strftime("%Y-%m-%d")
+        segmento = _STATUS_TO_SEGMENTO.get(data.status, "Ativo")
+
+        dim = DimCliente(
+            id_cliente=contact_id,
+            nome_completo=data.name,
+            email=data.email,
+            telefone=data.phone,
+            data_cadastro=today,
+        )
+        gold = GoldCliente360(
+            id_cliente=contact_id,
+            nome_completo=data.name,
+            email=data.email,
+            segmento_cliente=segmento,
+            total_pedidos=0,
+        )
+        db.add(dim)
+        db.add(gold)
+        db.commit()
+        db.refresh(gold)
+        db.refresh(dim)
+        return _to_contact_out(gold, dim)
+
+    @staticmethod
+    def update_contact(db: Session, contact_id: str, data: ContactUpdate) -> ContactOut | None:
+        gold = db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()
+        if not gold:
+            return None
+        dim = db.query(DimCliente).filter(DimCliente.id_cliente == contact_id).first()
+
+        if data.name is not None:
+            gold.nome_completo = data.name
+            if dim:
+                dim.nome_completo = data.name
+        if data.email is not None:
+            gold.email = data.email
+            if dim:
+                dim.email = data.email
+        if data.phone is not None and dim:
+            dim.telefone = data.phone
+        if data.status is not None:
+            gold.segmento_cliente = _STATUS_TO_SEGMENTO.get(data.status, gold.segmento_cliente)
+
+        db.commit()
+        db.refresh(gold)
+        if dim:
+            db.refresh(dim)
+        return _to_contact_out(gold, dim)
+
+    @staticmethod
     def get_contacts(
         db: Session,
         page: int = 1,
@@ -74,6 +130,9 @@ class ContactService:
         purchases_max: int | None = None,
         created_year: str = "",
         engagement: str = "",
+        sort_by: str = "",
+        sort_dir: str = "asc",
+        exclude_inactive: bool = True,
     ) -> ContactsPageOut:
         # tab "leads" não tem correspondência no gold — retorna vazio
         if tab == "leads":
@@ -86,6 +145,9 @@ class ContactService:
 
         if tab == "clients":
             query = query.filter(GoldCliente360.segmento_cliente.in_(_TAB_FILTER["clients"]))
+
+        if exclude_inactive:
+            query = query.filter(GoldCliente360.segmento_cliente != "Inativo")
 
         if search:
             term = f"%{search}%"
@@ -118,9 +180,18 @@ class ContactService:
 
         total = query.with_entities(func.count(GoldCliente360.id_cliente)).scalar()
 
+        _SORT_COLS = {
+            "name":         GoldCliente360.nome_completo,
+            "purchases":    GoldCliente360.total_pedidos,
+            "lastPurchase": GoldCliente360.data_ultimo_pedido,
+            "engagement":   GoldCliente360.nota_nps_media,
+        }
+        sort_col = _SORT_COLS.get(sort_by, GoldCliente360.nome_completo)
+        order_fn = desc if sort_dir == "desc" else asc
+
         rows = (
             query
-            .order_by(GoldCliente360.nome_completo)
+            .order_by(order_fn(sort_col))
             .offset((page - 1) * page_size)
             .limit(page_size)
             .all()
