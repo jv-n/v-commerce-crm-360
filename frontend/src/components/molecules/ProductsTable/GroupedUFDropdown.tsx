@@ -1,6 +1,6 @@
 import { useState } from "react"
 import { cn } from "@/lib/utils"
-import { mockProducts } from "@/lib/mocks/products"
+import type { Product } from "@/types/product"
 import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
 
 const BR_REGIONS: Record<string, string[]> = {
@@ -11,21 +11,23 @@ const BR_REGIONS: Record<string, string[]> = {
   "Sul":          ["Paraná", "Rio Grande do Sul", "Santa Catarina"],
 }
 
-const UFS_WITH_PRODUCTS = new Set(mockProducts.map(p => p.uf))
-const AVAILABLE_REGIONS: Record<string, string[]> = Object.fromEntries(
-  Object.entries(BR_REGIONS)
-    .map(([region, states]): [string, string[]] => [region, states.filter(s => UFS_WITH_PRODUCTS.has(s))])
-    .filter(([, states]) => states.length > 0)
-)
-
 export function GroupedUFDropdown({
+  products,
   selected,
   onSelect,
 }: {
+  products: Product[]
   selected: string | null
   onSelect: (uf: string) => void
 }) {
   const [collapsed, setCollapsed] = useState<Set<string>>(new Set())
+
+  const ufsWithProducts = new Set(products.map(p => p.uf).filter(Boolean))
+  const availableRegions: Record<string, string[]> = Object.fromEntries(
+    Object.entries(BR_REGIONS)
+      .map(([region, states]): [string, string[]] => [region, states.filter(s => ufsWithProducts.has(s))])
+      .filter(([, states]) => states.length > 0)
+  )
 
   const toggle = (region: string) =>
     setCollapsed(prev => {
@@ -36,7 +38,7 @@ export function GroupedUFDropdown({
 
   return (
     <div className="w-full py-1 max-h-72 overflow-y-auto">
-      {Object.entries(AVAILABLE_REGIONS).map(([region, ufs]) => {
+      {Object.entries(availableRegions).map(([region, ufs]) => {
         const isOpen = !collapsed.has(region)
         return (
           <div key={region}>
