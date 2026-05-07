@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useCallback } from "react";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import CloseFullscreenOutlinedIcon from "@mui/icons-material/CloseFullscreenOutlined";
 import OpenInFullOutlinedIcon from "@mui/icons-material/OpenInFullOutlined";
@@ -9,17 +9,21 @@ import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import ChatBubbleOutlineOutlinedIcon from "@mui/icons-material/ChatBubbleOutlineOutlined";
-import { fetchSuggestions, sendMessage, clearSession, type ChatMessage } from "@/lib/api/agent";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import {
+  fetchSuggestions,
+  sendMessage,
+  clearSession,
+  fetchConversations,
+  fetchConversation,
+  saveConversation,
+  deleteConversation,
+  type ChatMessage,
+  type ConversationSummary,
+  type ConversationDetail,
+} from "@/lib/api/agent";
 
-// ── Tipos ───────────────────────────────────────────────────────────────────
-
-interface Conversation {
-  id: string;
-  sessionId: string;
-  title: string;
-  messages: ChatMessage[];
-  startedAt: Date;
-}
+// ── Tipos ────────────────────────────────────────────────────────────────────
 
 interface AIChatSidebarProps {
   open: boolean;
@@ -38,22 +42,37 @@ export default function AIChatSidebar({
   isExpanded = false,
   onExpandedChange,
 }: AIChatSidebarProps) {
+  // ── Estado do chat ativo ──────────────────────────────────────────────────
   const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
+  const [sessionStartedAt] = useState<Date>(() => new Date());
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // Histórico: lista de conversas encerradas
-  const [history, setHistory] = useState<Conversation[]>([]);
-  // null = chat ativo; Conversation = visualizando histórico de uma sessão
-  const [viewing, setViewing] = useState<Conversation | null>(null);
+  // ── Estado do histórico ───────────────────────────────────────────────────
+  const [history, setHistory] = useState<ConversationSummary[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [viewing, setViewing] = useState<ConversationDetail | null>(null);
+  const [viewingLoading, setViewingLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // ── Efeitos ──────────────────────────────────────────────────────────────
+  // ── Carregar histórico do backend ─────────────────────────────────────────
+
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try {
+      const data = await fetchConversations();
+      setHistory(data);
+    } catch {
+      // silencioso — histórico não é crítico
+    } finally {
+      setHistoryLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
     if (open && suggestions.length === 0) {
@@ -109,37 +128,42 @@ export default function AIChatSidebar({
       };
       setMessages((prev) => [...prev, assistantMsg]);
     } catch (err) {
-      const errorMsg: ChatMessage = {
-        role: "assistant",
-        content:
-          err instanceof Error
-            ? `⚠️ ${err.message}`
-            : "⚠️ Erro inesperado. Tente novamente.",
-      };
-      setMessages((prev) => [...prev, errorMsg]);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            err instanceof Error
+              ? `⚠️ ${err.message}`
+              : "⚠️ Erro inesperado. Tente novamente.",
+        },
+      ]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  /** Encerra a sessão atual, salva no histórico e abre uma nova */
+  /** Salva a conversa atual no backend e abre uma nova sessão. */
   const handleNewConversation = async () => {
     if (messages.length > 0) {
       const firstUserMsg = messages.find((m) => m.role === "user");
       const title = firstUserMsg
-        ? firstUserMsg.content.slice(0, 60) + (firstUserMsg.content.length > 60 ? "…" : "")
+        ? firstUserMsg.content.slice(0, 60) +
+          (firstUserMsg.content.length > 60 ? "…" : "")
         : "Conversa sem título";
 
-      setHistory((prev) => [
-        {
-          id: crypto.randomUUID(),
-          sessionId,
+      try {
+        await saveConversation({
+          session_id: sessionId,
           title,
           messages,
-          startedAt: new Date(),
-        },
-        ...prev,
-      ]);
+          started_at: sessionStartedAt.toISOString(),
+        });
+        // Atualiza a lista localmente sem nova requisição
+        await loadHistory();
+      } catch {
+        // Falha silenciosa — não bloqueia nova conversa
+      }
 
       await clearSession(sessionId).catch(() => {});
     }
@@ -159,18 +183,109 @@ export default function AIChatSidebar({
   };
 
   const toggleHistory = () => {
-    setShowHistory((p) => !p);
+    const next = !showHistory;
+    setShowHistory(next);
     setViewing(null);
+    if (next) loadHistory();
   };
 
-  const openConversation = (conv: Conversation) => {
-    setViewing(conv);
+  const openConversation = async (summary: ConversationSummary) => {
+    setViewingLoading(true);
     setShowHistory(false);
+    try {
+      const detail = await fetchConversation(summary.id);
+      setViewing(detail);
+    } catch {
+      setViewing(null);
+      setShowHistory(true);
+    } finally {
+      setViewingLoading(false);
+    }
+  };
+
+  const handleDeleteConversation = async (
+    e: React.MouseEvent,
+    id: number
+  ) => {
+    e.stopPropagation();
+    try {
+      await deleteConversation(id);
+      setHistory((prev) => prev.filter((c) => c.id !== id));
+      if (viewing?.id === id) setViewing(null);
+    } catch {
+      // silencioso
+    }
+  };
+
+  const backToHistory = () => {
+    setViewing(null);
+    setShowHistory(true);
   };
 
   const backToChat = () => {
     setViewing(null);
     setShowHistory(false);
+  };
+
+  /**
+   * Retoma uma conversa do histórico: restaura as mensagens no chat ativo
+   * e envia a nova pergunta do usuário, iniciando uma sessão nova.
+   */
+  const handleResumeAndSend = async (text: string) => {
+    if (!viewing || !text.trim()) return;
+
+    // Salva a conversa ativa atual antes de substituí-la (se houver mensagens)
+    if (messages.length > 0) {
+      const firstUserMsg = messages.find((m) => m.role === "user");
+      const title = firstUserMsg
+        ? firstUserMsg.content.slice(0, 60) + (firstUserMsg.content.length > 60 ? "…" : "")
+        : "Conversa sem título";
+      try {
+        await saveConversation({
+          session_id: sessionId,
+          title,
+          messages,
+          started_at: sessionStartedAt.toISOString(),
+        });
+      } catch { /* silencioso */ }
+      await clearSession(sessionId).catch(() => {});
+    }
+
+    // Restaura as mensagens da conversa histórica + nova mensagem do usuário
+    const restored = [...viewing.messages];
+    const newSessionId = crypto.randomUUID();
+    const userMsg: ChatMessage = { role: "user", content: text.trim() };
+
+    setSessionId(newSessionId);
+    setMessages([...restored, userMsg]);
+    setInputValue("");
+    setViewing(null);
+    setShowHistory(false);
+    setIsLoading(true);
+
+    try {
+      const res = await sendMessage(text.trim(), newSessionId);
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content: res.answer,
+          sources: res.sources,
+          queries: res.queries,
+        },
+      ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          content:
+            err instanceof Error ? `⚠️ ${err.message}` : "⚠️ Erro inesperado. Tente novamente.",
+        },
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   // ── Derivados ─────────────────────────────────────────────────────────────
@@ -179,8 +294,6 @@ export default function AIChatSidebar({
     !showHistory && !viewing && messages.length === 0 && suggestions.length > 0;
 
   const sidebarWidth = isExpanded ? "w-[640px]" : "w-[480px]";
-
-  const activeMessages = viewing ? viewing.messages : messages;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -197,7 +310,6 @@ export default function AIChatSidebar({
     >
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-5 pt-5 pb-4 shrink-0">
-        {/* Badge V.IA */}
         <div
           className="px-3 py-1 rounded-full text-white text-sm font-semibold select-none"
           style={{
@@ -207,7 +319,6 @@ export default function AIChatSidebar({
           V.IA
         </div>
 
-        {/* Ações do header */}
         <div className="flex items-center gap-1">
           {/* Histórico de conversas */}
           <button
@@ -246,22 +357,26 @@ export default function AIChatSidebar({
       </div>
 
       {/* ══════════════════════════════════════════════════
-          PAINEL: HISTÓRICO DE CONVERSAS
+          PAINEL: HISTÓRICO
       ══════════════════════════════════════════════════ */}
       {showHistory && (
         <div className="flex-1 flex flex-col min-h-0">
           <div className="px-5 pb-3 shrink-0">
             <h3 className="text-sm font-semibold text-gray-700">Histórico de conversas</h3>
-            <p className="text-xs text-gray-400 mt-0.5">Conversas desta sessão</p>
+            <p className="text-xs text-gray-400 mt-0.5">Conversas salvas anteriormente</p>
           </div>
 
           <div className="flex-1 overflow-y-auto px-5 space-y-2 min-h-0">
-            {history.length === 0 ? (
+            {historyLoading ? (
+              <div className="flex items-center justify-center h-32">
+                <span className="text-sm text-gray-400">Carregando...</span>
+              </div>
+            ) : history.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 text-center">
                 <ChatBubbleOutlineOutlinedIcon sx={{ fontSize: 32, color: "#d1d5db" }} />
-                <p className="text-sm text-gray-400 mt-3">Nenhuma conversa anterior</p>
+                <p className="text-sm text-gray-400 mt-3">Nenhuma conversa salva</p>
                 <p className="text-xs text-gray-300 mt-1">
-                  Inicie uma nova conversa para começar
+                  Inicie e encerre uma conversa para ela aparecer aqui
                 </p>
               </div>
             ) : (
@@ -269,26 +384,33 @@ export default function AIChatSidebar({
                 <button
                   key={conv.id}
                   onClick={() => openConversation(conv)}
-                  className="w-full text-left px-4 py-3 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50 transition-all duration-150 group"
+                  className="w-full text-left px-4 py-3 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50 transition-all duration-150 group relative"
                 >
-                  <p className="text-sm text-gray-700 font-medium group-hover:text-purple-700 line-clamp-2 leading-snug">
+                  <p className="text-sm text-gray-700 font-medium group-hover:text-purple-700 line-clamp-2 leading-snug pr-6">
                     {conv.title}
                   </p>
                   <p className="text-xs text-gray-400 mt-1">
-                    {conv.messages.length / 2 | 0} trocas ·{" "}
-                    {conv.startedAt.toLocaleDateString("pt-BR", {
+                    {conv.message_count} mensagens ·{" "}
+                    {new Date(conv.ended_at).toLocaleDateString("pt-BR", {
                       day: "2-digit",
                       month: "short",
                       hour: "2-digit",
                       minute: "2-digit",
                     })}
                   </p>
+                  {/* Botão deletar */}
+                  <button
+                    onClick={(e) => handleDeleteConversation(e, conv.id)}
+                    className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded text-gray-300 hover:text-red-400 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                    title="Remover conversa"
+                  >
+                    <DeleteOutlineOutlinedIcon sx={{ fontSize: 14 }} />
+                  </button>
                 </button>
               ))
             )}
           </div>
 
-          {/* Nova conversa */}
           <div className="px-5 py-4 shrink-0 border-t border-gray-100">
             <button
               onClick={handleNewConversation}
@@ -302,42 +424,17 @@ export default function AIChatSidebar({
       )}
 
       {/* ══════════════════════════════════════════════════
-          PAINEL: VISUALIZANDO CONVERSA DO HISTÓRICO
+          PAINEL: VISUALIZANDO CONVERSA SALVA
       ══════════════════════════════════════════════════ */}
       {viewing && !showHistory && (
-        <div className="flex-1 flex flex-col min-h-0">
-          {/* Sub-header */}
-          <div className="flex items-center gap-2 px-5 pb-3 shrink-0">
-            <button
-              onClick={backToChat}
-              className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-              title="Voltar ao chat"
-            >
-              <ArrowBackOutlinedIcon sx={{ fontSize: 16 }} />
-            </button>
-            <p className="text-sm font-medium text-gray-600 truncate">{viewing.title}</p>
-          </div>
-
-          {/* Mensagens da conversa histórica (read-only) */}
-          <div className="flex-1 overflow-y-auto px-5 py-2 space-y-4 min-h-0">
-            {viewing.messages.map((msg, i) => (
-              <MessageBubble key={i} msg={msg} />
-            ))}
-          </div>
-
-          {/* Aviso de leitura */}
-          <div className="px-5 py-4 shrink-0 border-t border-gray-100">
-            <p className="text-xs text-center text-gray-400">
-              Esta conversa está encerrada.{" "}
-              <button
-                onClick={handleNewConversation}
-                className="text-purple-500 hover:text-purple-700 underline"
-              >
-                Iniciar uma nova
-              </button>
-            </p>
-          </div>
-        </div>
+        <ViewingPanel
+          viewing={viewing}
+          viewingLoading={viewingLoading}
+          onBack={backToHistory}
+          onResumeAndSend={handleResumeAndSend}
+          onNewConversation={handleNewConversation}
+          onBackToChat={backToChat}
+        />
       )}
 
       {/* ══════════════════════════════════════════════════
@@ -364,11 +461,10 @@ export default function AIChatSidebar({
 
           {/* Mensagens */}
           <div className="flex-1 overflow-y-auto px-5 py-2 space-y-4 min-h-0">
-            {activeMessages.map((msg, i) => (
+            {messages.map((msg, i) => (
               <MessageBubble key={i} msg={msg} />
             ))}
 
-            {/* Loading */}
             {isLoading && (
               <div className="flex justify-start">
                 <VAvatar />
@@ -388,7 +484,8 @@ export default function AIChatSidebar({
             <div
               className="rounded-2xl p-[2px]"
               style={{
-                background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 40%, #74FF60 100%)",
+                background:
+                  "linear-gradient(135deg, #7c3aed 0%, #a855f7 40%, #74FF60 100%)",
               }}
             >
               <div className="bg-white rounded-[14px] px-4 pt-3 pb-2">
@@ -473,7 +570,7 @@ export default function AIChatSidebar({
   );
 }
 
-// ── Sub-componentes auxiliares ────────────────────────────────────────────────
+// ── Sub-componentes ───────────────────────────────────────────────────────────
 
 function VAvatar() {
   return (
@@ -524,6 +621,129 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
             </div>
           </div>
         )}
+      </div>
+    </div>
+  );
+}
+
+// ── ViewingPanel ──────────────────────────────────────────────────────────────
+
+function ViewingPanel({
+  viewing,
+  viewingLoading,
+  onBack,
+  onResumeAndSend,
+  onNewConversation,
+  onBackToChat,
+}: {
+  viewing: ConversationDetail;
+  viewingLoading: boolean;
+  onBack: () => void;
+  onResumeAndSend: (text: string) => void;
+  onNewConversation: () => void;
+  onBackToChat: () => void;
+}) {
+  const [resumeInput, setResumeInput] = useState("");
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [resumeInput]);
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (resumeInput.trim()) onResumeAndSend(resumeInput);
+    }
+  };
+
+  return (
+    <div className="flex-1 flex flex-col min-h-0">
+      {/* Sub-header */}
+      <div className="flex items-center gap-2 px-5 pb-3 shrink-0">
+        <button
+          onClick={onBack}
+          className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+          title="Voltar ao histórico"
+        >
+          <ArrowBackOutlinedIcon sx={{ fontSize: 16 }} />
+        </button>
+        <p className="text-sm font-medium text-gray-600 truncate">{viewing.title}</p>
+      </div>
+
+      {/* Mensagens da conversa (read-only) */}
+      <div className="flex-1 overflow-y-auto px-5 py-2 space-y-4 min-h-0">
+        {viewingLoading ? (
+          <div className="flex items-center justify-center h-32">
+            <span className="text-sm text-gray-400">Carregando mensagens...</span>
+          </div>
+        ) : (
+          <>
+            {viewing.messages.map((msg, i) => (
+              <MessageBubble key={i} msg={msg} />
+            ))}
+            {/* Divisor visual entre histórico e nova pergunta */}
+            <div className="flex items-center gap-3 py-1">
+              <div className="flex-1 h-px bg-gray-100" />
+              <span className="text-xs text-gray-300 whitespace-nowrap">continuar conversa</span>
+              <div className="flex-1 h-px bg-gray-100" />
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Input para retomar */}
+      <div className="px-5 py-4 shrink-0">
+        <div
+          className="rounded-2xl p-[2px]"
+          style={{
+            background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 40%, #74FF60 100%)",
+          }}
+        >
+          <div className="bg-white rounded-[14px] px-4 pt-3 pb-2">
+            <textarea
+              ref={textareaRef}
+              value={resumeInput}
+              onChange={(e) => setResumeInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="Continue a partir daqui..."
+              rows={1}
+              className="w-full resize-none bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none leading-relaxed"
+              style={{ maxHeight: "120px", overflowY: "auto" }}
+            />
+            <div className="flex items-center justify-end mt-2">
+              <button
+                onClick={() => { if (resumeInput.trim()) onResumeAndSend(resumeInput); }}
+                disabled={!resumeInput.trim()}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-black transition disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-80"
+                style={{ background: "#74FF60" }}
+                title="Enviar"
+              >
+                <ArrowUpwardRoundedIcon sx={{ fontSize: 18 }} />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Ações secundárias */}
+        <div className="flex items-center justify-center gap-4 mt-3">
+          <button
+            onClick={onNewConversation}
+            className="text-xs text-gray-400 hover:text-purple-600 transition"
+          >
+            Nova conversa
+          </button>
+          <span className="text-gray-200">·</span>
+          <button
+            onClick={onBackToChat}
+            className="text-xs text-gray-400 hover:text-purple-600 transition"
+          >
+            Voltar ao chat atual
+          </button>
+        </div>
       </div>
     </div>
   );

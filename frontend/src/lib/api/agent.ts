@@ -1,5 +1,7 @@
 const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 
+// ── Agent chat ────────────────────────────────────────────────────────────────
+
 export interface ChatMessage {
   role: "user" | "assistant";
   content: string;
@@ -50,4 +52,55 @@ export async function sendMessage(
 
 export async function clearSession(sessionId: string): Promise<void> {
   await fetch(`${BASE_URL}/agent/session/${sessionId}`, { method: "DELETE" });
+}
+
+// ── Conversation history ──────────────────────────────────────────────────────
+
+export interface ConversationSummary {
+  id: number;
+  session_id: string;
+  title: string;
+  message_count: number;
+  started_at: string;
+  ended_at: string;
+}
+
+export interface ConversationDetail extends ConversationSummary {
+  messages: ChatMessage[];
+}
+
+export interface ConversationCreatePayload {
+  session_id: string;
+  title: string;
+  messages: ChatMessage[];
+  started_at: string; // ISO 8601
+}
+
+export async function fetchConversations(): Promise<ConversationSummary[]> {
+  const res = await fetch(`${BASE_URL}/conversations/?limit=100`);
+  if (!res.ok) throw new Error("Falha ao carregar histórico");
+  const data = await res.json() as { conversations: ConversationSummary[]; total: number };
+  return data.conversations;
+}
+
+export async function fetchConversation(id: number): Promise<ConversationDetail> {
+  const res = await fetch(`${BASE_URL}/conversations/${id}`);
+  if (!res.ok) throw new Error("Conversa não encontrada");
+  return res.json() as Promise<ConversationDetail>;
+}
+
+export async function saveConversation(
+  payload: ConversationCreatePayload
+): Promise<ConversationSummary> {
+  const res = await fetch(`${BASE_URL}/conversations/`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) throw new Error("Falha ao salvar conversa");
+  return res.json() as Promise<ConversationSummary>;
+}
+
+export async function deleteConversation(id: number): Promise<void> {
+  await fetch(`${BASE_URL}/conversations/${id}`, { method: "DELETE" });
 }
