@@ -2,12 +2,14 @@ import { useState, useEffect } from "react"
 import { DataTable } from "@/components/organisms/DataTable"
 import { makeContactColumns } from "./columns"
 import { fetchContacts } from "@/lib/api/contacts"
+import { ContactFormSheet } from "./ContactFormSheet"
 import type { Contact } from "@/types/contact"
 import type { Tab, ActiveFilters } from "@/components/organisms/DataTable/types"
 import { cn } from "@/lib/utils"
 import AddIcon from "@mui/icons-material/Add"
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined"
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
+import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined"
 
 const TABS: Tab[] = [
   { id: "all",     label: "Todos os contatos" },
@@ -18,16 +20,17 @@ const TABS: Tab[] = [
 const DEFAULT_PAGE_SIZE = 10
 
 interface ServerFilters {
-  status:       string
-  purchasesMin: number | null
-  purchasesMax: number | null
-  createdYear:  string
-  engagement:   string
+  status:          string
+  purchasesMin:    number | null
+  purchasesMax:    number | null
+  createdYear:     string
+  engagement:      string
+  excludeInactive: boolean
 }
 
-const EMPTY_FILTERS: ServerFilters = { status: "", purchasesMin: null, purchasesMax: null, createdYear: "", engagement: "" }
+const EMPTY_FILTERS: ServerFilters = { status: "", purchasesMin: null, purchasesMax: null, createdYear: "", engagement: "", excludeInactive: true }
 
-function ContactExpandedRow({ contact }: { contact: Contact }) {
+function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEdit: () => void }) {
   const history = [
     ...(contact.lastPurchase
       ? [{
@@ -76,6 +79,17 @@ function ContactExpandedRow({ contact }: { contact: Contact }) {
           </div>
         ))}
       </div>
+
+      {/* ── Ações ─────────────────────────────────────────────────────────── */}
+      <div className="flex flex-col gap-2 justify-start pt-0.5">
+        <button
+          onClick={onEdit}
+          className="flex items-center gap-1.5 text-xs font-medium text-purple-700 hover:text-purple-900 bg-white border border-purple-200 px-3 py-1.5 rounded-md shadow-sm hover:bg-purple-50 transition-colors"
+        >
+          <EditOutlinedIcon sx={{ fontSize: 13 }} />
+          Editar contato
+        </button>
+      </div>
     </div>
   )
 }
@@ -89,14 +103,19 @@ export function ContactsTable() {
   const [loading, setLoading]             = useState(true)
   const [serverFilters, setServerFilters] = useState<ServerFilters>(EMPTY_FILTERS)
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null)
+  const [sortBy,  setSortBy]  = useState<string | null>(null)
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
+  const [refetchKey, setRefetchKey]       = useState(0)
+  const [formOpen, setFormOpen]           = useState(false)
+  const [editingContact, setEditingContact] = useState<Contact | null>(null)
 
-  const { status, purchasesMin, purchasesMax, createdYear, engagement } = serverFilters
+  const { status, purchasesMin, purchasesMax, createdYear, engagement, excludeInactive } = serverFilters
 
   useEffect(() => {
     let cancelled = false
     setLoading(true)
 
-    fetchContacts({ page, pageSize, tab: activeTab, status, purchasesMin, purchasesMax, createdYear, engagement })
+    fetchContacts({ page, pageSize, tab: activeTab, status, purchasesMin, purchasesMax, createdYear, engagement, sortBy, sortDir, excludeInactive })
       .then((res) => {
         if (cancelled) return
         setContacts(res.data)
@@ -106,10 +125,16 @@ export function ContactsTable() {
       .finally(() => { if (!cancelled) setLoading(false) })
 
     return () => { cancelled = true }
-  }, [page, pageSize, activeTab, status, purchasesMin, purchasesMax, createdYear, engagement])
+  }, [page, pageSize, activeTab, status, purchasesMin, purchasesMax, createdYear, engagement, sortBy, sortDir, excludeInactive, refetchKey])
 
   const onToggleExpand = (id: string) =>
     setExpandedRowId(prev => prev === id ? null : id)
+
+  const handleSortChange = (key: string | null, dir: "asc" | "desc") => {
+    setSortBy(key)
+    setSortDir(dir)
+    setPage(1)
+  }
 
   const handleTabChange = (tabId: string) => {
     setActiveTab(tabId)
@@ -130,38 +155,63 @@ export function ContactsTable() {
     const pf = active["purchases"]
     const cf = active["createdAt"]
     const ef = active["engagement"]
+    const hf = active["hideInactive"]
     setServerFilters({
-      status:       sf?.type === "select"       && sf.value !== ""  ? sf.value      : "",
-      purchasesMin: pf?.type === "number-range"                     ? pf.min        : null,
-      purchasesMax: pf?.type === "number-range"                     ? pf.max        : null,
-      createdYear:  cf?.type === "select"       && cf.value !== ""  ? cf.value      : "",
-      engagement:   ef?.type === "select"       && ef.value !== ""  ? ef.value      : "",
+      status:          sf?.type === "select"       && sf.value !== ""  ? sf.value      : "",
+      purchasesMin:    pf?.type === "number-range"                     ? pf.min        : null,
+      purchasesMax:    pf?.type === "number-range"                     ? pf.max        : null,
+      createdYear:     cf?.type === "select"       && cf.value !== ""  ? cf.value      : "",
+      engagement:      ef?.type === "select"       && ef.value !== ""  ? ef.value      : "",
+      excludeInactive: hf?.type === "toggle"                          ? hf.active     : false,
     })
     setPage(1)
   }
 
+  const openEdit = (c: Contact) => { setEditingContact(c); setFormOpen(true) }
+  const openAdd  = ()           => { setEditingContact(null); setFormOpen(true) }
+
   return (
-    <DataTable
-      data={loading ? [] : contacts}
-      columns={makeContactColumns(expandedRowId, onToggleExpand)}
-      getRowId={(c) => c.id}
-      tabs={TABS}
-      activeTab={activeTab}
-      onTabChange={handleTabChange}
-      onFiltersChange={handleFiltersChange}
-      rightFilterKey="status"
-      headerClassName="bg-[#F0DDFD]"
-      dividersClassName="divide-[#9F83B2]"
-      rowsPerPageOptions={[10, 25, 50]}
-      expandedRowId={expandedRowId}
-      renderExpandedRow={(c) => <ContactExpandedRow contact={c} />}
-      serverPagination={{
-        total,
-        page,
-        pageSize,
-        onPageChange: handlePageChange,
-        onPageSizeChange: handlePageSizeChange,
-      }}
-    />
+    <>
+      <div className="flex justify-end mb-1">
+        <button
+          onClick={openAdd}
+          className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
+        >
+          <PersonAddOutlinedIcon sx={{ fontSize: 16 }} />
+          Adicionar contato
+        </button>
+      </div>
+
+      <DataTable
+        data={loading ? [] : contacts}
+        columns={makeContactColumns(expandedRowId, onToggleExpand)}
+        getRowId={(c) => c.id}
+        tabs={TABS}
+        activeTab={activeTab}
+        onTabChange={handleTabChange}
+        onFiltersChange={handleFiltersChange}
+        onSortChange={handleSortChange}
+        rightFilterKey="status"
+        headerClassName="bg-[#F0DDFD]"
+        dividersClassName="divide-[#9F83B2]"
+        rowsPerPageOptions={[10, 25, 50]}
+        expandedRowId={expandedRowId}
+        renderExpandedRow={(c) => <ContactExpandedRow contact={c} onEdit={() => openEdit(c)} />}
+        serverPagination={{
+          total,
+          page,
+          pageSize,
+          onPageChange: handlePageChange,
+          onPageSizeChange: handlePageSizeChange,
+        }}
+      />
+
+      <ContactFormSheet
+        open={formOpen}
+        onClose={() => setFormOpen(false)}
+        contact={editingContact}
+        onSuccess={() => setRefetchKey(k => k + 1)}
+      />
+    </>
   )
 }

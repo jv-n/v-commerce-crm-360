@@ -2,6 +2,9 @@ import { Fragment } from "react"
 import { cn } from "@/lib/utils"
 import type { Column } from "../types"
 import type { ReactNode } from "react"
+import ArrowUpwardIcon   from "@mui/icons-material/ArrowUpward"
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward"
+import UnfoldMoreIcon    from "@mui/icons-material/UnfoldMore"
 
 interface DataTableRowsProps<T> {
   columns: Column<T>[]
@@ -17,6 +20,9 @@ interface DataTableRowsProps<T> {
   dividersClassName?: string
   expandedRowId?: string | null
   renderExpandedRow?: (row: T) => ReactNode
+  sortKey?: string | null
+  sortDir?: "asc" | "desc"
+  onSort?: (key: string) => void
 }
 
 export function DataTableRows<T,>({
@@ -33,6 +39,9 @@ export function DataTableRows<T,>({
   dividersClassName = "divide-gray-100",
   expandedRowId,
   renderExpandedRow,
+  sortKey,
+  sortDir,
+  onSort,
 }: DataTableRowsProps<T>) {
   return (
     <div className="overflow-x-auto">
@@ -47,15 +56,38 @@ export function DataTableRows<T,>({
                 className="w-4 h-4 rounded border-gray-300 cursor-pointer accent-gray-800"
               />
             </th>
-            {columns.map(col => (
-              <th
-                key={col.key}
-                style={col.minWidth ? { minWidth: col.minWidth } : undefined}
-                className="px-3 py-3 text-left text-xs font-semibold text-gray-500"
-              >
-                {col.header}
-              </th>
-            ))}
+            {columns.map(col => {
+              const isActive = sortKey === col.key
+              return (
+                <th
+                  key={col.key}
+                  style={col.minWidth ? { minWidth: col.minWidth } : undefined}
+                  className="px-3 py-3 text-left text-xs font-semibold text-gray-500"
+                >
+                  {col.sortable && col.header ? (
+                    <button
+                      onClick={() => onSort?.(col.key)}
+                      className={cn(
+                        "group inline-flex items-center gap-1 hover:text-gray-800 transition-colors",
+                        isActive && "text-gray-800"
+                      )}
+                    >
+                      {col.header}
+                      <span className={cn(
+                        "transition-colors",
+                        isActive ? "text-gray-700" : "text-gray-300 group-hover:text-gray-400"
+                      )}>
+                        {isActive && sortDir === "asc"  && <ArrowUpwardIcon   sx={{ fontSize: 12 }} />}
+                        {isActive && sortDir === "desc" && <ArrowDownwardIcon sx={{ fontSize: 12 }} />}
+                        {!isActive && <UnfoldMoreIcon sx={{ fontSize: 13 }} />}
+                      </span>
+                    </button>
+                  ) : (
+                    col.header
+                  )}
+                </th>
+              )
+            })}
           </tr>
         </thead>
         <tbody className={cn("divide-y", dividersClassName)}>

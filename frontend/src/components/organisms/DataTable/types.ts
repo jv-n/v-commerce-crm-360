@@ -16,13 +16,21 @@ export interface NumberRangeFilterDef<T> {
   filterFn: (row: T, min: number | null, max: number | null) => boolean
 }
 
-export type FilterDef<T> = SelectFilterDef<T> | NumberRangeFilterDef<T>
+export interface ToggleFilterDef<T> {
+  type: "toggle"
+  label: string
+  defaultActive?: boolean
+  filterFn: (row: T) => boolean
+}
+
+export type FilterDef<T> = SelectFilterDef<T> | NumberRangeFilterDef<T> | ToggleFilterDef<T>
 
 // ─── Active filter state ──────────────────────────────────────────────────────
 
 export type SelectActiveFilter      = { type: "select"; value: string }
 export type NumberRangeActiveFilter = { type: "number-range"; min: number | null; max: number | null }
-export type ActiveFilter            = SelectActiveFilter | NumberRangeActiveFilter
+export type ToggleActiveFilter      = { type: "toggle"; active: boolean }
+export type ActiveFilter            = SelectActiveFilter | NumberRangeActiveFilter | ToggleActiveFilter
 export type ActiveFilters           = Record<string, ActiveFilter>
 
 // ─── Column & Table props ─────────────────────────────────────────────────────
@@ -35,6 +43,10 @@ export interface Column<T> {
   visible?: boolean
   /** If true, filter is hidden by default and only shown when user adds it via "+" */
   filterOptional?: boolean
+  /** Enables sort button on header; used for client-side sort */
+  sortable?: boolean
+  /** Value extractor for client-side sorting */
+  sortValue?: (row: T) => string | number | null | undefined
   render: (row: T) => ReactNode
   filter?: FilterDef<T>
 }
@@ -66,6 +78,7 @@ export interface DataTableProps<T> {
   serverPagination?: ServerPagination
   /** Called whenever a filter changes; used by server-paginated tables to re-fetch */
   onFiltersChange?: (filters: ActiveFilters) => void
+  onSortChange?: (key: string | null, dir: "asc" | "desc") => void
   noBorder?: boolean
   headerClassName?: string
   rowClassName?: string

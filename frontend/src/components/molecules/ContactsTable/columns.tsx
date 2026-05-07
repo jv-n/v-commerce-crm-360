@@ -22,6 +22,20 @@ export function makeContactColumns(
   onToggle: (id: string) => void,
 ): Column<Contact>[] {
   return [
+  // ── Sem inativos toggle (hidden column, default active) ────────────────────
+  {
+    key: "hideInactive",
+    header: "",
+    visible: false,
+    filter: {
+      type: "toggle" as const,
+      label: "Sem inativos",
+      defaultActive: true,
+      filterFn: (c: Contact) => c.status !== "Cliente Inativo",
+    },
+    render: () => null,
+  },
+
   // ── Info icon ──────────────────────────────────────────────────────────────
   {
     key: "info",
@@ -44,6 +58,8 @@ export function makeContactColumns(
     key: "name",
     header: "Nome",
     minWidth: "160px",
+    sortable: true,
+    sortValue: (c) => c.name ?? "",
     render: (c) => (
       <button
         onClick={() => onToggle(c.id)}
@@ -73,6 +89,8 @@ export function makeContactColumns(
     key: "lastPurchase",
     header: "Última compra",
     minWidth: "130px",
+    sortable: true,
+    sortValue: (c) => c.lastPurchase ?? "",
     render: (c) =>
       c.lastPurchase ? (
         <div className="flex items-center gap-1.5 text-gray-600">
@@ -89,6 +107,8 @@ export function makeContactColumns(
     key: "purchases",
     header: "Compras",
     minWidth: "80px",
+    sortable: true,
+    sortValue: (c) => c.purchases,
     filter: {
       type: "number-range",
       label: "Compras",
@@ -133,6 +153,8 @@ export function makeContactColumns(
     key: "engagement",
     header: "Engajamento",
     minWidth: "140px",
+    sortable: true,
+    sortValue: (c) => c.engagementScore,
     filterOptional: true,
     filter: {
       type: "select",
