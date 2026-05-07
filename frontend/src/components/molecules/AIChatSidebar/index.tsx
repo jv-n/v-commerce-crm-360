@@ -320,6 +320,15 @@ export default function AIChatSidebar({
         </div>
 
         <div className="flex items-center gap-1">
+          {/* Nova conversa */}
+          <button
+            onClick={handleNewConversation}
+            className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+            title="Nova conversa"
+          >
+            <AddOutlinedIcon sx={{ fontSize: 18 }} />
+          </button>
+
           {/* Histórico de conversas */}
           <button
             onClick={toggleHistory}
@@ -411,15 +420,6 @@ export default function AIChatSidebar({
             )}
           </div>
 
-          <div className="px-5 py-4 shrink-0 border-t border-gray-100">
-            <button
-              onClick={handleNewConversation}
-              className="w-full flex items-center justify-center gap-2 py-2.5 rounded-xl border border-dashed border-purple-300 text-purple-600 text-sm font-medium hover:bg-purple-50 transition"
-            >
-              <AddOutlinedIcon sx={{ fontSize: 16 }} />
-              Nova conversa
-            </button>
-          </div>
         </div>
       )}
 
@@ -432,7 +432,6 @@ export default function AIChatSidebar({
           viewingLoading={viewingLoading}
           onBack={backToHistory}
           onResumeAndSend={handleResumeAndSend}
-          onNewConversation={handleNewConversation}
           onBackToChat={backToChat}
         />
       )}
@@ -549,20 +548,10 @@ export default function AIChatSidebar({
           )}
 
           {/* Footer */}
-          <div className="px-5 pb-4 flex items-center justify-between shrink-0">
+          <div className="px-5 pb-4 shrink-0">
             <p className="text-xs text-gray-400">
               Toda I.A pode cometer erros, sempre verifique os dados.
             </p>
-            {messages.length > 0 && (
-              <button
-                onClick={handleNewConversation}
-                className="ml-2 flex-shrink-0 flex items-center gap-1 text-xs text-gray-400 hover:text-purple-600 hover:bg-purple-50 px-2 py-1 rounded-md transition"
-                title="Nova conversa"
-              >
-                <AddOutlinedIcon sx={{ fontSize: 14 }} />
-                Nova
-              </button>
-            )}
           </div>
         </>
       )}
@@ -633,14 +622,12 @@ function ViewingPanel({
   viewingLoading,
   onBack,
   onResumeAndSend,
-  onNewConversation,
   onBackToChat,
 }: {
   viewing: ConversationDetail;
   viewingLoading: boolean;
   onBack: () => void;
   onResumeAndSend: (text: string) => void;
-  onNewConversation: () => void;
   onBackToChat: () => void;
 }) {
   const [resumeInput, setResumeInput] = useState("");
@@ -728,15 +715,8 @@ function ViewingPanel({
           </div>
         </div>
 
-        {/* Ações secundárias */}
-        <div className="flex items-center justify-center gap-4 mt-3">
-          <button
-            onClick={onNewConversation}
-            className="text-xs text-gray-400 hover:text-purple-600 transition"
-          >
-            Nova conversa
-          </button>
-          <span className="text-gray-200">·</span>
+        {/* Ação secundária */}
+        <div className="flex items-center justify-center mt-3">
           <button
             onClick={onBackToChat}
             className="text-xs text-gray-400 hover:text-purple-600 transition"
