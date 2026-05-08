@@ -333,7 +333,11 @@ export default function AIChatSidebar({
   // ── Modo sidebar ───────────────────────────────────────────────────────────
 
   return (
-    <div className={`fixed top-0 right-0 h-full z-[60] flex flex-col bg-white shadow-2xl transition-all duration-300 ease-in-out w-[480px] ${open ? "translate-x-0" : "translate-x-full"}`} style={{ borderLeft: "1px solid #e5e7eb" }}>
+    <div
+      className="shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out"
+      style={{ width: open ? "420px" : "0px" }}
+    >
+    <div className="w-[420px] h-full flex flex-col bg-white" style={{ borderLeft: "1px solid #e5e7eb" }}>
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-5 pt-5 pb-4 shrink-0">
         {viaBadge}
@@ -510,6 +514,7 @@ export default function AIChatSidebar({
           </div>
         </>
       )}
+    </div>
     </div>
   );
 }

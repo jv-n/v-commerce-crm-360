@@ -152,22 +152,19 @@ export default function AppFrame() {
                     </SidebarGroup>
                 </SidebarContent>
             </Sidebar>
-            <SidebarInset
-                className="m-2 ml-0 rounded-xl flex flex-col transition-all duration-300"
-                style={{ marginRight: isAIOpen ? "488px" : "8px" }}
-            >
+            <SidebarInset className="m-2 ml-0 rounded-xl flex flex-col transition-all duration-300">
                 <AppNavbar onOpenAI={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }} />
-                <div className="flex-1 min-h-0 overflow-hidden">
-                    <Outlet />
+                <div className="flex flex-1 min-h-0">
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                        <Outlet />
+                    </div>
+                    <AIChatSidebar
+                        open={isAIOpen}
+                        onClose={() => setIsAIOpen(false)}
+                        userName="Joao Victor"
+                    />
                 </div>
             </SidebarInset>
-
-            {/* Painel do assistente V.IA */}
-            <AIChatSidebar
-                open={isAIOpen}
-                onClose={() => setIsAIOpen(false)}
-                userName="Joao Victor"
-            />
         </SidebarProvider>
     );
 }
