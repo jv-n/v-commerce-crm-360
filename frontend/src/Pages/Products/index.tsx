@@ -22,8 +22,8 @@ export default function Products() {
 
       <ProductsTable ref={tableRef} onCanUndoChange={setCanUndo} />
 
-      {/* Botões flutuantes */}
-      <div className="fixed bottom-6 right-6 flex items-center gap-2 z-50">
+      <hr className="border-gray-200" />
+      <div className="self-end flex items-center gap-2">
         <button
           onClick={() => tableRef.current?.undo()}
           disabled={!canUndo}

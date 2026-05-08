@@ -13,28 +13,43 @@ export interface SelectFilterDef<T> {
 export interface NumberRangeFilterDef<T> {
   type: "number-range"
   label: string
+  minBound?: number
+  maxBound?: number
+  variant?: "slider"
   filterFn: (row: T, min: number | null, max: number | null) => boolean
 }
 
-export type FilterDef<T> = SelectFilterDef<T> | NumberRangeFilterDef<T>
+export interface ToggleFilterDef<T> {
+  type: "toggle"
+  label: string
+  defaultActive?: boolean
+  filterFn: (row: T) => boolean
+}
+
+export type FilterDef<T> = SelectFilterDef<T> | NumberRangeFilterDef<T> | ToggleFilterDef<T>
 
 // ─── Active filter state ──────────────────────────────────────────────────────
 
 export type SelectActiveFilter      = { type: "select"; value: string }
 export type NumberRangeActiveFilter = { type: "number-range"; min: number | null; max: number | null }
-export type ActiveFilter            = SelectActiveFilter | NumberRangeActiveFilter
+export type ToggleActiveFilter      = { type: "toggle"; active: boolean }
+export type ActiveFilter            = SelectActiveFilter | NumberRangeActiveFilter | ToggleActiveFilter
 export type ActiveFilters           = Record<string, ActiveFilter>
 
 // ─── Column & Table props ─────────────────────────────────────────────────────
 
 export interface Column<T> {
   key: string
-  header: string
+  header: ReactNode
   minWidth?: string
   /** Set false to hide from table while keeping filter available */
   visible?: boolean
   /** If true, filter is hidden by default and only shown when user adds it via "+" */
   filterOptional?: boolean
+  /** Enables sort button on header; used for client-side sort */
+  sortable?: boolean
+  /** Value extractor for client-side sorting */
+  sortValue?: (row: T) => string | number | null | undefined
   render: (row: T) => ReactNode
   filter?: FilterDef<T>
 }
@@ -42,6 +57,7 @@ export interface Column<T> {
 export interface Tab {
   id: string
   label: string
+  count?: number
 }
 
 export interface ServerPagination {
@@ -64,12 +80,18 @@ export interface DataTableProps<T> {
   defaultRowsPerPage?: number
   /** When provided, disables internal pagination and uses these server-driven values */
   serverPagination?: ServerPagination
-  /** Called whenever a filter changes; used by server-paginated tables to re-fetch */
+  /** Called whenever a column filter changes */
   onFiltersChange?: (filters: ActiveFilters) => void
+  /** Called whenever the search query changes */
+  onSearchChange?: (query: string) => void
   noBorder?: boolean
   headerClassName?: string
   rowClassName?: string
   dividersClassName?: string
-  expandedRowId?: string | null
+  expandedRowIds?: Set<string>
   renderExpandedRow?: (row: T) => React.ReactNode
+  filterBarExtra?: React.ReactNode
+  tabsRightSlot?: React.ReactNode
+  searchFn?: (row: T, query: string) => boolean
+  searchPlaceholder?: string
 }

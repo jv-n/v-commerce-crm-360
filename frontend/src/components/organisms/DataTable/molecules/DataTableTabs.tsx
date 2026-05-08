@@ -1,19 +1,43 @@
+import { useEffect, useRef } from "react"
 import type { ReactNode } from "react"
 import type { Tab } from "../types"
 import { TabButton } from "../atoms/TabButton"
+import { MdOutlineTableChart } from "react-icons/md"
 import AddIcon from "@mui/icons-material/Add"
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined"
-import TableRowsOutlinedIcon from "@mui/icons-material/TableRowsOutlined"
-import GridViewOutlinedIcon from "@mui/icons-material/GridViewOutlined"
+import CloseIcon from "@mui/icons-material/Close"
 
 interface DataTableTabsProps {
   tabs: Tab[]
   activeTab?: string
   onTabChange: (id: string) => void
   rightSlot?: ReactNode
+  searchOpen: boolean
+  searchQuery: string
+  onSearchOpen: () => void
+  onSearchChange: (q: string) => void
+  onSearchClose: () => void
+  searchPlaceholder?: string
 }
 
-export function DataTableTabs({ tabs, activeTab, onTabChange, rightSlot }: DataTableTabsProps) {
+export function DataTableTabs({
+  tabs,
+  activeTab,
+  onTabChange,
+  rightSlot,
+  searchOpen,
+  searchQuery,
+  onSearchOpen,
+  onSearchChange,
+  onSearchClose,
+  searchPlaceholder = "Pesquisar...",
+}: DataTableTabsProps) {
+  const inputRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (searchOpen) inputRef.current?.focus()
+  }, [searchOpen])
+
   return (
     <div className="flex items-center justify-between px-4 border-b border-gray-200">
       <div className="flex items-center">
@@ -31,18 +55,38 @@ export function DataTableTabs({ tabs, activeTab, onTabChange, rightSlot }: DataT
       </div>
 
       <div className="flex items-center gap-2 relative z-50">
-        {rightSlot}
-        <button className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded">
-          <SearchOutlinedIcon sx={{ fontSize: 18 }} />
+        {!searchOpen && rightSlot}
+
+        {searchOpen ? (
+          <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-md px-2 py-1">
+            <SearchOutlinedIcon sx={{ fontSize: 16, color: "#9CA3AF" }} />
+            <input
+              ref={inputRef}
+              type="text"
+              value={searchQuery}
+              onChange={e => onSearchChange(e.target.value)}
+              placeholder={searchPlaceholder}
+              className="bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none w-44"
+            />
+            <button
+              onClick={onSearchClose}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <CloseIcon sx={{ fontSize: 14 }} />
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={onSearchOpen}
+            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+          >
+            <SearchOutlinedIcon sx={{ fontSize: 18 }} />
+          </button>
+        )}
+
+        <button className="p-1.5 text-gray-700">
+          <MdOutlineTableChart />
         </button>
-        <div className="flex items-center border border-gray-200 rounded-md overflow-hidden">
-          <button className="p-1.5 bg-gray-100 text-gray-700 border-r border-gray-200">
-            <TableRowsOutlinedIcon sx={{ fontSize: 16 }} />
-          </button>
-          <button className="p-1.5 text-gray-400 hover:bg-gray-50">
-            <GridViewOutlinedIcon sx={{ fontSize: 16 }} />
-          </button>
-        </div>
       </div>
     </div>
   )

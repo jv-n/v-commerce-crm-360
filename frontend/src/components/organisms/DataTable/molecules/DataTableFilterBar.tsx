@@ -14,6 +14,7 @@ interface DataTableFilterBarProps {
   onClearAll: () => void
   availableOptionalFilters: OptionalFilter[]
   onAddFilter: (key: string) => void
+  extra?: ReactNode
 }
 
 export function DataTableFilterBar({
@@ -22,6 +23,7 @@ export function DataTableFilterBar({
   onClearAll,
   availableOptionalFilters,
   onAddFilter,
+  extra,
 }: DataTableFilterBarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -47,7 +49,7 @@ export function DataTableFilterBar({
         <div className="relative" ref={ref}>
           <button
             onClick={() => setDropdownOpen(o => !o)}
-            className="p-1.5 text-gray-500 hover:text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50"
+            className="p-1.5 text-gray-500 hover:text-gray-700 rounded-md hover:bg-gray-50"
           >
             <AddIcon sx={{ fontSize: 14 }} />
           </button>
@@ -67,6 +69,8 @@ export function DataTableFilterBar({
           )}
         </div>
       )}
+
+      {extra}
 
       {activeFilterCount > 0 && (
         <button
