@@ -33,6 +33,7 @@ app.include_router(userRouter.router)
 app.include_router(contactRouter.router)
 app.include_router(productRouter.router)
 app.include_router(agentRouter.router)
+app.include_router(productRouter.router)
 
 @app.get("/", tags=["Health"])
 async def health_check():

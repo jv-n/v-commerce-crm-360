@@ -2,28 +2,27 @@ from pydantic import BaseModel
 
 
 class ProductSchema(BaseModel):
-    id_produto: str
-    nome_produto: str | None
-    categoria: str | None
-    preco: float | None
-    estoque_disponivel: float | None
-    nota_media_avaliacao: float | None
-    qtd_vendida: float | None
+    id: str
+    name: str
+    price: float | None = None
+    stock: int
+    category: str | None = None
+    status: str | None = None
+    uf: str | None = None
+    created_at: str | None = None
+    rating: float | None = None
+    total_sales: float | None = None
+    receita_total: float | None = None
+    ticket_medio: float | None = None
+    qtd_avaliacoes: float | None = None
+    nota_nps_media: float | None = None
+    qtd_tickets_gerados: float | None = None
+    tipo_problema_mais_frequente: str | None = None
+    ratio_ticket_por_venda: float | None = None
 
-    class Config:
-        from_attributes = True
 
-
-class ProductCreateSchema(BaseModel):
-    id_produto: str
-    nome_produto: str
-    categoria: str
-    preco: float
-    estoque_disponivel: int
-
-
-class ProductUpdateSchema(BaseModel):
-    nome_produto: str | None = None
-    categoria: str | None = None
-    preco: float | None = None
-    estoque_disponivel: int | None = None
+class ProductsPageOut(BaseModel):
+    data: list[ProductSchema]
+    total: int
+    page: int
+    pageSize: int

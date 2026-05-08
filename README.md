@@ -47,10 +47,9 @@ data-engineering/gold-data-csvs/
 
 ## 3. Popular o banco de dados
 
-Com os CSVs nas pastas corretas, instale a dependência e rode o script de seed:
+Com os CSVs nas pastas corretas, rode o script de seed (as dependências já estão no `requirements.txt` do backend):
 
 ```bash
-pip install -r database/requirements.txt
 python backend/database/seed.py
 ``` 
 
@@ -80,10 +79,18 @@ A API ficará disponível em `http://localhost:8000`. Documentação interativa 
 
 ## 5. Rodar o frontend
 
+Requer **Node.js v22+**. Para instalar via CLI:
+
+```bash
+winget install OpenJS.NodeJS.LTS
+```
+
+Após instalar, feche e abra o terminal novamente. Depois:
+
 ```bash
 cd frontend
-pnpm install
-pnpm dev
+npm install
+npm run dev
 ```
 
 O frontend ficará disponível em `http://localhost:5173`.
