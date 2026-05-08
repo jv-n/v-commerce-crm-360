@@ -20,17 +20,18 @@ export interface ProductsParams {
   stock_max?: number
   rating_min?: number
   rating_max?: number
+  sales_min?: number
+  sales_max?: number
   date_from?: string
   date_to?: string
 }
 
 interface RawProduct {
-  id: number
+  id: string
   name: string
-  description: string | null
   price: number | null
   stock: number
-  category: { id: number; name: string } | null
+  category: string | null
   status: string | null
   uf: string | null
   created_at: string | null
@@ -39,20 +40,19 @@ interface RawProduct {
 }
 
 const VALID_CATEGORIES = new Set<ProductCategory>([
-  "Perfumaria", "Artes", "Esportes", "Infantil", "Utilidades",
-  "Instrumentos", "Derivados", "Mobiliário", "Eletrodomésticos",
-  "Construção", "Alimentos", "Saúde", "Tecnologia",
+  "Automotivo", "Beleza", "Brinquedos", "Casa", "Eletronicos",
+  "Esportes", "Indefinida", "Moveis", "Vestuario",
 ])
 
 const VALID_STATES = new Set<ProductState>(["Ativo", "Novo", "Inativo", "Descontinuado"])
 
 function toProduct(raw: RawProduct): Product {
   return {
-    id: String(raw.id),
+    id: raw.id,
     name: raw.name,
-    category: VALID_CATEGORIES.has(raw.category?.name as ProductCategory)
-      ? (raw.category!.name as ProductCategory)
-      : "Tecnologia",
+    category: VALID_CATEGORIES.has(raw.category as ProductCategory)
+      ? (raw.category as ProductCategory)
+      : "Indefinida",
     price: raw.price,
     stock: raw.stock,
     rating: raw.rating ?? 0,
@@ -81,6 +81,8 @@ export async function fetchProducts(params: ProductsParams = {}): Promise<Produc
   if (params.stock_max  != null) query.set("stock_max",  String(params.stock_max))
   if (params.rating_min != null) query.set("rating_min", String(params.rating_min))
   if (params.rating_max != null) query.set("rating_max", String(params.rating_max))
+  if (params.sales_min  != null) query.set("sales_min",  String(params.sales_min))
+  if (params.sales_max  != null) query.set("sales_max",  String(params.sales_max))
   if (params.date_from)          query.set("date_from",  params.date_from)
   if (params.date_to)            query.set("date_to",    params.date_to)
 
