@@ -55,6 +55,7 @@ function parseInline(text: string): React.ReactNode[] {
 // ── Componente principal ──────────────────────────────────────────────────────
 
 export function MarkdownText({ content }: { content: string }) {
+  if (!content) return null;
   const lines = content.split("\n");
   const elements: React.ReactNode[] = [];
   let i = 0;

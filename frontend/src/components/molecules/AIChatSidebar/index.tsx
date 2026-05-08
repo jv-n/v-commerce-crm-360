@@ -5,8 +5,10 @@ import OpenInFullOutlinedIcon from "@mui/icons-material/OpenInFullOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
+import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
 import ChatBubbleOutlineOutlinedIcon from "@mui/icons-material/ChatBubbleOutlineOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import MentionInput, { type MentionInputHandle } from "@/components/molecules/MentionInput";
 import type { MentionItem } from "@/lib/api/mentions";
 import {
@@ -50,6 +52,7 @@ export default function AIChatSidebar({
   // ── Estado do histórico ───────────────────────────────────────────────────
   const [history, setHistory] = useState<ConversationSummary[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
+  const [historySearch, setHistorySearch] = useState("");
   const [viewing, setViewing] = useState<ConversationDetail | null>(null);
   const [viewingLoading, setViewingLoading] = useState(false);
   const [showHistory, setShowHistory] = useState(false);
@@ -171,7 +174,10 @@ export default function AIChatSidebar({
     const next = !showHistory;
     setShowHistory(next);
     setViewing(null);
-    if (next) loadHistory();
+    if (next) {
+      setHistorySearch("");
+      loadHistory();
+    }
   };
 
   const openConversation = async (summary: ConversationSummary) => {
@@ -275,6 +281,10 @@ export default function AIChatSidebar({
 
   // ── Derivados ─────────────────────────────────────────────────────────────
 
+  const filteredHistory = history.filter((c) =>
+    c.title.toLowerCase().includes(historySearch.toLowerCase())
+  );
+
   const showSuggestions =
     !showHistory && !viewing && messages.length === 0 && suggestions.length > 0 && (mentionInputRef.current?.isEmpty() ?? true);
 
@@ -333,9 +343,25 @@ export default function AIChatSidebar({
       ══════════════════════════════════════════════════ */}
       {showHistory && (
         <div className="flex-1 flex flex-col min-h-0">
+          {/* Campo de busca */}
           <div className="px-5 pb-3 shrink-0">
-            <h3 className="text-sm font-semibold text-gray-700">Histórico de conversas</h3>
-            <p className="text-xs text-gray-400 mt-0.5">Conversas salvas anteriormente</p>
+            <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200">
+              <SearchOutlinedIcon sx={{ fontSize: 15, color: "#9ca3af" }} />
+              <input
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                placeholder="Pesquisar conversas..."
+                className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
+              />
+              {historySearch && (
+                <button
+                  onClick={() => setHistorySearch("")}
+                  className="text-gray-300 hover:text-gray-500 transition"
+                >
+                  ×
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="flex-1 overflow-y-auto px-5 space-y-2 min-h-0">
@@ -343,16 +369,20 @@ export default function AIChatSidebar({
               <div className="flex items-center justify-center h-32">
                 <span className="text-sm text-gray-400">Carregando...</span>
               </div>
-            ) : history.length === 0 ? (
+            ) : filteredHistory.length === 0 ? (
               <div className="flex flex-col items-center justify-center h-40 text-center">
                 <ChatBubbleOutlineOutlinedIcon sx={{ fontSize: 32, color: "#d1d5db" }} />
-                <p className="text-sm text-gray-400 mt-3">Nenhuma conversa salva</p>
-                <p className="text-xs text-gray-300 mt-1">
-                  Inicie e encerre uma conversa para ela aparecer aqui
+                <p className="text-sm text-gray-400 mt-3">
+                  {historySearch ? "Nenhum resultado" : "Nenhuma conversa salva"}
                 </p>
+                {!historySearch && (
+                  <p className="text-xs text-gray-300 mt-1">
+                    Inicie e encerre uma conversa para ela aparecer aqui
+                  </p>
+                )}
               </div>
             ) : (
-              history.map((conv) => (
+              filteredHistory.map((conv) => (
                 <button
                   key={conv.id}
                   onClick={() => openConversation(conv)}
@@ -402,7 +432,7 @@ export default function AIChatSidebar({
       {/* ══════════════════════════════════════════════════
           PAINEL: CHAT ATIVO
       ══════════════════════════════════════════════════ */}
-      {!showHistory && !viewing && (
+      {!showHistory && !viewing && !viewingLoading && (
         <>
           {/* Saudação */}
           <div className="px-5 pb-4 shrink-0">
