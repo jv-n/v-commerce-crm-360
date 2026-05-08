@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
-import CloseFullscreenOutlinedIcon from "@mui/icons-material/CloseFullscreenOutlined";
 import OpenInFullOutlinedIcon from "@mui/icons-material/OpenInFullOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import AlternateEmailOutlinedIcon from "@mui/icons-material/AlternateEmailOutlined";
@@ -29,8 +29,6 @@ interface AIChatSidebarProps {
   open: boolean;
   onClose: () => void;
   userName?: string;
-  isExpanded?: boolean;
-  onExpandedChange?: (expanded: boolean) => void;
 }
 
 // ── Componente ───────────────────────────────────────────────────────────────
@@ -39,9 +37,8 @@ export default function AIChatSidebar({
   open,
   onClose,
   userName = "você",
-  isExpanded = false,
-  onExpandedChange,
 }: AIChatSidebarProps) {
+  const navigate = useNavigate();
   // ── Estado do chat ativo ──────────────────────────────────────────────────
   const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
   const [sessionStartedAt] = useState<Date>(() => new Date());
@@ -293,76 +290,54 @@ export default function AIChatSidebar({
   const showSuggestions =
     !showHistory && !viewing && messages.length === 0 && suggestions.length > 0;
 
-  const sidebarWidth = isExpanded ? "w-[640px]" : "w-[480px]";
-
   // ── Render ────────────────────────────────────────────────────────────────
 
+  // Botões do header — iguais nos dois modos
+  const headerActions = (
+    <div className="flex items-center gap-1">
+      <button onClick={handleNewConversation} className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition" title="Nova conversa">
+        <AddOutlinedIcon sx={{ fontSize: 18 }} />
+      </button>
+      <button onClick={toggleHistory} className={`w-8 h-8 flex items-center justify-center rounded-md transition ${showHistory ? "bg-purple-100 text-purple-600" : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"}`} title="Histórico de conversas">
+        <HistoryOutlinedIcon sx={{ fontSize: 18 }} />
+      </button>
+      <button
+        onClick={() => {
+          navigate("/chat", {
+            state: {
+              messages,
+              sessionId,
+              inputValue,
+              sessionStartedAt: sessionStartedAt.toISOString(),
+            },
+          });
+          onClose();
+        }}
+        className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+        title="Abrir em tela cheia"
+      >
+        <OpenInFullOutlinedIcon sx={{ fontSize: 16 }} />
+      </button>
+      <button onClick={onClose} className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition" title="Fechar">
+        <CloseOutlinedIcon sx={{ fontSize: 18 }} />
+      </button>
+    </div>
+  );
+
+  const viaBadge = (
+    <div className="px-3 py-1 rounded-full text-white text-sm font-semibold select-none" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #74FF60 100%)" }}>
+      V.IA
+    </div>
+  );
+
+  // ── Modo sidebar ───────────────────────────────────────────────────────────
+
   return (
-    <div
-      className={`
-        fixed top-0 right-0 h-full z-[60] flex flex-col
-        bg-white shadow-2xl
-        transition-all duration-300 ease-in-out
-        ${open ? "translate-x-0" : "translate-x-full"}
-        ${sidebarWidth}
-      `}
-      style={{ borderLeft: "1px solid #e5e7eb" }}
-    >
+    <div className={`fixed top-0 right-0 h-full z-[60] flex flex-col bg-white shadow-2xl transition-all duration-300 ease-in-out w-[480px] ${open ? "translate-x-0" : "translate-x-full"}`} style={{ borderLeft: "1px solid #e5e7eb" }}>
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-5 pt-5 pb-4 shrink-0">
-        <div
-          className="px-3 py-1 rounded-full text-white text-sm font-semibold select-none"
-          style={{
-            background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #74FF60 100%)",
-          }}
-        >
-          V.IA
-        </div>
-
-        <div className="flex items-center gap-1">
-          {/* Nova conversa */}
-          <button
-            onClick={handleNewConversation}
-            className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-            title="Nova conversa"
-          >
-            <AddOutlinedIcon sx={{ fontSize: 18 }} />
-          </button>
-
-          {/* Histórico de conversas */}
-          <button
-            onClick={toggleHistory}
-            className={`w-8 h-8 flex items-center justify-center rounded-md transition
-              ${showHistory
-                ? "bg-purple-100 text-purple-600"
-                : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"
-              }`}
-            title="Histórico de conversas"
-          >
-            <HistoryOutlinedIcon sx={{ fontSize: 18 }} />
-          </button>
-
-          {/* Expandir / Reduzir */}
-          <button
-            onClick={() => onExpandedChange?.(!isExpanded)}
-            className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-            title={isExpanded ? "Reduzir" : "Expandir"}
-          >
-            {isExpanded
-              ? <CloseFullscreenOutlinedIcon sx={{ fontSize: 16 }} />
-              : <OpenInFullOutlinedIcon sx={{ fontSize: 16 }} />
-            }
-          </button>
-
-          {/* Fechar */}
-          <button
-            onClick={onClose}
-            className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-            title="Fechar"
-          >
-            <CloseOutlinedIcon sx={{ fontSize: 18 }} />
-          </button>
-        </div>
+        {viaBadge}
+        {headerActions}
       </div>
 
       {/* ══════════════════════════════════════════════════
@@ -566,12 +541,12 @@ function VAvatar() {
   );
 }
 
-function MessageBubble({ msg }: { msg: ChatMessage }) {
+function MessageBubble({ msg, expanded = false }: { msg: ChatMessage; expanded?: boolean }) {
   return (
     <div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
       {msg.role === "assistant" && <VAvatar />}
       <div
-        className={`max-w-[85%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+        className={`${expanded ? "max-w-[75%]" : "max-w-[85%]"} rounded-2xl px-4 py-3 text-sm leading-relaxed ${
           msg.role === "user"
             ? "text-white rounded-tr-sm"
             : "bg-gray-50 text-gray-800 rounded-tl-sm border border-gray-100"

@@ -1,0 +1,447 @@
+import { useCallback, useEffect, useRef, useState } from "react";
+import { useNavigate, useLocation } from "react-router-dom";
+import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
+import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
+import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
+import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
+import AlternateEmailOutlinedIcon from "@mui/icons-material/AlternateEmailOutlined";
+import ChatBubbleOutlineOutlinedIcon from "@mui/icons-material/ChatBubbleOutlineOutlined";
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
+import {
+  fetchSuggestions,
+  sendMessage,
+  clearSession,
+  fetchConversations,
+  fetchConversation,
+  saveConversation,
+  deleteConversation,
+  type ChatMessage,
+  type ConversationSummary,
+  type ConversationDetail,
+} from "@/lib/api/agent";
+import { MarkdownText } from "@/lib/renderMarkdown";
+
+// ── Sub-componentes locais ────────────────────────────────────────────────────
+
+function VAvatar() {
+  return (
+    <div
+      className="w-7 h-7 rounded-full flex-shrink-0 mr-2 mt-0.5 flex items-center justify-center text-white text-xs font-bold"
+      style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}
+    >
+      V
+    </div>
+  );
+}
+
+function MessageBubble({ msg }: { msg: ChatMessage }) {
+  return (
+    <div className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+      {msg.role === "assistant" && <VAvatar />}
+      <div
+        className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
+          msg.role === "user"
+            ? "text-white rounded-tr-sm"
+            : "bg-gray-50 text-gray-800 rounded-tl-sm border border-gray-100"
+        }`}
+        style={
+          msg.role === "user"
+            ? { background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)" }
+            : undefined
+        }
+      >
+        <MarkdownText content={msg.content} />
+        {msg.role === "assistant" && msg.sources && msg.sources.length > 0 && (
+          <div className="mt-2 pt-2 border-t border-gray-200">
+            <p className="text-xs text-gray-400 font-medium mb-1">Fontes consultadas:</p>
+            <div className="flex flex-wrap gap-1">
+              {msg.sources.map((s) => (
+                <span key={s} className="text-xs bg-purple-50 text-purple-600 px-2 py-0.5 rounded-full border border-purple-100">
+                  {s}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Tipo do estado de navegação ────────────────────────────────────────────────
+
+interface ChatRouteState {
+  messages?: ChatMessage[];
+  sessionId?: string;
+  inputValue?: string;
+  sessionStartedAt?: string;
+}
+
+// ── Página ────────────────────────────────────────────────────────────────────
+
+export default function Chat() {
+  const navigate = useNavigate();
+  const location = useLocation();
+  const routeState = (location.state ?? {}) as ChatRouteState;
+
+  const [sessionId, setSessionId] = useState(() => routeState.sessionId ?? crypto.randomUUID());
+  const [sessionStartedAt] = useState(() =>
+    routeState.sessionStartedAt ? new Date(routeState.sessionStartedAt) : new Date()
+  );
+  const [messages, setMessages] = useState<ChatMessage[]>(() => routeState.messages ?? []);
+  const [suggestions, setSuggestions] = useState<string[]>([]);
+  const [inputValue, setInputValue] = useState(() => routeState.inputValue ?? "");
+  const [isLoading, setIsLoading] = useState(false);
+
+  const [history, setHistory] = useState<ConversationSummary[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [showHistory, setShowHistory] = useState(false);
+  const [viewing, setViewing] = useState<ConversationDetail | null>(null);
+  const [viewingLoading, setViewingLoading] = useState(false);
+
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // ── Efeitos ──────────────────────────────────────────────────────────────
+
+  // Quando há estado de rota (vindo da sidebar), foca o input e rola até o fim
+  useEffect(() => {
+    if (routeState.messages?.length || routeState.inputValue) {
+      textareaRef.current?.focus();
+      messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    fetchSuggestions()
+      .then(setSuggestions)
+      .catch(() =>
+        setSuggestions([
+          "Quantas compras foram feitas mês passado?",
+          "Em quanto está o estoque do produto mais vendido?",
+          "Quais os produtos mais rentáveis esse mês?",
+          "Quem são os principais clientes VIPs?",
+          "Como está a média do NPS mensal?",
+          "Exporte os tickets em aberto em CSV",
+        ])
+      );
+  }, []);
+
+  useEffect(() => {
+    if (!showHistory && !viewing) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [messages, isLoading, showHistory, viewing]);
+
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
+  }, [inputValue]);
+
+  // ── Handlers ─────────────────────────────────────────────────────────────
+
+  const loadHistory = useCallback(async () => {
+    setHistoryLoading(true);
+    try { setHistory(await fetchConversations()); }
+    catch { /* silencioso */ }
+    finally { setHistoryLoading(false); }
+  }, []);
+
+  const handleSend = async (text: string) => {
+    const trimmed = text.trim();
+    if (!trimmed || isLoading) return;
+    setShowHistory(false);
+    setViewing(null);
+
+    setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
+    setInputValue("");
+    setIsLoading(true);
+
+    try {
+      const res = await sendMessage(trimmed, sessionId);
+      setMessages((prev) => [...prev, { role: "assistant", content: res.answer, sources: res.sources, queries: res.queries }]);
+    } catch (err) {
+      setMessages((prev) => [...prev, { role: "assistant", content: err instanceof Error ? `⚠️ ${err.message}` : "⚠️ Erro inesperado. Tente novamente." }]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleNewConversation = async () => {
+    if (messages.length > 0) {
+      const firstUser = messages.find((m) => m.role === "user");
+      const title = firstUser ? firstUser.content.slice(0, 60) + (firstUser.content.length > 60 ? "…" : "") : "Conversa sem título";
+      try { await saveConversation({ session_id: sessionId, title, messages, started_at: sessionStartedAt.toISOString() }); }
+      catch { /* silencioso */ }
+      await clearSession(sessionId).catch(() => {});
+    }
+    setSessionId(crypto.randomUUID());
+    setMessages([]);
+    setInputValue("");
+    setShowHistory(false);
+    setViewing(null);
+    await loadHistory();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(inputValue); }
+  };
+
+  const toggleHistory = () => {
+    const next = !showHistory;
+    setShowHistory(next);
+    setViewing(null);
+    if (next) loadHistory();
+  };
+
+  const openConversation = async (conv: ConversationSummary) => {
+    setViewingLoading(true);
+    setShowHistory(false);
+    try { setViewing(await fetchConversation(conv.id)); }
+    catch { setShowHistory(true); }
+    finally { setViewingLoading(false); }
+  };
+
+  const handleDeleteConversation = async (e: React.MouseEvent, id: number) => {
+    e.stopPropagation();
+    try {
+      await deleteConversation(id);
+      setHistory((prev) => prev.filter((c) => c.id !== id));
+      if (viewing?.id === id) setViewing(null);
+    } catch { /* silencioso */ }
+  };
+
+  const handleResumeAndSend = async (text: string) => {
+    if (!viewing || !text.trim()) return;
+    if (messages.length > 0) {
+      const firstUser = messages.find((m) => m.role === "user");
+      const title = firstUser ? firstUser.content.slice(0, 60) + "…" : "Conversa sem título";
+      try { await saveConversation({ session_id: sessionId, title, messages, started_at: sessionStartedAt.toISOString() }); }
+      catch { /* silencioso */ }
+      await clearSession(sessionId).catch(() => {});
+    }
+    const newId = crypto.randomUUID();
+    const restored = [...viewing.messages];
+    setSessionId(newId);
+    setMessages([...restored, { role: "user", content: text.trim() }]);
+    setViewing(null);
+    setShowHistory(false);
+    setIsLoading(true);
+    try {
+      const res = await sendMessage(text.trim(), newId);
+      setMessages((prev) => [...prev, { role: "assistant", content: res.answer, sources: res.sources, queries: res.queries }]);
+    } catch (err) {
+      setMessages((prev) => [...prev, { role: "assistant", content: err instanceof Error ? `⚠️ ${err.message}` : "⚠️ Erro inesperado." }]);
+    } finally { setIsLoading(false); }
+  };
+
+  const showSuggestions = !showHistory && !viewing && messages.length === 0;
+
+  // ── Render ────────────────────────────────────────────────────────────────
+
+  return (
+    <div className="h-full flex flex-col bg-white rounded-xl overflow-hidden">
+
+      {/* ── Header ── */}
+      <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 shrink-0">
+        <div
+          className="px-3 py-1 rounded-full text-white text-sm font-semibold select-none"
+          style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #74FF60 100%)" }}
+        >
+          V.IA
+        </div>
+        <div className="flex items-center gap-1">
+          <button onClick={handleNewConversation} className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition" title="Nova conversa">
+            <AddOutlinedIcon sx={{ fontSize: 18 }} />
+          </button>
+          <button onClick={toggleHistory} className={`w-8 h-8 flex items-center justify-center rounded-md transition ${showHistory ? "bg-purple-100 text-purple-600" : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"}`} title="Histórico">
+            <HistoryOutlinedIcon sx={{ fontSize: 18 }} />
+          </button>
+          <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition" title="Fechar">
+            <CloseOutlinedIcon sx={{ fontSize: 18 }} />
+          </button>
+        </div>
+      </div>
+
+      {/* ── Conteúdo centralizado ── */}
+      <div className="flex-1 flex flex-col min-h-0 w-full max-w-3xl mx-auto px-6">
+
+        {/* ══ HISTÓRICO ══ */}
+        {showHistory && (
+          <div className="flex-1 flex flex-col min-h-0 pt-6">
+            <div className="pb-4 shrink-0">
+              <h3 className="text-base font-semibold text-gray-700">Histórico de conversas</h3>
+              <p className="text-xs text-gray-400 mt-0.5">Conversas salvas anteriormente</p>
+            </div>
+            <div className="flex-1 overflow-y-auto min-h-0">
+              {historyLoading ? (
+                <div className="flex items-center justify-center h-32"><span className="text-sm text-gray-400">Carregando...</span></div>
+              ) : history.length === 0 ? (
+                <div className="flex flex-col items-center justify-center h-48 text-center">
+                  <ChatBubbleOutlineOutlinedIcon sx={{ fontSize: 40, color: "#d1d5db" }} />
+                  <p className="text-sm text-gray-400 mt-3">Nenhuma conversa salva</p>
+                  <p className="text-xs text-gray-300 mt-1">Inicie e encerre uma conversa para ela aparecer aqui</p>
+                </div>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  {history.map((conv) => (
+                    <button key={conv.id} onClick={() => openConversation(conv)} className="text-left px-4 py-3 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50 transition-all duration-150 group relative">
+                      <p className="text-sm text-gray-700 font-medium group-hover:text-purple-700 line-clamp-2 leading-snug pr-6">{conv.title}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        {conv.message_count} mensagens · {new Date(conv.ended_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                      <button onClick={(e) => handleDeleteConversation(e, conv.id)} className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded text-gray-300 hover:text-red-400 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all" title="Remover">
+                        <DeleteOutlineOutlinedIcon sx={{ fontSize: 14 }} />
+                      </button>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ══ VISUALIZANDO CONVERSA ══ */}
+        {viewing && !showHistory && (
+          <div className="flex-1 flex flex-col min-h-0 pt-6">
+            <div className="flex items-center gap-2 pb-4 shrink-0">
+              <button onClick={() => { setViewing(null); setShowHistory(true); }} className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 transition">
+                <ArrowBackOutlinedIcon sx={{ fontSize: 16 }} />
+              </button>
+              <p className="text-sm font-medium text-gray-600 truncate">{viewing.title}</p>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-4 min-h-0 py-2">
+              {viewingLoading ? (
+                <div className="flex items-center justify-center h-32"><span className="text-sm text-gray-400">Carregando...</span></div>
+              ) : (
+                <>
+                  {viewing.messages.map((msg, i) => <MessageBubble key={i} msg={msg} />)}
+                  <div className="flex items-center gap-3 py-1">
+                    <div className="flex-1 h-px bg-gray-100" />
+                    <span className="text-xs text-gray-300 whitespace-nowrap">continuar conversa</span>
+                    <div className="flex-1 h-px bg-gray-100" />
+                  </div>
+                </>
+              )}
+            </div>
+            {/* Input de retomada */}
+            <ResumeInput onSend={handleResumeAndSend} onBackToChat={() => { setViewing(null); setShowHistory(false); }} />
+          </div>
+        )}
+
+        {/* ══ CHAT ATIVO ══ */}
+        {!showHistory && !viewing && (
+          <>
+            {/* Saudação */}
+            {messages.length === 0 && (
+              <div className="pt-12 pb-8 shrink-0 text-center">
+                <h2
+                  className="text-4xl font-bold leading-tight"
+                  style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 60%, #6d28d9 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
+                >
+                  Como posso te ajudar hoje?
+                </h2>
+              </div>
+            )}
+
+            {/* Mensagens */}
+            <div className="flex-1 overflow-y-auto py-4 space-y-4 min-h-0">
+              {messages.map((msg, i) => <MessageBubble key={i} msg={msg} />)}
+              {isLoading && (
+                <div className="flex justify-start">
+                  <VAvatar />
+                  <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1">
+                    <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:0ms]" />
+                    <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:150ms]" />
+                    <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:300ms]" />
+                  </div>
+                </div>
+              )}
+              <div ref={messagesEndRef} />
+            </div>
+
+            {/* Input */}
+            <div className="py-4 shrink-0">
+              <div className="rounded-2xl p-[2px]" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 40%, #74FF60 100%)" }}>
+                <div className="bg-white rounded-[14px] px-4 pt-3 pb-2">
+                  <textarea
+                    ref={textareaRef}
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    placeholder="Me diga como posso te ajudar..."
+                    rows={1}
+                    className="w-full resize-none bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none leading-relaxed"
+                    style={{ maxHeight: "160px", overflowY: "auto" }}
+                    disabled={isLoading}
+                  />
+                  <div className="flex items-center justify-between mt-2">
+                    <button className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition" title="Mencionar">
+                      <AlternateEmailOutlinedIcon sx={{ fontSize: 16 }} />
+                    </button>
+                    <button onClick={() => handleSend(inputValue)} disabled={!inputValue.trim() || isLoading} className="w-8 h-8 rounded-full flex items-center justify-center text-black transition disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-80" style={{ background: "#74FF60" }} title="Enviar">
+                      <ArrowUpwardRoundedIcon sx={{ fontSize: 18 }} />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Sugestões — 3 colunas */}
+            {showSuggestions && suggestions.length > 0 && (
+              <div className="pb-6 shrink-0">
+                <p className="text-sm font-semibold text-gray-700 mb-3">Por onde começar?</p>
+                <div className="grid grid-cols-3 gap-2">
+                  {suggestions.slice(0, 6).map((s, i) => (
+                    <button key={i} onClick={() => handleSend(s)} className="text-left text-xs text-gray-600 bg-white border border-gray-200 rounded-xl px-3 py-2.5 hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700 transition-all duration-150 leading-snug line-clamp-2">
+                      {s}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Footer */}
+            <div className="pb-4 shrink-0 text-center">
+              <p className="text-xs text-gray-400">Toda I.A pode cometer erros, sempre verifique os dados.</p>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── ResumeInput ───────────────────────────────────────────────────────────────
+
+function ResumeInput({ onSend, onBackToChat }: { onSend: (t: string) => void; onBackToChat: () => void }) {
+  const [value, setValue] = useState("");
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = ref.current; if (!el) return;
+    el.style.height = "auto"; el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [value]);
+
+  return (
+    <div className="py-4 shrink-0">
+      <div className="rounded-2xl p-[2px]" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 40%, #74FF60 100%)" }}>
+        <div className="bg-white rounded-[14px] px-4 pt-3 pb-2">
+          <textarea ref={ref} value={value} onChange={(e) => setValue(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (value.trim()) onSend(value); } }} placeholder="Continue a partir daqui..." rows={1} className="w-full resize-none bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none leading-relaxed" style={{ maxHeight: "120px", overflowY: "auto" }} />
+          <div className="flex items-center justify-end mt-2">
+            <button onClick={() => { if (value.trim()) onSend(value); }} disabled={!value.trim()} className="w-8 h-8 rounded-full flex items-center justify-center text-black transition disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-80" style={{ background: "#74FF60" }}>
+              <ArrowUpwardRoundedIcon sx={{ fontSize: 18 }} />
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center justify-center mt-3">
+        <button onClick={onBackToChat} className="text-xs text-gray-400 hover:text-purple-600 transition">Voltar ao chat atual</button>
+      </div>
+    </div>
+  );
+}

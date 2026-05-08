@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import AppNavbar from "@/components/molecules/AppNavbar";
 import AIChatSidebar from "@/components/molecules/AIChatSidebar";
@@ -25,8 +25,13 @@ import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 
 export default function AppFrame() {
     const { pathname } = useLocation();
+    const isOnChat = pathname === "/chat";
     const [isAIOpen, setIsAIOpen] = useState(false);
-    const [isAIExpanded, setIsAIExpanded] = useState(false);
+
+    // Fecha a sidebar de IA automaticamente ao entrar na tela cheia
+    useEffect(() => {
+        if (isOnChat) setIsAIOpen(false);
+    }, [isOnChat]);
 
     const itemActive = (path: string) => pathname === path ? "bg-primary" : "bg-background";
 
@@ -130,7 +135,7 @@ export default function AppFrame() {
                                         ) : (
                                             <SidebarMenuButton
                                                 className={`${isAIOpen ? "ring ring-primary" : ""} bg-background w-8 h-8 transition duration-400 hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
-                                                onClick={() => setIsAIOpen((prev) => !prev)}
+                                                onClick={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }}
                                                 title="Abrir assistente V.IA"
                                             >
                                                 {setIcon(item.name)}
@@ -145,9 +150,9 @@ export default function AppFrame() {
             </Sidebar>
             <SidebarInset
                 className="m-2 ml-0 rounded-xl flex flex-col transition-all duration-300"
-                style={{ marginRight: isAIOpen ? (isAIExpanded ? "648px" : "488px") : "8px" }}
+                style={{ marginRight: isAIOpen ? "488px" : "8px" }}
             >
-                <AppNavbar onOpenAI={() => setIsAIOpen((prev) => !prev)} />
+                <AppNavbar onOpenAI={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }} />
                 <div className="flex-1">
                     <Outlet />
                 </div>
@@ -158,8 +163,6 @@ export default function AppFrame() {
                 open={isAIOpen}
                 onClose={() => setIsAIOpen(false)}
                 userName="Joao Victor"
-                isExpanded={isAIExpanded}
-                onExpandedChange={setIsAIExpanded}
             />
         </SidebarProvider>
     );
