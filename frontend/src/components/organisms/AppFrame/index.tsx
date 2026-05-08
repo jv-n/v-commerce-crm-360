@@ -77,7 +77,7 @@ export default function AppFrame() {
             case "Book":
                 return <MenuBookOutlinedIcon sx={{color: iconColor(title.toLowerCase())}}/>;
             case "Chat":
-                return <img src="v_ai.svg" alt="Chat Icon" height={40} width={40} />
+                return <img src="v_ai.svg" alt="Chat Icon" height={48} width={48} />
             default:
                 return <div className="w-6 h-6 rounded-md bg-gray-500" />;
         }
@@ -138,7 +138,7 @@ export default function AppFrame() {
                                             </SidebarMenuButton>
                                         ) : (
                                             <SidebarMenuButton
-                                                className={`${isAIOpen ? "ring ring-primary" : ""} bg-background w-8 h-8 transition duration-400 hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
+                                                className={`${isAIOpen ? "ring ring-primary" : ""} bg-background !w-11 !h-11 transition duration-400 hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
                                                 onClick={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }}
                                                 title="Abrir assistente V.IA"
                                             >
