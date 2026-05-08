@@ -17,12 +17,40 @@ const ALL_STATUSES: ContactStatus[] = [
   "Cliente Ativo", "Cliente VIP", "Em risco", "Lead", "Cliente Inativo", "Desativado",
 ]
 
-export const contactColumns: Column<Contact>[] = [
-  // ── Info icon (decorative) ─────────────────────────────────────────────────
+export function makeContactColumns(
+  expandedRowId: string | null,
+  onToggle: (id: string) => void,
+): Column<Contact>[] {
+  return [
+  // ── Sem inativos toggle (hidden column, default active) ────────────────────
+  {
+    key: "hideInactive",
+    header: "",
+    visible: false,
+    filter: {
+      type: "toggle" as const,
+      label: "Sem inativos",
+      defaultActive: true,
+      filterFn: (c: Contact) => c.status !== "Cliente Inativo",
+    },
+    render: () => null,
+  },
+
+  // ── Info icon ──────────────────────────────────────────────────────────────
   {
     key: "info",
     header: "",
-    render: () => <InfoOutlinedIcon sx={{ fontSize: 15, color: "#D1D5DB" }} />,
+    render: (c) => (
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggle(c.id) }}
+        className="flex items-center justify-center"
+      >
+        <InfoOutlinedIcon sx={{
+          fontSize: 15,
+          color: expandedRowId === c.id ? "#7C3AED" : "#D1D5DB",
+        }} />
+      </button>
+    ),
   },
 
   // ── Nome ───────────────────────────────────────────────────────────────────
@@ -30,8 +58,15 @@ export const contactColumns: Column<Contact>[] = [
     key: "name",
     header: "Nome",
     minWidth: "160px",
+    sortable: true,
+    sortValue: (c) => c.name ?? "",
     render: (c) => (
-      <span className="font-medium text-gray-900 truncate block max-w-[200px]">{c.name}</span>
+      <button
+        onClick={() => onToggle(c.id)}
+        className="font-medium text-gray-900 truncate block max-w-[200px] text-left hover:text-purple-700 transition-colors"
+      >
+        {c.name}
+      </button>
     ),
   },
 
@@ -54,6 +89,8 @@ export const contactColumns: Column<Contact>[] = [
     key: "lastPurchase",
     header: "Última compra",
     minWidth: "130px",
+    sortable: true,
+    sortValue: (c) => c.lastPurchase ?? "",
     render: (c) =>
       c.lastPurchase ? (
         <div className="flex items-center gap-1.5 text-gray-600">
@@ -70,6 +107,8 @@ export const contactColumns: Column<Contact>[] = [
     key: "purchases",
     header: "Compras",
     minWidth: "80px",
+    sortable: true,
+    sortValue: (c) => c.purchases,
     filter: {
       type: "number-range",
       label: "Compras",
@@ -114,6 +153,8 @@ export const contactColumns: Column<Contact>[] = [
     key: "engagement",
     header: "Engajamento",
     minWidth: "140px",
+    sortable: true,
+    sortValue: (c) => c.engagementScore,
     filterOptional: true,
     filter: {
       type: "select",
@@ -133,4 +174,5 @@ export const contactColumns: Column<Contact>[] = [
       )
     },
   },
-]
+  ]
+}

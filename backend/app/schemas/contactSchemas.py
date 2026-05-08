@@ -1,6 +1,20 @@
 from pydantic import BaseModel, ConfigDict
 
 
+class ContactCreate(BaseModel):
+    name: str
+    email: str | None = None
+    phone: str | None = None
+    status: str = "Cliente Ativo"
+
+
+class ContactUpdate(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    status: str | None = None
+
+
 class ContactOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

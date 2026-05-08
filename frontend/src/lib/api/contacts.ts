@@ -17,6 +17,9 @@ interface ContactsParams {
   purchasesMax?: number | null
   createdYear?: string
   engagement?: string
+  sortBy?: string | null
+  sortDir?: "asc" | "desc"
+  excludeInactive?: boolean
 }
 
 interface RawContact {
@@ -55,6 +58,33 @@ function toContact(raw: RawContact): Contact {
   }
 }
 
+export interface ContactFormData {
+  name: string
+  email?: string
+  phone?: string
+  status: string
+}
+
+export async function createContact(data: ContactFormData): Promise<Contact> {
+  const res = await fetch("/api/contacts/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(`Erro ao criar contato: ${res.status}`)
+  return toContact(await res.json() as RawContact)
+}
+
+export async function updateContact(id: string, data: Partial<ContactFormData>): Promise<Contact> {
+  const res = await fetch(`/api/contacts/${id}`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(`Erro ao atualizar contato: ${res.status}`)
+  return toContact(await res.json() as RawContact)
+}
+
 export async function fetchContacts(params: ContactsParams): Promise<ContactsPage> {
   const query = new URLSearchParams({
     page: String(params.page),
@@ -66,6 +96,9 @@ export async function fetchContacts(params: ContactsParams): Promise<ContactsPag
     ...(params.purchasesMax != null    ? { purchases_max: String(params.purchasesMax)          } : {}),
     ...(params.createdYear             ? { created_year:  params.createdYear                   } : {}),
     ...(params.engagement              ? { engagement:    params.engagement                     } : {}),
+    ...(params.sortBy                  ? { sort_by:          params.sortBy                      } : {}),
+    ...(params.sortBy && params.sortDir ? { sort_dir:        params.sortDir                     } : {}),
+    ...(params.excludeInactive === false ? { exclude_inactive: "false" }                        : {}),
   })
 
   const res = await fetch(`/api/contacts/?${query}`)

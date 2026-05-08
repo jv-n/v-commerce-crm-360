@@ -3,11 +3,13 @@ import type { Column, ActiveFilters, ActiveFilter } from "../types"
 
 export function isFilterActive(f: ActiveFilter): boolean {
   if (f.type === "select") return f.value !== ""
+  if (f.type === "toggle") return f.active
   return f.min != null || f.max != null
 }
 
 export function formatActiveFilter(f: ActiveFilter): string {
   if (f.type === "select") return f.value
+  if (f.type === "toggle") return ""
   const { min, max } = f
   if (min != null && max != null) return `${min} – ${max}`
   if (min != null) return `≥ ${min}`
@@ -16,7 +18,15 @@ export function formatActiveFilter(f: ActiveFilter): string {
 }
 
 export function useFilterState<T>(columns: Column<T>[], data: T[], onChange?: (f: ActiveFilters) => void) {
-  const [activeFilters, setActiveFilters] = useState<ActiveFilters>({})
+  const [activeFilters, setActiveFilters] = useState<ActiveFilters>(() => {
+    const init: ActiveFilters = {}
+    for (const col of columns) {
+      if (col.filter?.type === "toggle" && col.filter.defaultActive) {
+        init[col.key] = { type: "toggle", active: true }
+      }
+    }
+    return init
+  })
   const [openFilter, setOpenFilter]       = useState<string | null>(null)
 
   const setFilter = (key: string, value: ActiveFilter) => {
@@ -60,6 +70,8 @@ export function useFilterState<T>(columns: Column<T>[], data: T[], onChange?: (f
           return def.filterFn(row, active.value)
         if (def.type === "number-range" && active.type === "number-range")
           return def.filterFn(row, active.min, active.max)
+        if (def.type === "toggle" && active.type === "toggle" && active.active)
+          return def.filterFn(row)
         return true
       })
     )

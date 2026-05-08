@@ -86,16 +86,18 @@ export function NumberRangeDropdown({ current, onApply, onClear, minBound, maxBo
       <div className="flex items-center gap-2">
         <input
           type="number"
+          min={0}
           value={min}
-          onChange={e => setMin(e.target.value)}
+          onChange={e => setMin(e.target.value.replace(/^-/, ""))}
           placeholder="Mín"
           className="w-[72px] border border-gray-200 rounded-md px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-purple-300"
         />
         <span className="text-gray-400 text-sm">–</span>
         <input
           type="number"
+          min={0}
           value={max}
-          onChange={e => setMax(e.target.value)}
+          onChange={e => setMax(e.target.value.replace(/^-/, ""))}
           placeholder="Máx"
           className="w-[72px] border border-gray-200 rounded-md px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-purple-300"
         />
@@ -105,7 +107,7 @@ export function NumberRangeDropdown({ current, onApply, onClear, minBound, maxBo
           onClick={() => {
             const clamp = (v: string, lo?: number, hi?: number) => {
               if (!v) return null
-              let n = Number(v)
+              let n = Math.max(0, Number(v))
               if (lo != null) n = Math.max(lo, n)
               if (hi != null) n = Math.min(hi, n)
               return n

@@ -10,6 +10,7 @@ import { DataTableFilterBar } from "./molecules/DataTableFilterBar"
 import { DataTableRows } from "./molecules/DataTableRows"
 import { DataTablePagination } from "./molecules/DataTablePagination"
 import { FilterPill } from "./atoms/FilterPill"
+import { TogglePill } from "./atoms/TogglePill"
 import { SelectDropdown } from "./atoms/SelectDropdown"
 import { NumberRangeDropdown } from "./atoms/NumberRangeDropdown"
 
@@ -30,6 +31,7 @@ export function DataTable<T,>({
   data,
   columns,
   getRowId,
+  loading,
   tabs = [],
   activeTab,
   onTabChange,
@@ -47,6 +49,7 @@ export function DataTable<T,>({
   tabsRightSlot,
   searchFn,
   searchPlaceholder,
+  onSortChange,
 }: DataTableProps<T>) {
   const [searchOpen,  setSearchOpen]  = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -66,10 +69,33 @@ export function DataTable<T,>({
   const selection  = useRowSelection(getRowId)
 
   const [shownOptionalKeys, setShownOptionalKeys] = useState<Set<string>>(new Set())
+  const [sortKey, setSortKey] = useState<string | null>(null)
+  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
+
+  const handleSort = (key: string) => {
+    const newDir = sortKey === key && sortDir === "asc" ? "desc" : "asc"
+    setSortKey(key)
+    setSortDir(newDir)
+    pagination.resetPage()
+    if (serverPagination) onSortChange?.({ key, direction: newDir })
+  }
+
+  const sortedData = (arr: T[]): T[] => {
+    if (!sortKey || serverPagination) return arr
+    const col = columns.find(c => c.key === sortKey)
+    if (!col?.sortValue) return arr
+    return [...arr].sort((a, b) => {
+      const va = col.sortValue!(a) ?? ""
+      const vb = col.sortValue!(b) ?? ""
+      if (va < vb) return sortDir === "asc" ? -1 : 1
+      if (va > vb) return sortDir === "asc" ? 1 : -1
+      return 0
+    })
+  }
 
   const { pageData, safePage, ...pageInfo } = serverPagination
     ? { ...buildServerPageInfo(serverPagination, data.length), pageData: data }
-    : pagination.paginate(filters.filteredData)
+    : pagination.paginate(sortedData(filters.filteredData))
 
   const visibleColumns  = columns.filter(c => c.visible !== false)
   
@@ -100,12 +126,31 @@ export function DataTable<T,>({
     pagination.resetPage()
     selection.clearSelection()
     setShownOptionalKeys(new Set())
+    setSortKey(null)
+    setSortDir("asc")
   }
 
   const renderPill = (colKey: string, alignRight = false, isOptional = false): ReactNode => {
     const col = columns.find(c => c.key === colKey)
     if (!col?.filter) return null
-    const def    = col.filter
+    const def = col.filter
+
+    if (def.type === "toggle") {
+      const active = filters.activeFilters[colKey]
+      const isOn = active?.type === "toggle" ? active.active : false
+      return (
+        <TogglePill
+          key={colKey}
+          label={def.label}
+          active={isOn}
+          onToggle={() => {
+            filters.setFilter(colKey, { type: "toggle", active: !isOn })
+            pagination.resetPage()
+          }}
+        />
+      )
+    }
+
     const active = filters.activeFilters[colKey]
     const active_ = active && isFilterActive(active)
 
@@ -194,6 +239,7 @@ export function DataTable<T,>({
           columns={visibleColumns}
           pageData={pageData}
           getRowId={getRowId}
+          loading={loading}
           selectedRows={selection.selectedRows}
           isAllSelected={selection.isPageAllSelected(pageData)}
           onToggleAll={() => selection.toggleAll(pageData)}
@@ -203,6 +249,9 @@ export function DataTable<T,>({
           dividersClassName={dividersClassName}
           expandedRowIds={expandedRowIds}
           renderExpandedRow={renderExpandedRow}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSort={handleSort}
         />
 
         <DataTablePagination
