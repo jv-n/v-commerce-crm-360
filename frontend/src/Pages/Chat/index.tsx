@@ -3,8 +3,9 @@ import { useNavigate, useLocation } from "react-router-dom";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
-import AlternateEmailOutlinedIcon from "@mui/icons-material/AlternateEmailOutlined";
 import ChatBubbleOutlineOutlinedIcon from "@mui/icons-material/ChatBubbleOutlineOutlined";
+import MentionInput, { type MentionInputHandle } from "@/components/molecules/MentionInput";
+import type { MentionItem } from "@/lib/api/mentions";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import CloseFullscreenOutlinedIcon from "@mui/icons-material/CloseFullscreenOutlined";
@@ -140,7 +141,6 @@ export default function Chat() {
   );
   const [messages, setMessages] = useState<ChatMessage[]>(() => routeState.messages ?? []);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [inputValue, setInputValue] = useState(() => routeState.inputValue ?? "");
   const [isLoading, setIsLoading] = useState(false);
 
   // ── Estado do histórico ───────────────────────────────────────────────────
@@ -151,14 +151,14 @@ export default function Chat() {
   const [viewingLoading, setViewingLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mentionInputRef = useRef<MentionInputHandle>(null);
 
   // ── Efeitos ───────────────────────────────────────────────────────────────
 
   // Foca o input e rola ao fim quando vem da sidebar com estado
   useEffect(() => {
-    if (routeState.messages?.length || routeState.inputValue) {
-      textareaRef.current?.focus();
+    if (routeState.messages?.length) {
+      mentionInputRef.current?.focus();
       messagesEndRef.current?.scrollIntoView({ behavior: "instant" });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -185,13 +185,6 @@ export default function Chat() {
     }
   }, [messages, isLoading, viewing]);
 
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
-  }, [inputValue]);
-
   // ── Handlers ─────────────────────────────────────────────────────────────
 
   const loadHistory = useCallback(async () => {
@@ -203,12 +196,13 @@ export default function Chat() {
 
   useEffect(() => { loadHistory(); }, [loadHistory]);
 
-  const handleSend = async (text: string) => {
+  const handleSend = async (text: string, _mentions?: MentionItem[]) => {
     const trimmed = text.trim();
     if (!trimmed || isLoading) return;
     setViewing(null);
-    setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
-    setInputValue("");
+    const displayText = trimmed.replace(/\n\n\[Menções:.*\]$/s, "").trim();
+    setMessages((prev) => [...prev, { role: "user", content: displayText }]);
+    mentionInputRef.current?.clear();
     setIsLoading(true);
     try {
       const res = await sendMessage(trimmed, sessionId);
@@ -232,13 +226,9 @@ export default function Chat() {
     }
     setSessionId(crypto.randomUUID());
     setMessages([]);
-    setInputValue("");
+    mentionInputRef.current?.clear();
     setViewing(null);
     await loadHistory();
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(inputValue); }
   };
 
   const openConversation = async (conv: ConversationSummary) => {
@@ -454,35 +444,11 @@ export default function Chat() {
 
               {/* Input */}
               <div className="py-4 shrink-0">
-                <div className="rounded-2xl p-[2px]" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 40%, #74FF60 100%)" }}>
-                  <div className="bg-white rounded-[14px] px-4 pt-3 pb-2">
-                    <textarea
-                      ref={textareaRef}
-                      value={inputValue}
-                      onChange={(e) => setInputValue(e.target.value)}
-                      onKeyDown={handleKeyDown}
-                      placeholder="Me diga como posso te ajudar..."
-                      rows={1}
-                      className="w-full resize-none bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none leading-relaxed"
-                      style={{ maxHeight: "160px", overflowY: "auto" }}
-                      disabled={isLoading}
-                    />
-                    <div className="flex items-center justify-between mt-2">
-                      <button className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition" title="Mencionar">
-                        <AlternateEmailOutlinedIcon sx={{ fontSize: 16 }} />
-                      </button>
-                      <button
-                        onClick={() => handleSend(inputValue)}
-                        disabled={!inputValue.trim() || isLoading}
-                        className="w-8 h-8 rounded-full flex items-center justify-center text-black transition disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-80"
-                        style={{ background: "#74FF60" }}
-                        title="Enviar"
-                      >
-                        <ArrowUpwardRoundedIcon sx={{ fontSize: 18 }} />
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                <MentionInput
+                  ref={mentionInputRef}
+                  onSend={handleSend}
+                  disabled={isLoading}
+                />
               </div>
 
               {/* Sugestões */}

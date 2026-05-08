@@ -4,7 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import userRouter, contactRouter, agentRouter, productRouter
-from app.routes import conversationRouter
+from app.routes import conversationRouter, mentionRouter
 
 # Injeta a GEMINI_API_KEY no ambiente para o PydanticAI/Google SDK
 # (lida do .env via pydantic-settings no config.py)
@@ -41,6 +41,7 @@ app.include_router(contactRouter.router)
 app.include_router(agentRouter.router)
 app.include_router(productRouter.router)
 app.include_router(conversationRouter.router)
+app.include_router(mentionRouter.router)
 
 @app.get("/", tags=["Health"])
 async def health_check():

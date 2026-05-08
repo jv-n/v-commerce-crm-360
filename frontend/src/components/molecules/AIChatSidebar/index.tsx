@@ -3,12 +3,12 @@ import { useNavigate, useLocation } from "react-router-dom";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import OpenInFullOutlinedIcon from "@mui/icons-material/OpenInFullOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
-import AlternateEmailOutlinedIcon from "@mui/icons-material/AlternateEmailOutlined";
-import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import ChatBubbleOutlineOutlinedIcon from "@mui/icons-material/ChatBubbleOutlineOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
+import MentionInput, { type MentionInputHandle } from "@/components/molecules/MentionInput";
+import type { MentionItem } from "@/lib/api/mentions";
 import {
   fetchSuggestions,
   sendMessage,
@@ -45,7 +45,6 @@ export default function AIChatSidebar({
   const [sessionStartedAt] = useState<Date>(() => new Date());
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [suggestions, setSuggestions] = useState<string[]>([]);
-  const [inputValue, setInputValue] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   // ── Estado do histórico ───────────────────────────────────────────────────
@@ -56,7 +55,7 @@ export default function AIChatSidebar({
   const [showHistory, setShowHistory] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  const mentionInputRef = useRef<MentionInputHandle>(null);
 
   // ── Carregar histórico do backend ─────────────────────────────────────────
 
@@ -95,25 +94,20 @@ export default function AIChatSidebar({
     }
   }, [messages, isLoading, showHistory, viewing]);
 
-  useEffect(() => {
-    const el = textareaRef.current;
-    if (!el) return;
-    el.style.height = "auto";
-    el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
-  }, [inputValue]);
-
   // ── Handlers ─────────────────────────────────────────────────────────────
 
-  const handleSend = async (text: string) => {
+  const handleSend = async (text: string, _mentions?: MentionItem[]) => {
     const trimmed = text.trim();
     if (!trimmed || isLoading) return;
 
     setShowHistory(false);
     setViewing(null);
 
-    const userMsg: ChatMessage = { role: "user", content: trimmed };
+    // Exibe só o texto antes do bloco [Menções:] na bolha do usuário
+    const displayText = trimmed.replace(/\n\n\[Menções:.*\]$/s, "").trim();
+    const userMsg: ChatMessage = { role: "user", content: displayText };
     setMessages((prev) => [...prev, userMsg]);
-    setInputValue("");
+    mentionInputRef.current?.clear();
     setIsLoading(true);
 
     try {
@@ -168,16 +162,9 @@ export default function AIChatSidebar({
 
     setSessionId(crypto.randomUUID());
     setMessages([]);
-    setInputValue("");
+    mentionInputRef.current?.clear();
     setShowHistory(false);
     setViewing(null);
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend(inputValue);
-    }
   };
 
   const toggleHistory = () => {
@@ -256,7 +243,7 @@ export default function AIChatSidebar({
 
     setSessionId(newSessionId);
     setMessages([...restored, userMsg]);
-    setInputValue("");
+    mentionInputRef.current?.clear();
     setViewing(null);
     setShowHistory(false);
     setIsLoading(true);
@@ -289,7 +276,7 @@ export default function AIChatSidebar({
   // ── Derivados ─────────────────────────────────────────────────────────────
 
   const showSuggestions =
-    !showHistory && !viewing && messages.length === 0 && suggestions.length > 0;
+    !showHistory && !viewing && messages.length === 0 && suggestions.length > 0 && (mentionInputRef.current?.isEmpty() ?? true);
 
   // ── Render ────────────────────────────────────────────────────────────────
 
@@ -308,7 +295,6 @@ export default function AIChatSidebar({
             state: {
               messages,
               sessionId,
-              inputValue,
               sessionStartedAt: sessionStartedAt.toISOString(),
               from: pathname,
             },
@@ -457,47 +443,11 @@ export default function AIChatSidebar({
 
           {/* Input */}
           <div className="px-5 py-4 shrink-0">
-            <div
-              className="rounded-2xl p-[2px]"
-              style={{
-                background:
-                  "linear-gradient(135deg, #7c3aed 0%, #a855f7 40%, #74FF60 100%)",
-              }}
-            >
-              <div className="bg-white rounded-[14px] px-4 pt-3 pb-2">
-                <textarea
-                  ref={textareaRef}
-                  value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Me diga como posso te ajudar..."
-                  rows={1}
-                  className="w-full resize-none bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none leading-relaxed"
-                  style={{ maxHeight: "160px", overflowY: "auto" }}
-                  disabled={isLoading}
-                />
-                <div className="flex items-center justify-between mt-2">
-                  <div className="flex items-center gap-1">
-                    <button
-                      className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition"
-                      title="Mencionar"
-                    >
-                      <AlternateEmailOutlinedIcon sx={{ fontSize: 16 }} />
-                    </button>
-                  </div>
-
-                  <button
-                    onClick={() => handleSend(inputValue)}
-                    disabled={!inputValue.trim() || isLoading}
-                    className="w-8 h-8 rounded-full flex items-center justify-center text-black transition disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-80"
-                    style={{ background: "#74FF60" }}
-                    title="Enviar"
-                  >
-                    <ArrowUpwardRoundedIcon sx={{ fontSize: 18 }} />
-                  </button>
-                </div>
-              </div>
-            </div>
+            <MentionInput
+              ref={mentionInputRef}
+              onSend={handleSend}
+              disabled={isLoading}
+            />
           </div>
 
           {/* Sugestões */}
