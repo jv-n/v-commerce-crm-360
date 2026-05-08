@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import AddOutlinedIcon from "@mui/icons-material/AddOutlined";
-import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import ArrowBackOutlinedIcon from "@mui/icons-material/ArrowBackOutlined";
 import ArrowUpwardRoundedIcon from "@mui/icons-material/ArrowUpwardRounded";
 import AlternateEmailOutlinedIcon from "@mui/icons-material/AlternateEmailOutlined";
 import ChatBubbleOutlineOutlinedIcon from "@mui/icons-material/ChatBubbleOutlineOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
+import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import {
   fetchSuggestions,
   sendMessage,
@@ -22,7 +22,7 @@ import {
 } from "@/lib/api/agent";
 import { MarkdownText } from "@/lib/renderMarkdown";
 
-// ── Sub-componentes locais ────────────────────────────────────────────────────
+// ── Sub-componentes ───────────────────────────────────────────────────────────
 
 function VAvatar() {
   return (
@@ -69,7 +69,53 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
   );
 }
 
-// ── Tipo do estado de navegação ────────────────────────────────────────────────
+function ResumeInput({ onSend, onBackToChat }: { onSend: (t: string) => void; onBackToChat: () => void }) {
+  const [value, setValue] = useState("");
+  const ref = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
+  }, [value]);
+
+  return (
+    <div className="py-4 shrink-0">
+      <div className="rounded-2xl p-[2px]" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 40%, #74FF60 100%)" }}>
+        <div className="bg-white rounded-[14px] px-4 pt-3 pb-2">
+          <textarea
+            ref={ref}
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (value.trim()) onSend(value); } }}
+            placeholder="Continue a partir daqui..."
+            rows={1}
+            className="w-full resize-none bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none leading-relaxed"
+            style={{ maxHeight: "120px", overflowY: "auto" }}
+          />
+          <div className="flex items-center justify-end mt-2">
+            <button
+              onClick={() => { if (value.trim()) onSend(value); }}
+              disabled={!value.trim()}
+              className="w-8 h-8 rounded-full flex items-center justify-center text-black transition disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-80"
+              style={{ background: "#74FF60" }}
+            >
+              <ArrowUpwardRoundedIcon sx={{ fontSize: 18 }} />
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="flex items-center justify-center mt-3">
+        <button onClick={onBackToChat} className="text-xs text-gray-400 hover:text-purple-600 transition">
+          Voltar ao chat atual
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Tipo do estado de navegação ───────────────────────────────────────────────
 
 interface ChatRouteState {
   messages?: ChatMessage[];
@@ -85,6 +131,7 @@ export default function Chat() {
   const location = useLocation();
   const routeState = (location.state ?? {}) as ChatRouteState;
 
+  // ── Estado do chat ativo ──────────────────────────────────────────────────
   const [sessionId, setSessionId] = useState(() => routeState.sessionId ?? crypto.randomUUID());
   const [sessionStartedAt] = useState(() =>
     routeState.sessionStartedAt ? new Date(routeState.sessionStartedAt) : new Date()
@@ -94,18 +141,19 @@ export default function Chat() {
   const [inputValue, setInputValue] = useState(() => routeState.inputValue ?? "");
   const [isLoading, setIsLoading] = useState(false);
 
+  // ── Estado do histórico ───────────────────────────────────────────────────
   const [history, setHistory] = useState<ConversationSummary[]>([]);
   const [historyLoading, setHistoryLoading] = useState(false);
-  const [showHistory, setShowHistory] = useState(false);
+  const [historySearch, setHistorySearch] = useState("");
   const [viewing, setViewing] = useState<ConversationDetail | null>(null);
   const [viewingLoading, setViewingLoading] = useState(false);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
-  // ── Efeitos ──────────────────────────────────────────────────────────────
+  // ── Efeitos ───────────────────────────────────────────────────────────────
 
-  // Quando há estado de rota (vindo da sidebar), foca o input e rola até o fim
+  // Foca o input e rola ao fim quando vem da sidebar com estado
   useEffect(() => {
     if (routeState.messages?.length || routeState.inputValue) {
       textareaRef.current?.focus();
@@ -130,10 +178,10 @@ export default function Chat() {
   }, []);
 
   useEffect(() => {
-    if (!showHistory && !viewing) {
+    if (!viewing) {
       messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
     }
-  }, [messages, isLoading, showHistory, viewing]);
+  }, [messages, isLoading, viewing]);
 
   useEffect(() => {
     const el = textareaRef.current;
@@ -151,16 +199,15 @@ export default function Chat() {
     finally { setHistoryLoading(false); }
   }, []);
 
+  useEffect(() => { loadHistory(); }, [loadHistory]);
+
   const handleSend = async (text: string) => {
     const trimmed = text.trim();
     if (!trimmed || isLoading) return;
-    setShowHistory(false);
     setViewing(null);
-
     setMessages((prev) => [...prev, { role: "user", content: trimmed }]);
     setInputValue("");
     setIsLoading(true);
-
     try {
       const res = await sendMessage(trimmed, sessionId);
       setMessages((prev) => [...prev, { role: "assistant", content: res.answer, sources: res.sources, queries: res.queries }]);
@@ -174,7 +221,9 @@ export default function Chat() {
   const handleNewConversation = async () => {
     if (messages.length > 0) {
       const firstUser = messages.find((m) => m.role === "user");
-      const title = firstUser ? firstUser.content.slice(0, 60) + (firstUser.content.length > 60 ? "…" : "") : "Conversa sem título";
+      const title = firstUser
+        ? firstUser.content.slice(0, 60) + (firstUser.content.length > 60 ? "…" : "")
+        : "Conversa sem título";
       try { await saveConversation({ session_id: sessionId, title, messages, started_at: sessionStartedAt.toISOString() }); }
       catch { /* silencioso */ }
       await clearSession(sessionId).catch(() => {});
@@ -182,7 +231,6 @@ export default function Chat() {
     setSessionId(crypto.randomUUID());
     setMessages([]);
     setInputValue("");
-    setShowHistory(false);
     setViewing(null);
     await loadHistory();
   };
@@ -191,18 +239,10 @@ export default function Chat() {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(inputValue); }
   };
 
-  const toggleHistory = () => {
-    const next = !showHistory;
-    setShowHistory(next);
-    setViewing(null);
-    if (next) loadHistory();
-  };
-
   const openConversation = async (conv: ConversationSummary) => {
     setViewingLoading(true);
-    setShowHistory(false);
     try { setViewing(await fetchConversation(conv.id)); }
-    catch { setShowHistory(true); }
+    catch { setViewing(null); }
     finally { setViewingLoading(false); }
   };
 
@@ -229,7 +269,6 @@ export default function Chat() {
     setSessionId(newId);
     setMessages([...restored, { role: "user", content: text.trim() }]);
     setViewing(null);
-    setShowHistory(false);
     setIsLoading(true);
     try {
       const res = await sendMessage(text.trim(), newId);
@@ -239,208 +278,227 @@ export default function Chat() {
     } finally { setIsLoading(false); }
   };
 
-  const showSuggestions = !showHistory && !viewing && messages.length === 0;
+  const filteredHistory = history.filter((c) =>
+    c.title.toLowerCase().includes(historySearch.toLowerCase())
+  );
+
+  const showSuggestions = !viewing && messages.length === 0;
 
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="h-full flex flex-col bg-white rounded-xl overflow-hidden">
+    <div className="h-full flex bg-white rounded-xl overflow-hidden">
 
-      {/* ── Header ── */}
-      <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 shrink-0">
-        <div
-          className="px-3 py-1 rounded-full text-white text-sm font-semibold select-none"
-          style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #74FF60 100%)" }}
-        >
-          V.IA
-        </div>
-        <div className="flex items-center gap-1">
-          <button onClick={handleNewConversation} className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition" title="Nova conversa">
-            <AddOutlinedIcon sx={{ fontSize: 18 }} />
-          </button>
-          <button onClick={toggleHistory} className={`w-8 h-8 flex items-center justify-center rounded-md transition ${showHistory ? "bg-purple-100 text-purple-600" : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"}`} title="Histórico">
-            <HistoryOutlinedIcon sx={{ fontSize: 18 }} />
-          </button>
-          <button onClick={() => navigate(-1)} className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition" title="Fechar">
-            <CloseOutlinedIcon sx={{ fontSize: 18 }} />
-          </button>
-        </div>
-      </div>
-
-      {/* ── Conteúdo centralizado ── */}
-      <div className="flex-1 flex flex-col min-h-0 w-full max-w-3xl mx-auto px-6">
-
-        {/* ══ HISTÓRICO ══ */}
-        {showHistory && (
-          <div className="flex-1 flex flex-col min-h-0 pt-6">
-            <div className="pb-4 shrink-0">
-              <h3 className="text-base font-semibold text-gray-700">Histórico de conversas</h3>
-              <p className="text-xs text-gray-400 mt-0.5">Conversas salvas anteriormente</p>
-            </div>
-            <div className="flex-1 overflow-y-auto min-h-0">
-              {historyLoading ? (
-                <div className="flex items-center justify-center h-32"><span className="text-sm text-gray-400">Carregando...</span></div>
-              ) : history.length === 0 ? (
-                <div className="flex flex-col items-center justify-center h-48 text-center">
-                  <ChatBubbleOutlineOutlinedIcon sx={{ fontSize: 40, color: "#d1d5db" }} />
-                  <p className="text-sm text-gray-400 mt-3">Nenhuma conversa salva</p>
-                  <p className="text-xs text-gray-300 mt-1">Inicie e encerre uma conversa para ela aparecer aqui</p>
-                </div>
-              ) : (
-                <div className="grid grid-cols-2 gap-3">
-                  {history.map((conv) => (
-                    <button key={conv.id} onClick={() => openConversation(conv)} className="text-left px-4 py-3 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50 transition-all duration-150 group relative">
-                      <p className="text-sm text-gray-700 font-medium group-hover:text-purple-700 line-clamp-2 leading-snug pr-6">{conv.title}</p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        {conv.message_count} mensagens · {new Date(conv.ended_at).toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" })}
-                      </p>
-                      <button onClick={(e) => handleDeleteConversation(e, conv.id)} className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded text-gray-300 hover:text-red-400 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all" title="Remover">
-                        <DeleteOutlineOutlinedIcon sx={{ fontSize: 14 }} />
-                      </button>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+      {/* ══ COLUNA ESQUERDA — Histórico ══ */}
+      <div className="w-64 border-r border-gray-100 flex flex-col shrink-0">
+        {/* Busca */}
+        <div className="px-3 pt-4 pb-2 shrink-0">
+          <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-50 border border-gray-200">
+            <SearchOutlinedIcon sx={{ fontSize: 15, color: "#9ca3af" }} />
+            <input
+              value={historySearch}
+              onChange={(e) => setHistorySearch(e.target.value)}
+              placeholder="Pesquisar..."
+              className="flex-1 bg-transparent text-sm text-gray-700 placeholder-gray-400 outline-none"
+            />
           </div>
-        )}
+        </div>
 
-        {/* ══ VISUALIZANDO CONVERSA ══ */}
-        {viewing && !showHistory && (
-          <div className="flex-1 flex flex-col min-h-0 pt-6">
-            <div className="flex items-center gap-2 pb-4 shrink-0">
-              <button onClick={() => { setViewing(null); setShowHistory(true); }} className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 transition">
-                <ArrowBackOutlinedIcon sx={{ fontSize: 16 }} />
-              </button>
-              <p className="text-sm font-medium text-gray-600 truncate">{viewing.title}</p>
+        {/* Lista de conversas */}
+        <div className="flex-1 overflow-y-auto px-2 pb-3 space-y-0.5 min-h-0">
+          {historyLoading ? (
+            <div className="flex items-center justify-center h-24">
+              <span className="text-xs text-gray-400">Carregando...</span>
             </div>
-            <div className="flex-1 overflow-y-auto space-y-4 min-h-0 py-2">
-              {viewingLoading ? (
-                <div className="flex items-center justify-center h-32"><span className="text-sm text-gray-400">Carregando...</span></div>
-              ) : (
-                <>
-                  {viewing.messages.map((msg, i) => <MessageBubble key={i} msg={msg} />)}
-                  <div className="flex items-center gap-3 py-1">
-                    <div className="flex-1 h-px bg-gray-100" />
-                    <span className="text-xs text-gray-300 whitespace-nowrap">continuar conversa</span>
-                    <div className="flex-1 h-px bg-gray-100" />
-                  </div>
-                </>
-              )}
+          ) : filteredHistory.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-32 text-center px-4">
+              <ChatBubbleOutlineOutlinedIcon sx={{ fontSize: 28, color: "#e5e7eb" }} />
+              <p className="text-xs text-gray-400 mt-2">
+                {historySearch ? "Nenhum resultado" : "Nenhuma conversa salva"}
+              </p>
             </div>
-            {/* Input de retomada */}
-            <ResumeInput onSend={handleResumeAndSend} onBackToChat={() => { setViewing(null); setShowHistory(false); }} />
-          </div>
-        )}
-
-        {/* ══ CHAT ATIVO ══ */}
-        {!showHistory && !viewing && (
-          <>
-            {/* Saudação */}
-            {messages.length === 0 && (
-              <div className="pt-12 pb-8 shrink-0 text-center">
-                <h2
-                  className="text-4xl font-bold leading-tight"
-                  style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 60%, #6d28d9 100%)", WebkitBackgroundClip: "text", WebkitTextFillColor: "transparent", backgroundClip: "text" }}
+          ) : (
+            filteredHistory.map((conv) => (
+              <button
+                key={conv.id}
+                onClick={() => openConversation(conv)}
+                className={`w-full text-left px-3 py-2.5 rounded-lg transition-all duration-150 group relative ${
+                  viewing?.id === conv.id
+                    ? "bg-purple-50 text-purple-700"
+                    : "hover:bg-gray-50 text-gray-700"
+                }`}
+              >
+                <p className="text-sm leading-snug line-clamp-1 pr-5">{conv.title}</p>
+                <button
+                  onClick={(e) => handleDeleteConversation(e, conv.id)}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                  title="Remover"
                 >
-                  Como posso te ajudar hoje?
-                </h2>
-              </div>
-            )}
-
-            {/* Mensagens */}
-            <div className="flex-1 overflow-y-auto py-4 space-y-4 min-h-0">
-              {messages.map((msg, i) => <MessageBubble key={i} msg={msg} />)}
-              {isLoading && (
-                <div className="flex justify-start">
-                  <VAvatar />
-                  <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1">
-                    <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:0ms]" />
-                    <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:150ms]" />
-                    <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:300ms]" />
-                  </div>
-                </div>
-              )}
-              <div ref={messagesEndRef} />
-            </div>
-
-            {/* Input */}
-            <div className="py-4 shrink-0">
-              <div className="rounded-2xl p-[2px]" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 40%, #74FF60 100%)" }}>
-                <div className="bg-white rounded-[14px] px-4 pt-3 pb-2">
-                  <textarea
-                    ref={textareaRef}
-                    value={inputValue}
-                    onChange={(e) => setInputValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder="Me diga como posso te ajudar..."
-                    rows={1}
-                    className="w-full resize-none bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none leading-relaxed"
-                    style={{ maxHeight: "160px", overflowY: "auto" }}
-                    disabled={isLoading}
-                  />
-                  <div className="flex items-center justify-between mt-2">
-                    <button className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition" title="Mencionar">
-                      <AlternateEmailOutlinedIcon sx={{ fontSize: 16 }} />
-                    </button>
-                    <button onClick={() => handleSend(inputValue)} disabled={!inputValue.trim() || isLoading} className="w-8 h-8 rounded-full flex items-center justify-center text-black transition disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-80" style={{ background: "#74FF60" }} title="Enviar">
-                      <ArrowUpwardRoundedIcon sx={{ fontSize: 18 }} />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Sugestões — 3 colunas */}
-            {showSuggestions && suggestions.length > 0 && (
-              <div className="pb-6 shrink-0">
-                <p className="text-sm font-semibold text-gray-700 mb-3">Por onde começar?</p>
-                <div className="grid grid-cols-3 gap-2">
-                  {suggestions.slice(0, 6).map((s, i) => (
-                    <button key={i} onClick={() => handleSend(s)} className="text-left text-xs text-gray-600 bg-white border border-gray-200 rounded-xl px-3 py-2.5 hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700 transition-all duration-150 leading-snug line-clamp-2">
-                      {s}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Footer */}
-            <div className="pb-4 shrink-0 text-center">
-              <p className="text-xs text-gray-400">Toda I.A pode cometer erros, sempre verifique os dados.</p>
-            </div>
-          </>
-        )}
+                  <DeleteOutlineOutlinedIcon sx={{ fontSize: 13 }} />
+                </button>
+              </button>
+            ))
+          )}
+        </div>
       </div>
-    </div>
-  );
-}
 
-// ── ResumeInput ───────────────────────────────────────────────────────────────
+      {/* ══ COLUNA DIREITA — Chat ══ */}
+      <div className="flex-1 flex flex-col min-h-0">
 
-function ResumeInput({ onSend, onBackToChat }: { onSend: (t: string) => void; onBackToChat: () => void }) {
-  const [value, setValue] = useState("");
-  const ref = useRef<HTMLTextAreaElement>(null);
-
-  useEffect(() => {
-    const el = ref.current; if (!el) return;
-    el.style.height = "auto"; el.style.height = `${Math.min(el.scrollHeight, 120)}px`;
-  }, [value]);
-
-  return (
-    <div className="py-4 shrink-0">
-      <div className="rounded-2xl p-[2px]" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 40%, #74FF60 100%)" }}>
-        <div className="bg-white rounded-[14px] px-4 pt-3 pb-2">
-          <textarea ref={ref} value={value} onChange={(e) => setValue(e.target.value)} onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); if (value.trim()) onSend(value); } }} placeholder="Continue a partir daqui..." rows={1} className="w-full resize-none bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none leading-relaxed" style={{ maxHeight: "120px", overflowY: "auto" }} />
-          <div className="flex items-center justify-end mt-2">
-            <button onClick={() => { if (value.trim()) onSend(value); }} disabled={!value.trim()} className="w-8 h-8 rounded-full flex items-center justify-center text-black transition disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-80" style={{ background: "#74FF60" }}>
-              <ArrowUpwardRoundedIcon sx={{ fontSize: 18 }} />
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-3 border-b border-gray-100 shrink-0">
+          <div
+            className="px-3 py-1 rounded-full text-white text-sm font-semibold select-none"
+            style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 50%, #74FF60 100%)" }}
+          >
+            V.IA
+          </div>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={handleNewConversation}
+              className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+              title="Nova conversa"
+            >
+              <AddOutlinedIcon sx={{ fontSize: 18 }} />
+            </button>
+            <button
+              onClick={() => navigate(-1)}
+              className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+              title="Fechar"
+            >
+              <CloseOutlinedIcon sx={{ fontSize: 18 }} />
             </button>
           </div>
         </div>
-      </div>
-      <div className="flex items-center justify-center mt-3">
-        <button onClick={onBackToChat} className="text-xs text-gray-400 hover:text-purple-600 transition">Voltar ao chat atual</button>
+
+        {/* Conteúdo centralizado */}
+        <div className="flex-1 flex flex-col min-h-0 w-full max-w-3xl mx-auto px-6">
+
+          {/* ══ VISUALIZANDO CONVERSA ══ */}
+          {viewing && (
+            <div className="flex-1 flex flex-col min-h-0 pt-6">
+              <div className="flex items-center gap-2 pb-4 shrink-0">
+                <button
+                  onClick={() => setViewing(null)}
+                  className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 transition"
+                  title="Voltar ao chat"
+                >
+                  <ArrowBackOutlinedIcon sx={{ fontSize: 16 }} />
+                </button>
+                <p className="text-sm font-medium text-gray-600 truncate">{viewing.title}</p>
+              </div>
+              <div className="flex-1 overflow-y-auto space-y-4 min-h-0 py-2">
+                {viewingLoading ? (
+                  <div className="flex items-center justify-center h-32">
+                    <span className="text-sm text-gray-400">Carregando mensagens...</span>
+                  </div>
+                ) : (
+                  <>
+                    {viewing.messages.map((msg, i) => <MessageBubble key={i} msg={msg} />)}
+                    <div className="flex items-center gap-3 py-1">
+                      <div className="flex-1 h-px bg-gray-100" />
+                      <span className="text-xs text-gray-300 whitespace-nowrap">continuar conversa</span>
+                      <div className="flex-1 h-px bg-gray-100" />
+                    </div>
+                  </>
+                )}
+              </div>
+              <ResumeInput onSend={handleResumeAndSend} onBackToChat={() => setViewing(null)} />
+            </div>
+          )}
+
+          {/* ══ CHAT ATIVO ══ */}
+          {!viewing && (
+            <>
+              {messages.length === 0 && (
+                <div className="pt-12 pb-8 shrink-0 text-center">
+                  <h2
+                    className="text-4xl font-bold leading-tight"
+                    style={{
+                      background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 60%, #6d28d9 100%)",
+                      WebkitBackgroundClip: "text",
+                      WebkitTextFillColor: "transparent",
+                      backgroundClip: "text",
+                    }}
+                  >
+                    Como posso te ajudar hoje?
+                  </h2>
+                </div>
+              )}
+
+              <div className="flex-1 overflow-y-auto py-4 space-y-4 min-h-0">
+                {messages.map((msg, i) => <MessageBubble key={i} msg={msg} />)}
+                {isLoading && (
+                  <div className="flex justify-start">
+                    <VAvatar />
+                    <div className="bg-gray-50 border border-gray-100 rounded-2xl rounded-tl-sm px-4 py-3 flex items-center gap-1">
+                      <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:0ms]" />
+                      <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:150ms]" />
+                      <span className="w-2 h-2 bg-purple-400 rounded-full animate-bounce [animation-delay:300ms]" />
+                    </div>
+                  </div>
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+
+              {/* Input */}
+              <div className="py-4 shrink-0">
+                <div className="rounded-2xl p-[2px]" style={{ background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 40%, #74FF60 100%)" }}>
+                  <div className="bg-white rounded-[14px] px-4 pt-3 pb-2">
+                    <textarea
+                      ref={textareaRef}
+                      value={inputValue}
+                      onChange={(e) => setInputValue(e.target.value)}
+                      onKeyDown={handleKeyDown}
+                      placeholder="Me diga como posso te ajudar..."
+                      rows={1}
+                      className="w-full resize-none bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none leading-relaxed"
+                      style={{ maxHeight: "160px", overflowY: "auto" }}
+                      disabled={isLoading}
+                    />
+                    <div className="flex items-center justify-between mt-2">
+                      <button className="w-7 h-7 flex items-center justify-center rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition" title="Mencionar">
+                        <AlternateEmailOutlinedIcon sx={{ fontSize: 16 }} />
+                      </button>
+                      <button
+                        onClick={() => handleSend(inputValue)}
+                        disabled={!inputValue.trim() || isLoading}
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-black transition disabled:opacity-40 disabled:cursor-not-allowed hover:opacity-80"
+                        style={{ background: "#74FF60" }}
+                        title="Enviar"
+                      >
+                        <ArrowUpwardRoundedIcon sx={{ fontSize: 18 }} />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sugestões */}
+              {showSuggestions && suggestions.length > 0 && (
+                <div className="pb-6 shrink-0">
+                  <p className="text-sm font-semibold text-gray-700 mb-3">Por onde começar?</p>
+                  <div className="grid grid-cols-3 gap-2">
+                    {suggestions.slice(0, 6).map((s, i) => (
+                      <button
+                        key={i}
+                        onClick={() => handleSend(s)}
+                        className="text-left text-xs text-gray-600 bg-white border border-gray-200 rounded-xl px-3 py-2.5 hover:border-purple-300 hover:bg-purple-50 hover:text-purple-700 transition-all duration-150 leading-snug line-clamp-2"
+                      >
+                        {s}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Footer */}
+              <div className="pb-4 shrink-0 text-center">
+                <p className="text-xs text-gray-400">Toda I.A pode cometer erros, sempre verifique os dados.</p>
+              </div>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
