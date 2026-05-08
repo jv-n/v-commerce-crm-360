@@ -4,6 +4,8 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.routes import userRouter, contactRouter, agentRouter, productRouter
+from database.database import Base, engine
+from app.models import userModel, contactModel, productModel, orderModel
 
 # Injeta a GEMINI_API_KEY no ambiente para o PydanticAI/Google SDK
 # (lida do .env via pydantic-settings no config.py)
@@ -28,6 +30,9 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Cria as tabelas no banco de dados (se não existirem)
+Base.metadata.create_all(bind=engine)
 
 app.include_router(userRouter.router)
 app.include_router(contactRouter.router)
