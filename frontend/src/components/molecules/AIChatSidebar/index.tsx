@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useCallback } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import HistoryOutlinedIcon from "@mui/icons-material/HistoryOutlined";
 import OpenInFullOutlinedIcon from "@mui/icons-material/OpenInFullOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
@@ -39,6 +39,7 @@ export default function AIChatSidebar({
   userName = "você",
 }: AIChatSidebarProps) {
   const navigate = useNavigate();
+  const { pathname } = useLocation();
   // ── Estado do chat ativo ──────────────────────────────────────────────────
   const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
   const [sessionStartedAt] = useState<Date>(() => new Date());
@@ -309,6 +310,7 @@ export default function AIChatSidebar({
               sessionId,
               inputValue,
               sessionStartedAt: sessionStartedAt.toISOString(),
+              from: pathname,
             },
           });
           onClose();

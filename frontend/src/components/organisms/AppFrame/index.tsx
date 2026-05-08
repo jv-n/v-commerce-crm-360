@@ -24,14 +24,18 @@ import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
 
 export default function AppFrame() {
-    const { pathname } = useLocation();
+    const { pathname, state: locationState } = useLocation();
     const isOnChat = pathname === "/chat";
     const [isAIOpen, setIsAIOpen] = useState(false);
 
-    // Fecha a sidebar de IA automaticamente ao entrar na tela cheia
+    // Fecha a sidebar ao entrar em /chat; reabre ao minimizar de volta
     useEffect(() => {
-        if (isOnChat) setIsAIOpen(false);
-    }, [isOnChat]);
+        if (isOnChat) {
+            setIsAIOpen(false);
+        } else if ((locationState as { reopenAI?: boolean })?.reopenAI) {
+            setIsAIOpen(true);
+        }
+    }, [isOnChat, locationState]);
 
     const itemActive = (path: string) => pathname === path ? "bg-primary" : "bg-background";
 

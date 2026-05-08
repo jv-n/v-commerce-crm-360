@@ -7,6 +7,7 @@ import AlternateEmailOutlinedIcon from "@mui/icons-material/AlternateEmailOutlin
 import ChatBubbleOutlineOutlinedIcon from "@mui/icons-material/ChatBubbleOutlineOutlined";
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
+import CloseFullscreenOutlinedIcon from "@mui/icons-material/CloseFullscreenOutlined";
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined";
 import {
   fetchSuggestions,
@@ -122,6 +123,7 @@ interface ChatRouteState {
   sessionId?: string;
   inputValue?: string;
   sessionStartedAt?: string;
+  from?: string;
 }
 
 // ── Página ────────────────────────────────────────────────────────────────────
@@ -361,6 +363,15 @@ export default function Chat() {
             >
               <AddOutlinedIcon sx={{ fontSize: 18 }} />
             </button>
+            {routeState.from && (
+              <button
+                onClick={() => navigate(routeState.from!, { state: { reopenAI: true } })}
+                className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+                title="Minimizar"
+              >
+                <CloseFullscreenOutlinedIcon sx={{ fontSize: 16 }} />
+              </button>
+            )}
             <button
               onClick={() => navigate(-1)}
               className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
