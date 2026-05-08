@@ -84,7 +84,7 @@ export default function AppFrame() {
     }
 
     return (
-        <SidebarProvider defaultOpen={true}>
+        <SidebarProvider defaultOpen={true} className="!h-svh overflow-hidden">
             <Sidebar variant="inset" >
                 <SidebarHeader className="w-full align-center justify-center">
                     <img src="vcom360_icon.svg" alt="CRM Icon" height={80} width={80}/>
@@ -157,7 +157,7 @@ export default function AppFrame() {
                 style={{ marginRight: isAIOpen ? "488px" : "8px" }}
             >
                 <AppNavbar onOpenAI={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }} />
-                <div className="flex-1">
+                <div className="flex-1 min-h-0 overflow-hidden">
                     <Outlet />
                 </div>
             </SidebarInset>

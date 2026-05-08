@@ -373,7 +373,7 @@ export default function Chat() {
         </div>
 
         {/* Conteúdo centralizado */}
-        <div className="flex-1 flex flex-col min-h-0 w-full max-w-3xl mx-auto px-6">
+        <div className="flex-1 flex flex-col min-h-0 w-full max-w-4xl mx-auto px-6">
 
           {/* ══ VISUALIZANDO CONVERSA ══ */}
           {viewing && (
