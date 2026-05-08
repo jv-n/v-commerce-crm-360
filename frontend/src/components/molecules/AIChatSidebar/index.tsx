@@ -293,9 +293,11 @@ export default function AIChatSidebar({
   // Botões do header — iguais nos dois modos
   const headerActions = (
     <div className="flex items-center gap-1">
-      <button onClick={handleNewConversation} className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition" title="Nova conversa">
-        <AddOutlinedIcon sx={{ fontSize: 18 }} />
-      </button>
+      {messages.length > 0 && (
+        <button onClick={handleNewConversation} className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition" title="Nova conversa">
+          <AddOutlinedIcon sx={{ fontSize: 18 }} />
+        </button>
+      )}
       <button onClick={toggleHistory} className={`w-8 h-8 flex items-center justify-center rounded-md transition ${showHistory ? "bg-purple-100 text-purple-600" : "text-gray-400 hover:bg-gray-100 hover:text-gray-600"}`} title="Histórico de conversas">
         <HistoryOutlinedIcon sx={{ fontSize: 18 }} />
       </button>
@@ -530,12 +532,12 @@ function MessageBubble({ msg, expanded = false }: { msg: ChatMessage; expanded?:
       <div
         className={`${expanded ? "max-w-[75%]" : "max-w-[85%]"} rounded-2xl px-4 py-3 text-sm leading-relaxed ${
           msg.role === "user"
-            ? "text-white rounded-tr-sm"
+            ? "text-gray-900 rounded-tr-sm"
             : "bg-gray-50 text-gray-800 rounded-tl-sm border border-gray-100"
         }`}
         style={
           msg.role === "user"
-            ? { background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)" }
+            ? { background: "#ECCFFF" }
             : undefined
         }
       >

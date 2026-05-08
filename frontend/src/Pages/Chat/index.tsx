@@ -44,12 +44,12 @@ function MessageBubble({ msg }: { msg: ChatMessage }) {
       <div
         className={`max-w-[75%] rounded-2xl px-4 py-3 text-sm leading-relaxed ${
           msg.role === "user"
-            ? "text-white rounded-tr-sm"
+            ? "text-gray-900 rounded-tr-sm"
             : "bg-gray-50 text-gray-800 rounded-tl-sm border border-gray-100"
         }`}
         style={
           msg.role === "user"
-            ? { background: "linear-gradient(135deg, #7c3aed 0%, #a855f7 100%)" }
+            ? { background: "#ECCFFF" }
             : undefined
         }
       >
@@ -346,13 +346,15 @@ export default function Chat() {
             V.IA
           </div>
           <div className="flex items-center gap-1">
-            <button
-              onClick={handleNewConversation}
-              className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
-              title="Nova conversa"
-            >
-              <AddOutlinedIcon sx={{ fontSize: 18 }} />
-            </button>
+            {messages.length > 0 && (
+              <button
+                onClick={handleNewConversation}
+                className="w-8 h-8 flex items-center justify-center rounded-md text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition"
+                title="Nova conversa"
+              >
+                <AddOutlinedIcon sx={{ fontSize: 18 }} />
+              </button>
+            )}
             {routeState.from && (
               <button
                 onClick={() => navigate(routeState.from!, { state: { reopenAI: true } })}
