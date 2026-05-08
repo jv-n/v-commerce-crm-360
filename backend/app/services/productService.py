@@ -1,18 +1,55 @@
-from sqlalchemy import func
 from sqlalchemy.orm import Session
-from app.models.productModel import Product, ProductCategory
-from app.schemas.productSchemas import ProductCreateSchema, ProductUpdateSchema
+
+from app.models.productModel import DimProduto, GoldDesempenhoProduto
+from app.schemas.productSchemas import ProductSchema
 
 
 def _dmy_to_iso(dmy: str) -> str:
-    """Converte DD/MM/YYYY para YYYY-MM-DD (para comparação lexicográfica no SQLite)."""
     d, m, y = dmy.strip().split("/")
     return f"{y}-{m.zfill(2)}-{d.zfill(2)}"
+
+
+def _to_product_out(dim: DimProduto, gold: GoldDesempenhoProduto | None) -> ProductSchema:
+    raw_date = dim.data_cadastro_produto or ""
+    if raw_date and "-" in raw_date:
+        y, m, d = raw_date[:10].split("-")
+        created_at = f"{d}/{m}/{y}"
+    else:
+        created_at = raw_date or None
+
+    return ProductSchema(
+        id=dim.id_produto,
+        name=dim.nome_produto,
+        price=dim.preco,
+        stock=int(dim.estoque_disponivel or 0),
+        category=dim.categoria,
+        status="Ativo" if str(dim.ativo or "").lower() == "true" else "Inativo",
+        uf=None,
+        created_at=created_at,
+        rating=gold.nota_media_avaliacao if gold else None,
+        total_sales=gold.qtd_vendida if gold else None,
+        receita_total=gold.receita_total if gold else None,
+        ticket_medio=gold.ticket_medio if gold else None,
+        qtd_avaliacoes=gold.qtd_avaliacoes if gold else None,
+        nota_nps_media=gold.nota_nps_media if gold else None,
+        qtd_tickets_gerados=gold.qtd_tickets_gerados if gold else None,
+        tipo_problema_mais_frequente=gold.tipo_problema_mais_frequente if gold else None,
+        ratio_ticket_por_venda=gold.ratio_ticket_por_venda if gold else None,
+    )
 
 
 class ProductService:
     def __init__(self, db: Session):
         self.db = db
+
+    def _base_query(self):
+        return (
+            self.db.query(DimProduto, GoldDesempenhoProduto)
+            .outerjoin(
+                GoldDesempenhoProduto,
+                DimProduto.id_produto == GoldDesempenhoProduto.id_produto,
+            )
+        )
 
     def get_products(
         self,
@@ -28,99 +65,66 @@ class ProductService:
         stock_max: int | None = None,
         rating_min: float | None = None,
         rating_max: float | None = None,
+        sales_min: float | None = None,
+        sales_max: float | None = None,
         date_from: str | None = None,
         date_to: str | None = None,
-    ) -> tuple[list[Product], int]:
-        query = self.db.query(Product)
+    ) -> tuple[list[ProductSchema], int]:
+        query = self._base_query()
 
         if search:
-            query = query.filter(Product.name.ilike(f"%{search}%"))
+            query = query.filter(DimProduto.nome_produto.ilike(f"%{search}%"))
 
         if category:
-            query = query.join(Product.category).filter(
-                ProductCategory.name.ilike(f"%{category}%")
-            )
+            query = query.filter(DimProduto.categoria.ilike(f"%{category}%"))
 
         if status:
             statuses = [s.strip() for s in status.split(",") if s.strip()]
-            if statuses:
-                query = query.filter(Product.status.in_(statuses))
-
-        if uf:
-            query = query.filter(Product.uf == uf)
+            ativo_values = []
+            for s in statuses:
+                if s == "Ativo":
+                    ativo_values.append("True")
+                elif s == "Inativo":
+                    ativo_values.append("False")
+            if ativo_values:
+                query = query.filter(DimProduto.ativo.in_(ativo_values))
 
         if price_min is not None:
-            query = query.filter(Product.price >= price_min)
+            query = query.filter(DimProduto.preco >= price_min)
         if price_max is not None:
-            query = query.filter(Product.price <= price_max)
+            query = query.filter(DimProduto.preco <= price_max)
 
         if stock_min is not None:
-            query = query.filter(Product.stock >= stock_min)
+            query = query.filter(DimProduto.estoque_disponivel >= stock_min)
         if stock_max is not None:
-            query = query.filter(Product.stock <= stock_max)
+            query = query.filter(DimProduto.estoque_disponivel <= stock_max)
 
         if rating_min is not None:
-            query = query.filter(Product.rating >= rating_min)
+            query = query.filter(GoldDesempenhoProduto.nota_media_avaliacao >= rating_min)
         if rating_max is not None:
-            query = query.filter(Product.rating <= rating_max)
+            query = query.filter(GoldDesempenhoProduto.nota_media_avaliacao <= rating_max)
 
-        # created_at está em DD/MM/YYYY — converte para ISO antes de comparar
+        if sales_min is not None:
+            query = query.filter(GoldDesempenhoProduto.qtd_vendida >= sales_min)
+        if sales_max is not None:
+            query = query.filter(GoldDesempenhoProduto.qtd_vendida <= sales_max)
+
+        # data_cadastro_produto é YYYY-MM-DD — comparação direta após converter o input
         if date_from:
             try:
-                iso_from = _dmy_to_iso(date_from)
-                # substr converte DD/MM/YYYY → YYYY-MM-DD no SQLite em tempo de query
-                query = query.filter(
-                    func.substr(Product.created_at, 7, 4)
-                    + "-"
-                    + func.substr(Product.created_at, 4, 2)
-                    + "-"
-                    + func.substr(Product.created_at, 1, 2)
-                    >= iso_from
-                )
+                query = query.filter(DimProduto.data_cadastro_produto >= _dmy_to_iso(date_from))
             except ValueError:
                 pass
-
         if date_to:
             try:
-                iso_to = _dmy_to_iso(date_to)
-                query = query.filter(
-                    func.substr(Product.created_at, 7, 4)
-                    + "-"
-                    + func.substr(Product.created_at, 4, 2)
-                    + "-"
-                    + func.substr(Product.created_at, 1, 2)
-                    <= iso_to
-                )
+                query = query.filter(DimProduto.data_cadastro_produto <= _dmy_to_iso(date_to))
             except ValueError:
                 pass
 
         total = query.count()
-        skip = (page - 1) * page_size
-        data = query.offset(skip).limit(page_size).all()
-        return data, total
+        rows = query.offset((page - 1) * page_size).limit(page_size).all()
+        return [_to_product_out(dim, gold) for dim, gold in rows], total
 
-    def get_product_by_id(self, product_id: int) -> Product | None:
-        return self.db.query(Product).filter(Product.id == product_id).first()
-
-    def create_product(self, product: ProductCreateSchema) -> Product:
-        db_product = Product(**product.model_dump())
-        self.db.add(db_product)
-        self.db.commit()
-        self.db.refresh(db_product)
-        return db_product
-
-    def update_product(self, product_id: int, product: ProductUpdateSchema) -> Product | None:
-        db_product = self.get_product_by_id(product_id)
-        if db_product:
-            for key, value in product.model_dump(exclude_unset=True).items():
-                setattr(db_product, key, value)
-            self.db.commit()
-            self.db.refresh(db_product)
-        return db_product
-
-    def delete_product(self, product_id: int) -> Product | None:
-        db_product = self.get_product_by_id(product_id)
-        if db_product:
-            self.db.delete(db_product)
-            self.db.commit()
-        return db_product
+    def get_product_by_id(self, product_id: str) -> ProductSchema | None:
+        row = self._base_query().filter(DimProduto.id_produto == product_id).first()
+        return _to_product_out(row[0], row[1]) if row else None
