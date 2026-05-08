@@ -129,9 +129,9 @@ export function ContactsTable() {
   const onToggleExpand = (id: string) =>
     setExpandedRowId(prev => prev === id ? null : id)
 
-  const handleSortChange = (key: string | null, dir: "asc" | "desc") => {
-    setSortBy(key)
-    setSortDir(dir)
+  const handleSortChange = (sort: { key: string; direction: "asc" | "desc" } | null) => {
+    setSortBy(sort?.key ?? null)
+    setSortDir(sort?.direction ?? "asc")
     setPage(1)
   }
 
@@ -157,6 +157,7 @@ export function ContactsTable() {
     const pf = active["purchases"]
     const cf = active["createdAt"]
     const ef = active["engagement"]
+    const hf = active["excludeInactive"]
     setLoading(true)
     setServerFilters({
       status:          sf?.type === "select"       && sf.value !== ""  ? sf.value      : "",
@@ -197,7 +198,7 @@ export function ContactsTable() {
         headerClassName="bg-[#F0DDFD]"
         dividersClassName="divide-[#9F83B2]"
         rowsPerPageOptions={[10, 25, 50]}
-        expandedRowId={expandedRowId}
+        expandedRowIds={expandedRowId ? new Set([expandedRowId]) : undefined}
         renderExpandedRow={(c) => <ContactExpandedRow contact={c} onEdit={() => openEdit(c)} />}
         serverPagination={{
           total,

@@ -31,6 +31,7 @@ export function DataTable<T,>({
   data,
   columns,
   getRowId,
+  loading,
   tabs = [],
   activeTab,
   onTabChange,
@@ -48,6 +49,7 @@ export function DataTable<T,>({
   tabsRightSlot,
   searchFn,
   searchPlaceholder,
+  onSortChange,
 }: DataTableProps<T>) {
   const [searchOpen,  setSearchOpen]  = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -75,7 +77,7 @@ export function DataTable<T,>({
     setSortKey(key)
     setSortDir(newDir)
     pagination.resetPage()
-    if (serverPagination) onSortChange?.(key, newDir)
+    if (serverPagination) onSortChange?.({ key, direction: newDir })
   }
 
   const sortedData = (arr: T[]): T[] => {
@@ -237,6 +239,7 @@ export function DataTable<T,>({
           columns={visibleColumns}
           pageData={pageData}
           getRowId={getRowId}
+          loading={loading}
           selectedRows={selection.selectedRows}
           isAllSelected={selection.isPageAllSelected(pageData)}
           onToggleAll={() => selection.toggleAll(pageData)}

@@ -70,6 +70,7 @@ export interface ServerPagination {
 
 export interface DataTableProps<T> {
   data: T[]
+  loading?: boolean
   columns: Column<T>[]
   getRowId: (row: T) => string
   tabs?: Tab[]
@@ -84,6 +85,7 @@ export interface DataTableProps<T> {
   onFiltersChange?: (filters: ActiveFilters) => void
   /** Called whenever the search query changes */
   onSearchChange?: (query: string) => void
+  onSortChange?: (sort: { key: string; direction: "asc" | "desc" } | null) => void
   noBorder?: boolean
   headerClassName?: string
   rowClassName?: string

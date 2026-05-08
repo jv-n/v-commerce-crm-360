@@ -129,7 +129,8 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
 
     return (
       <DataTable
-        data={loading ? [] : sales}
+        data={sales}
+        loading={loading}
         columns={saleColumns}
         getRowId={(c) => c.id}
         tabs={TABS}
