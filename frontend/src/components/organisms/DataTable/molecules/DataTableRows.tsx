@@ -14,6 +14,7 @@ interface DataTableRowsProps<T> {
   isAllSelected: boolean
   onToggleAll: () => void
   onToggleRow: (id: string) => void
+  loading?: boolean
   emptyMessage?: string
   headerClassName?: string
   rowClassName?: string
@@ -33,6 +34,7 @@ export function DataTableRows<T,>({
   isAllSelected,
   onToggleAll,
   onToggleRow,
+  loading = false,
   emptyMessage = "Nenhum item encontrado.",
   headerClassName = "bg-gray-50",
   rowClassName = "",
@@ -91,53 +93,70 @@ export function DataTableRows<T,>({
           </tr>
         </thead>
         <tbody className={cn("divide-y", dividersClassName)}>
-          {pageData.map(row => {
-            const id         = getRowId(row)
-            const isSelected = selectedRows.has(id)
-            const isExpanded = expandedRowIds?.has(id) ?? false
-            return (
-              <Fragment key={id}>
-                <tr
-                  className={cn(
-                    "transition-colors",
-                    rowClassName || "hover:bg-gray-50/80",
-                    isSelected && "bg-blue-50/60"
-                  )}
-                >
-                  <td className="px-4 py-3">
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => onToggleRow(id)}
-                      className="w-4 h-4 rounded border-gray-300 cursor-pointer accent-gray-800"
-                    />
+          {loading ? (
+            Array.from({ length: 8 }).map((_, i) => (
+              <tr key={i} className="animate-pulse">
+                <td className="px-4 py-3">
+                  <div className="w-4 h-4 rounded bg-gray-200" />
+                </td>
+                {columns.map(col => (
+                  <td key={col.key} className="px-3 py-3">
+                    <div className="h-4 rounded bg-gray-200" style={{ width: `${60 + (i * 13 + col.key.length * 7) % 35}%` }} />
                   </td>
-                  {columns.map(col => (
-                    <td key={col.key} className="px-3 py-3">
-                      {col.render(row)}
-                    </td>
-                  ))}
-                </tr>
-                {isExpanded && renderExpandedRow && (
-                  <tr>
-                    <td colSpan={columns.length + 1} className="p-0">
-                      {renderExpandedRow(row)}
-                    </td>
-                  </tr>
-                )}
-              </Fragment>
-            )
-          })}
+                ))}
+              </tr>
+            ))
+          ) : (
+            <>
+              {pageData.map(row => {
+                const id         = getRowId(row)
+                const isSelected = selectedRows.has(id)
+                const isExpanded = expandedRowIds?.has(id) ?? false
+                return (
+                  <Fragment key={id}>
+                    <tr
+                      className={cn(
+                        "transition-colors",
+                        rowClassName || "hover:bg-gray-50/80",
+                        isSelected && "bg-blue-50/60"
+                      )}
+                    >
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => onToggleRow(id)}
+                          className="w-4 h-4 rounded border-gray-300 cursor-pointer accent-gray-800"
+                        />
+                      </td>
+                      {columns.map(col => (
+                        <td key={col.key} className="px-3 py-3">
+                          {col.render(row)}
+                        </td>
+                      ))}
+                    </tr>
+                    {isExpanded && renderExpandedRow && (
+                      <tr>
+                        <td colSpan={columns.length + 1} className="p-0">
+                          {renderExpandedRow(row)}
+                        </td>
+                      </tr>
+                    )}
+                  </Fragment>
+                )
+              })}
 
-          {pageData.length === 0 && (
-            <tr>
-              <td
-                colSpan={columns.length + 1}
-                className="px-4 py-12 text-center text-sm text-gray-400"
-              >
-                {emptyMessage}
-              </td>
-            </tr>
+              {pageData.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={columns.length + 1}
+                    className="px-4 py-12 text-center text-sm text-gray-400"
+                  >
+                    {emptyMessage}
+                  </td>
+                </tr>
+              )}
+            </>
           )}
         </tbody>
       </table>
