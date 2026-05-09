@@ -21,6 +21,8 @@ def get_tickets(
     responsible: str = Query(""),
     problem: str = Query(""),
     resolved: str = Query(""),
+    status: str = Query(""),
+    score: str = Query(""),
     db: Session = Depends(get_db),
 ):
     return TicketService.get_tickets(
@@ -31,8 +33,13 @@ def get_tickets(
         responsible=responsible,
         problem=problem,
         resolved=resolved,
+        status=status,
+        score=score,
     )
 
+@router.get("/responsibles", response_model=list[str])
+def get_ticket_responsibles(db: Session = Depends(get_db)):
+    return TicketService.get_responsibles(db)
 
 @router.get("/{ticket_id}", response_model=TicketOut)
 def get_ticket(ticket_id: str, db: Session = Depends(get_db)):

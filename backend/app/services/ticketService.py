@@ -1,4 +1,4 @@
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, text
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from uuid import uuid4
@@ -22,6 +22,8 @@ class TicketService:
         responsible: str = "",
         problem: str = "",
         resolved: str = "",
+        status: str = "",
+        score: str = "",
     ) -> TicketsPageOut:
         query = db.query(FtTicketSuporte)
 
@@ -44,8 +46,53 @@ class TicketService:
         if problem:
             query = query.filter(FtTicketSuporte.tipo_problema == problem)
 
-        if resolved:
-            query = query.filter(func.lower(FtTicketSuporte.resolvido) == resolved.lower())
+        print("STATUS RECEBIDO:", status)
+        print("SCORE RECEBIDO:", score)
+
+        if status:
+            normalized_status = status.strip().lower()
+
+            if normalized_status == "finalizado":
+                query = query.filter(
+                    func.lower(FtTicketSuporte.resolvido) == "true"
+                )
+
+            elif normalized_status == "em atendimento":
+                query = query.filter(
+                    func.lower(FtTicketSuporte.resolvido) == "false",
+                    FtTicketSuporte.agente_suporte.is_not(None),
+                    func.trim(FtTicketSuporte.agente_suporte) != "",
+                )
+
+            elif normalized_status == "aguardando":
+                query = query.filter(
+                    func.lower(FtTicketSuporte.resolvido) == "false",
+                    or_(
+                        FtTicketSuporte.agente_suporte.is_(None),
+                        func.trim(FtTicketSuporte.agente_suporte) == "",
+                    ),
+                )
+
+            else:
+                raise HTTPException(status_code=400, detail="Status inválido")
+
+        elif resolved:
+            query = query.filter(
+                func.lower(FtTicketSuporte.resolvido) == resolved.lower()
+            )
+
+        if score:
+            normalized_score = score.strip().lower()
+
+            if normalized_score in {"sem avaliação", "sem_avaliacao", "sem avaliacao"}:
+                query = query.filter(FtTicketSuporte.nota_avaliacao.is_(None))
+            else:
+                try:
+                    score_value = float(normalized_score)
+                except ValueError:
+                    raise HTTPException(status_code=400, detail="Nota inválida")
+
+                query = query.filter(FtTicketSuporte.nota_avaliacao == score_value)
 
         total = query.with_entities(func.count(FtTicketSuporte.ticket_id)).scalar() or 0
 
@@ -63,6 +110,20 @@ class TicketService:
             page=page,
             pageSize=page_size,
         )
+
+    @staticmethod
+    def get_responsibles(db: Session) -> list[str]:
+        rows = db.execute(
+            text("""
+                SELECT agente_suporte
+                FROM dim_agentes_suporte
+                WHERE agente_suporte IS NOT NULL
+                  AND TRIM(agente_suporte) <> ''
+                ORDER BY agente_suporte ASC
+            """)
+        ).fetchall()
+
+        return [row[0] for row in rows]
 
     @staticmethod
     def get_ticket(db: Session, ticket_id: str) -> TicketOut:
@@ -83,6 +144,7 @@ class TicketService:
         db.add(row)
         db.commit()
         db.refresh(row)
+
         return TicketOut.model_validate(row)
 
     @staticmethod
