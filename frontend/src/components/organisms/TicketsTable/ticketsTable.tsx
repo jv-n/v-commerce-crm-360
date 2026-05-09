@@ -1,7 +1,15 @@
-import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from "react"
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from "react"
+
 import { DataTable } from "@/components/organisms/DataTable"
-import { ticketColumns } from "./columns"
-import { fetchTickets } from "@/lib/api/tickets"
+import { getTicketColumns } from "./columns"
+import { fetchTicketResponsibles, fetchTickets } from "@/lib/api/tickets"
 import type { Ticket } from "@/types/ticket"
 import type { ActiveFilters, Tab } from "@/components/organisms/DataTable/types"
 
@@ -17,14 +25,14 @@ interface ServerFilters {
   responsible: string
   status: string
   problem: string
-  evaluation: string
+  score: string
 }
 
 const EMPTY_FILTERS: ServerFilters = {
   responsible: "",
   status: "",
   problem: "",
-  evaluation: "",
+  score: "",
 }
 
 type FilterSnapshot = {
@@ -38,15 +46,21 @@ export type TicketsTableHandle = {
   reset: () => void
 }
 
-export const TicketsTable = forwardRef<TicketsTableHandle, { onCanUndoChange?: (can: boolean) => void }>(
+type TicketsTableProps = {
+  onCanUndoChange?: (can: boolean) => void
+}
+
+export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
   ({ onCanUndoChange }, ref) => {
     const [activeTab, setActiveTab] = useState("contacts")
     const [page, setPage] = useState(1)
     const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE)
     const [tickets, setTickets] = useState<Ticket[]>([])
+    const [responsibleOptions, setResponsibleOptions] = useState<string[]>([])
     const [total, setTotal] = useState(0)
     const [loading, setLoading] = useState(true)
-    const [serverFilters, setServerFilters] = useState<ServerFilters>(EMPTY_FILTERS)
+    const [serverFilters, setServerFilters] =
+      useState<ServerFilters>(EMPTY_FILTERS)
     const [filterHistory, setFilterHistory] = useState<FilterSnapshot[]>([])
 
     const currentSnapshot = useRef<FilterSnapshot>({
@@ -55,9 +69,27 @@ export const TicketsTable = forwardRef<TicketsTableHandle, { onCanUndoChange?: (
       serverFilters: EMPTY_FILTERS,
     })
 
+    const columns = getTicketColumns(responsibleOptions)
+
     useEffect(() => {
       currentSnapshot.current = { tab: activeTab, page, serverFilters }
-    })
+    }, [activeTab, page, serverFilters])
+
+    useEffect(() => {
+      let cancelled = false
+
+      fetchTicketResponsibles()
+        .then(data => {
+          if (!cancelled) {
+            setResponsibleOptions(data)
+          }
+        })
+        .catch(console.error)
+
+      return () => {
+        cancelled = true
+      }
+    }, [])
 
     const pushHistory = useCallback(() => {
       setFilterHistory(history => [...history, { ...currentSnapshot.current }])
@@ -67,31 +99,35 @@ export const TicketsTable = forwardRef<TicketsTableHandle, { onCanUndoChange?: (
       onCanUndoChange?.(filterHistory.length > 0)
     }, [filterHistory.length, onCanUndoChange])
 
-    useImperativeHandle(ref, () => ({
-      undo: () => {
-        setFilterHistory(history => {
-          if (history.length === 0) return history
+    useImperativeHandle(
+      ref,
+      () => ({
+        undo: () => {
+          setFilterHistory(history => {
+            if (history.length === 0) return history
 
-          const prev = history[history.length - 1]
+            const prev = history[history.length - 1]
 
-          setActiveTab(prev.tab)
-          setPage(prev.page)
+            setActiveTab(prev.tab)
+            setPage(prev.page)
+            setLoading(true)
+            setServerFilters(prev.serverFilters)
+
+            return history.slice(0, -1)
+          })
+        },
+        reset: () => {
+          pushHistory()
           setLoading(true)
-          setServerFilters(prev.serverFilters)
+          setActiveTab("contacts")
+          setPage(1)
+          setServerFilters(EMPTY_FILTERS)
+        },
+      }),
+      [pushHistory]
+    )
 
-          return history.slice(0, -1)
-        })
-      },
-      reset: () => {
-        pushHistory()
-        setLoading(true)
-        setActiveTab("contacts")
-        setPage(1)
-        setServerFilters(EMPTY_FILTERS)
-      },
-    }), [pushHistory])
-
-    const { responsible, status, problem, evaluation } = serverFilters
+    const { responsible, status, problem, score } = serverFilters
 
     useEffect(() => {
       let cancelled = false
@@ -103,7 +139,7 @@ export const TicketsTable = forwardRef<TicketsTableHandle, { onCanUndoChange?: (
         responsible,
         status,
         problem,
-        evaluation,
+        score,
       })
         .then(response => {
           if (cancelled) return
@@ -119,7 +155,7 @@ export const TicketsTable = forwardRef<TicketsTableHandle, { onCanUndoChange?: (
       return () => {
         cancelled = true
       }
-    }, [page, pageSize, activeTab, responsible, status, problem, evaluation])
+    }, [page, pageSize, activeTab, responsible, status, problem, score])
 
     const handleTabChange = (tabId: string) => {
       pushHistory()
@@ -144,7 +180,7 @@ export const TicketsTable = forwardRef<TicketsTableHandle, { onCanUndoChange?: (
       const responsibleFilter = active["responsible"]
       const statusFilter = active["status"]
       const problemFilter = active["problem"]
-      const evaluationFilter = active["evaluation"]
+      const scoreFilter = active["score"]
 
       pushHistory()
       setLoading(true)
@@ -162,9 +198,9 @@ export const TicketsTable = forwardRef<TicketsTableHandle, { onCanUndoChange?: (
           problemFilter?.type === "select" && problemFilter.value
             ? problemFilter.value
             : "",
-        evaluation:
-          evaluationFilter?.type === "select" && evaluationFilter.value
-            ? evaluationFilter.value
+        score:
+          scoreFilter?.type === "select" && scoreFilter.value
+            ? scoreFilter.value
             : "",
       })
 
@@ -175,7 +211,7 @@ export const TicketsTable = forwardRef<TicketsTableHandle, { onCanUndoChange?: (
       <DataTable
         data={tickets}
         loading={loading}
-        columns={ticketColumns}
+        columns={columns}
         getRowId={ticket => ticket.id}
         tabs={TABS}
         activeTab={activeTab}
@@ -194,8 +230,9 @@ export const TicketsTable = forwardRef<TicketsTableHandle, { onCanUndoChange?: (
             ticket.orderId,
             ticket.responsible.name,
             ticket.problem,
+            ticket.openedAt,
             ticket.status,
-            ticket.evaluation.label,
+            ticket.score ?? "Sem avaliação",
           ]
             .join(" ")
             .toLowerCase()

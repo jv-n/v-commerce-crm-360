@@ -1,4 +1,4 @@
-import type { TicketEvaluationStatus, TicketStatus } from "@/types/ticket"
+import type {TicketStatus } from "@/types/ticket"
 
 export function TicketStatusBadge({ status }: { status: TicketStatus }) {
   const styles: Record<TicketStatus, string> = {
@@ -21,23 +21,8 @@ export function TicketStatusBadge({ status }: { status: TicketStatus }) {
   )
 }
 
-export function EvaluationBadge({ label }: { label: TicketEvaluationStatus }) {
-  const styles: Record<TicketEvaluationStatus, string> = {
-    "Solucionado": "bg-[#DFA8FF] text-[#6F2B90]",
-    "Não Solucionado": "bg-[#E7C6FF] text-[#6F2B90]",
-    "Sem avaliação": "bg-[#F0DDFD] text-[#6B4A7A]",
-    "Não respondido": "bg-[#9F83B2] text-white",
-  }
-
-  return (
-    <span className={`inline-flex items-center rounded px-2 py-1 text-xs font-medium ${styles[label]}`}>
-      {label}
-    </span>
-  )
-}
-
-export function ScoreBadge({ score }: { score?: number }) {
-  if (!score) return null
+export function ScoreBadge({ score }: { score?: number | null }) {
+  if (score === undefined || score === null) return null
 
   const style =
     score <= 1
