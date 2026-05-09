@@ -22,6 +22,7 @@ import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import ConfirmationNumberOutlinedIcon from '@mui/icons-material/ConfirmationNumberOutlined';
 
 export default function AppFrame() {
     const { pathname, state: locationState } = useLocation();
@@ -49,6 +50,7 @@ export default function AppFrame() {
         { name: "Sales", nav: true, path: "/sales" },
         { name: "Products", nav: true, path: "/products" },
         { name: "Dashboard", nav: true, path: "/dashboard" },
+        { name: "Tickets", nav: true, path: "/tickets" },
     ];
 
     const sidebarItems3 = [
@@ -78,6 +80,8 @@ export default function AppFrame() {
                 return <MenuBookOutlinedIcon sx={{color: iconColor(title.toLowerCase())}}/>;
             case "Chat":
                 return <img src="v_ai.svg" alt="Chat Icon" height={40} width={40} />
+            case "Tickets":
+                return <ConfirmationNumberOutlinedIcon sx={{ color: iconColor("/tickets")} }/>;
             default:
                 return <div className="w-6 h-6 rounded-md bg-gray-500" />;
         }
