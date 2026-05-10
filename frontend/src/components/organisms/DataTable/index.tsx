@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { useState, useMemo } from "react"
 import { cn } from "@/lib/utils"
-import type { DataTableProps, SelectFilterDef, NumberRangeFilterDef, ServerPagination } from "./types"
+import type { DataTableProps, SelectFilterDef, NumberRangeFilterDef, MultiSelectFilterDef, ServerPagination } from "./types"
 import { useFilterState, isFilterActive, formatActiveFilter } from "./hooks/useFilterState"
 import { useRowSelection } from "./hooks/useRowSelection"
 import { usePagination } from "./hooks/usePagination"
@@ -13,6 +13,7 @@ import { FilterPill } from "./atoms/FilterPill"
 import { TogglePill } from "./atoms/TogglePill"
 import { SelectDropdown } from "./atoms/SelectDropdown"
 import { NumberRangeDropdown } from "./atoms/NumberRangeDropdown"
+import { MultiSelectDropdown } from "./atoms/MultiSelectDropdown"
 
 function buildServerPageInfo(sp: ServerPagination, dataLength: number) {
   const totalPages = Math.max(1, Math.ceil(sp.total / sp.pageSize))
@@ -166,23 +167,46 @@ export function DataTable<T,>({
       }
     }
 
-    const content = def.type === "select" ? (
-      <SelectDropdown
-        options={(def as SelectFilterDef<T>).options}
-        activeValue={active?.type === "select" ? active.value : ""}
-        onSelect={val => { filters.setFilter(colKey, { type: "select", value: val }); pagination.resetPage() }}
-        onClear={handleClear}
-      />
-    ) : (
-      <NumberRangeDropdown
-        current={active?.type === "number-range" ? { min: active.min, max: active.max } : null}
-        onApply={(min, max) => { filters.setFilter(colKey, { type: "number-range", min, max }); pagination.resetPage() }}
-        onClear={handleClear}
-        minBound={(def as NumberRangeFilterDef<T>).minBound}
-        maxBound={(def as NumberRangeFilterDef<T>).maxBound}
-        variant={(def as NumberRangeFilterDef<T>).variant}
-      />
-    )
+    let content: ReactNode
+    if (def.type === "select") {
+      content = (
+        <SelectDropdown
+          options={(def as SelectFilterDef<T>).options}
+          activeValue={active?.type === "select" ? active.value : ""}
+          onSelect={val => { filters.setFilter(colKey, { type: "select", value: val }); pagination.resetPage() }}
+          onClear={handleClear}
+        />
+      )
+    } else if (def.type === "multi-select") {
+      const msDef = def as MultiSelectFilterDef<T>
+      const activeVals = active?.type === "multi-select" ? active.values : []
+      content = (
+        <MultiSelectDropdown
+          options={msDef.options}
+          activeValues={activeVals}
+          renderOption={msDef.renderOption}
+          onToggle={val => {
+            const next = activeVals.includes(val)
+              ? activeVals.filter(v => v !== val)
+              : [...activeVals, val]
+            filters.setFilter(colKey, { type: "multi-select", values: next }, true)
+            pagination.resetPage()
+          }}
+          onClear={handleClear}
+        />
+      )
+    } else {
+      content = (
+        <NumberRangeDropdown
+          current={active?.type === "number-range" ? { min: active.min, max: active.max } : null}
+          onApply={(min, max) => { filters.setFilter(colKey, { type: "number-range", min, max }); pagination.resetPage() }}
+          onClear={handleClear}
+          minBound={(def as NumberRangeFilterDef<T>).minBound}
+          maxBound={(def as NumberRangeFilterDef<T>).maxBound}
+          variant={(def as NumberRangeFilterDef<T>).variant}
+        />
+      )
+    }
 
     return (
       <FilterPill

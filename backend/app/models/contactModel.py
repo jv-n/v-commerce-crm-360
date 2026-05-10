@@ -23,7 +23,7 @@ class GoldCliente360(Base):
     nota_media_atendimento: Mapped[float | None] = mapped_column(Float, nullable=True)
     nota_nps_media: Mapped[float | None] = mapped_column(Float, nullable=True)
     nota_produto_media: Mapped[float | None] = mapped_column(Float, nullable=True)
-    categoria_nps_predominante: Mapped[str | None] = mapped_column(String, nullable=True)
+    categoria_nps_recente: Mapped[str | None] = mapped_column(String, nullable=True)
     segmento_cliente: Mapped[str | None] = mapped_column(String, nullable=True)
     timestamp_ingestion: Mapped[str | None] = mapped_column(String, nullable=True)
 

@@ -1,4 +1,4 @@
-import type { Contact, ContactStatus, EngagementType } from "@/types/contact"
+import type { Contact, EngagementType } from "@/types/contact"
 
 export interface ContactsPage {
   data: Contact[]
@@ -12,7 +12,6 @@ interface ContactsParams {
   pageSize: number
   tab: string
   search?: string
-  status?: string
   purchasesMin?: number | null
   purchasesMax?: number | null
   createdYear?: string
@@ -25,7 +24,6 @@ interface ContactsParams {
 interface RawContact {
   id: string
   name: string | null
-  status: string | null
   email: string | null
   phone: string | null
   lastPurchase: string | null
@@ -35,17 +33,12 @@ interface RawContact {
   createdAt: string | null
 }
 
-const VALID_STATUSES = new Set<ContactStatus>([
-  "Cliente Ativo", "Cliente VIP", "Em risco", "Lead", "Cliente Inativo", "Desativado",
-])
-
 const VALID_ENGAGEMENTS = new Set<EngagementType>(["Promotor", "Neutro", "Detrator", "Nenhum NPS"])
 
 function toContact(raw: RawContact): Contact {
   return {
     id: raw.id,
     name: raw.name,
-    status: VALID_STATUSES.has(raw.status as ContactStatus) ? (raw.status as ContactStatus) : null,
     email: raw.email,
     phone: raw.phone,
     lastPurchase: raw.lastPurchase,
@@ -62,7 +55,6 @@ export interface ContactFormData {
   name: string
   email?: string
   phone?: string
-  status: string
 }
 
 export async function createContact(data: ContactFormData): Promise<Contact> {
@@ -91,7 +83,6 @@ export async function fetchContacts(params: ContactsParams): Promise<ContactsPag
     pageSize: String(params.pageSize),
     tab: params.tab,
     ...(params.search                  ? { search:        params.search                        } : {}),
-    ...(params.status                  ? { status:        params.status                        } : {}),
     ...(params.purchasesMin != null    ? { purchases_min: String(params.purchasesMin)          } : {}),
     ...(params.purchasesMax != null    ? { purchases_max: String(params.purchasesMax)          } : {}),
     ...(params.createdYear             ? { created_year:  params.createdYear                   } : {}),

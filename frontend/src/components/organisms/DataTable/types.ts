@@ -26,14 +26,23 @@ export interface ToggleFilterDef<T> {
   filterFn: (row: T) => boolean
 }
 
-export type FilterDef<T> = SelectFilterDef<T> | NumberRangeFilterDef<T> | ToggleFilterDef<T>
+export interface MultiSelectFilterDef<T> {
+  type: "multi-select"
+  label: string
+  options: string[]
+  renderOption?: (value: string) => ReactNode
+  filterFn: (row: T, values: string[]) => boolean
+}
+
+export type FilterDef<T> = SelectFilterDef<T> | NumberRangeFilterDef<T> | ToggleFilterDef<T> | MultiSelectFilterDef<T>
 
 // ─── Active filter state ──────────────────────────────────────────────────────
 
 export type SelectActiveFilter      = { type: "select"; value: string }
 export type NumberRangeActiveFilter = { type: "number-range"; min: number | null; max: number | null }
 export type ToggleActiveFilter      = { type: "toggle"; active: boolean }
-export type ActiveFilter            = SelectActiveFilter | NumberRangeActiveFilter | ToggleActiveFilter
+export type MultiSelectActiveFilter = { type: "multi-select"; values: string[] }
+export type ActiveFilter            = SelectActiveFilter | NumberRangeActiveFilter | ToggleActiveFilter | MultiSelectActiveFilter
 export type ActiveFilters           = Record<string, ActiveFilter>
 
 // ─── Column & Table props ─────────────────────────────────────────────────────
