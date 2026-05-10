@@ -50,7 +50,21 @@ function columnFiltersToParams(cf: ActiveFilters): Partial<ProductsParams> {
     if (rating.max != null) p.rating_max = rating.max
   }
 
+  const sales = cf.totalSales
+  if (sales?.type === "number-range") {
+    if (sales.min != null) p.sales_min = sales.min
+    if (sales.max != null) p.sales_max = sales.max
+  }
+
   return p
+}
+
+function newTabDateFrom(): string {
+  const d = new Date()
+  d.setFullYear(d.getFullYear() - 1)
+  const dd = String(d.getDate()).padStart(2, "0")
+  const mm = String(d.getMonth() + 1).padStart(2, "0")
+  return `${dd}/${mm}/${d.getFullYear()}`
 }
 
 function buildParams(
@@ -63,26 +77,31 @@ function buildParams(
   search: string,
 ): ProductsParams {
   let status: string | undefined
+  let tabDateFrom: string | undefined
+
   if (tab === "new") {
-    status = "Novo"
+    tabDateFrom = newTabDateFrom()
   } else if (adv.states.length) {
     status = adv.states.join(",")
   }
 
+  // adv.dateFrom explícito prevalece sobre o corte do tab
+  const effectiveDateFrom = adv.dateFrom ? isoToDMY(adv.dateFrom) : tabDateFrom
+
   return {
     page,
     pageSize,
-    ...(search                            && { search }),
-    ...(status                            && { status }),
-    ...(uf                                && { uf }),
-    ...(adv.priceMin  !== ""              && { price_min:  Number(adv.priceMin)  }),
-    ...(adv.priceMax  !== ""              && { price_max:  Number(adv.priceMax)  }),
-    ...(adv.stockMin  !== ""              && { stock_min:  Number(adv.stockMin)  }),
-    ...(adv.stockMax  !== ""              && { stock_max:  Number(adv.stockMax)  }),
-    ...(adv.ratingMin !== ""              && { rating_min: Number(adv.ratingMin) }),
-    ...(adv.ratingMax !== ""              && { rating_max: Number(adv.ratingMax) }),
-    ...(adv.dateFrom                      && { date_from:  isoToDMY(adv.dateFrom) }),
-    ...(adv.dateTo                        && { date_to:    isoToDMY(adv.dateTo)   }),
+    ...(search             && { search }),
+    ...(status             && { status }),
+    ...(uf                 && { uf }),
+    ...(adv.priceMin  !== "" && { price_min:  Number(adv.priceMin)  }),
+    ...(adv.priceMax  !== "" && { price_max:  Number(adv.priceMax)  }),
+    ...(adv.stockMin  !== "" && { stock_min:  Number(adv.stockMin)  }),
+    ...(adv.stockMax  !== "" && { stock_max:  Number(adv.stockMax)  }),
+    ...(adv.ratingMin !== "" && { rating_min: Number(adv.ratingMin) }),
+    ...(adv.ratingMax !== "" && { rating_max: Number(adv.ratingMax) }),
+    ...(effectiveDateFrom  && { date_from: effectiveDateFrom }),
+    ...(adv.dateTo         && { date_to:   isoToDMY(adv.dateTo) }),
     ...columnFiltersToParams(colFilters),
   }
 }

@@ -26,14 +26,23 @@ export interface ToggleFilterDef<T> {
   filterFn: (row: T) => boolean
 }
 
-export type FilterDef<T> = SelectFilterDef<T> | NumberRangeFilterDef<T> | ToggleFilterDef<T>
+export interface MultiSelectFilterDef<T> {
+  type: "multi-select"
+  label: string
+  options: string[]
+  renderOption?: (value: string) => ReactNode
+  filterFn: (row: T, values: string[]) => boolean
+}
+
+export type FilterDef<T> = SelectFilterDef<T> | NumberRangeFilterDef<T> | ToggleFilterDef<T> | MultiSelectFilterDef<T>
 
 // ─── Active filter state ──────────────────────────────────────────────────────
 
 export type SelectActiveFilter      = { type: "select"; value: string }
 export type NumberRangeActiveFilter = { type: "number-range"; min: number | null; max: number | null }
 export type ToggleActiveFilter      = { type: "toggle"; active: boolean }
-export type ActiveFilter            = SelectActiveFilter | NumberRangeActiveFilter | ToggleActiveFilter
+export type MultiSelectActiveFilter = { type: "multi-select"; values: string[] }
+export type ActiveFilter            = SelectActiveFilter | NumberRangeActiveFilter | ToggleActiveFilter | MultiSelectActiveFilter
 export type ActiveFilters           = Record<string, ActiveFilter>
 
 // ─── Column & Table props ─────────────────────────────────────────────────────
@@ -70,6 +79,7 @@ export interface ServerPagination {
 
 export interface DataTableProps<T> {
   data: T[]
+  loading?: boolean
   columns: Column<T>[]
   getRowId: (row: T) => string
   tabs?: Tab[]
@@ -84,6 +94,7 @@ export interface DataTableProps<T> {
   onFiltersChange?: (filters: ActiveFilters) => void
   /** Called whenever the search query changes */
   onSearchChange?: (query: string) => void
+  onSortChange?: (sort: { key: string; direction: "asc" | "desc" } | null) => void
   noBorder?: boolean
   headerClassName?: string
   rowClassName?: string

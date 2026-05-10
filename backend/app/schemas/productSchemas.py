@@ -1,22 +1,12 @@
 from pydantic import BaseModel
 
 
-class ProductCategorySchema(BaseModel):
-    id: int
-    name: str
-
-    class Config:
-        from_attributes = True
-
-
 class ProductSchema(BaseModel):
-    id: int
+    id: str
     name: str
-    description: str | None = None
-    price: float
+    price: float | None = None
     stock: int
-    category_id: int
-    category: ProductCategorySchema | None = None
+    category: str | None = None
     status: str | None = None
     uf: str | None = None
     created_at: str | None = None
@@ -30,33 +20,9 @@ class ProductSchema(BaseModel):
     tipo_problema_mais_frequente: str | None = None
     ratio_ticket_por_venda: float | None = None
 
-    class Config:
-        from_attributes = True
-
 
 class ProductsPageOut(BaseModel):
     data: list[ProductSchema]
     total: int
     page: int
     pageSize: int
-
-
-class ProductCreateSchema(BaseModel):
-    name: str
-    description: str | None = None
-    price: float
-    stock: int
-    category_id: int
-    status: str | None = None
-    uf: str | None = None
-    created_at: str | None = None
-
-
-class ProductUpdateSchema(BaseModel):
-    name: str | None = None
-    description: str | None = None
-    price: float | None = None
-    stock: int | None = None
-    category_id: int | None = None
-    status: str | None = None
-    uf: str | None = None

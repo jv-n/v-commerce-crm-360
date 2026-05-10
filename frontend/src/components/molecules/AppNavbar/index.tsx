@@ -9,9 +9,11 @@ import SearchInput from "../SearchInput";
 import Dropdown from "../Dropdown";
 import { Separator } from "@/components/atoms/separator";
 
+interface AppNavbarProps {
+    onOpenAI?: () => void;
+}
 
-
-export default function AppNavbar() {
+export default function AppNavbar({ onOpenAI }: AppNavbarProps) {
 
     const [unreadNotifications, setUnreadNotifications] = useState(4);
 
@@ -40,6 +42,15 @@ export default function AppNavbar() {
                 <Dropdown title="Settings" buttonIcon={<SettingsOutlinedIcon sx={{color: "#74FF60"}}/>} menuItems={["Preferences", "Help"]} />
                 <Dropdown title="Notifications" buttonIcon={hasUnreadNotifications()} menuItems={["Notification 1", "Notification 2", "Notification 3"]} onOpenChange={(open) => { if(open) markNotificationsAsRead()}} />
                 <Separator orientation="vertical" className="bg-foreground/30" />
+                {onOpenAI && (
+                    <button
+                        onClick={onOpenAI}
+                        className="flex items-center justify-center rounded-md h-8 w-8 hover:ring hover:ring-primary transition duration-300"
+                        title="Abrir assistente V.IA"
+                    >
+                        <img src="v_ai.svg" alt="V.IA" height={28} width={28} />
+                    </button>
+                )}
                 <UserMenu name="Joao Victor" avatarSrc="profile_pic.jpg"/>
             </div>
         </div>

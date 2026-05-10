@@ -9,18 +9,14 @@ import { cn } from "@/lib/utils"
 import AddIcon from "@mui/icons-material/Add"
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined"
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
-import PersonAddOutlinedIcon from "@mui/icons-material/PersonAddOutlined"
 
 const TABS: Tab[] = [
-  { id: "all",     label: "Todos os contatos" },
-  { id: "clients", label: "Todos os clientes" },
-  { id: "leads",   label: "Todos os Leads" },
+  { id: "all", label: "Todos os contatos" },
 ]
 
 const DEFAULT_PAGE_SIZE = 10
 
 interface ServerFilters {
-  status:          string
   purchasesMin:    number | null
   purchasesMax:    number | null
   createdYear:     string
@@ -28,32 +24,22 @@ interface ServerFilters {
   excludeInactive: boolean
 }
 
-const EMPTY_FILTERS: ServerFilters = { status: "", purchasesMin: null, purchasesMax: null, createdYear: "", engagement: "", excludeInactive: true }
+const EMPTY_FILTERS: ServerFilters = {
+  purchasesMin: null, purchasesMax: null,
+  createdYear: "", engagement: "", excludeInactive: true,
+}
 
 function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEdit: () => void }) {
   const history = [
     ...(contact.lastPurchase
-      ? [{
-          type: "purchase" as const,
-          text: "realizou uma compra",
-          time: contact.lastPurchase,
-        }]
+      ? [{ type: "purchase" as const, text: "realizou uma compra", time: contact.lastPurchase }]
       : []),
-    {
-      type: "edit" as const,
-      text: "teve o status atualizado",
-      time: "01/01 2025 10:00",
-    },
-    {
-      type: "add" as const,
-      text: "foi adicionado como contato",
-      time: contact.createdAt ?? "—",
-    },
+    { type: "edit" as const, text: "teve o status atualizado", time: "01/01 2025 10:00" },
+    { type: "add" as const, text: "foi adicionado como contato", time: contact.createdAt ?? "—" },
   ]
 
   return (
     <div className="bg-purple-50/40 px-8 py-5 flex gap-8 border-t border-purple-100">
-      {/* ── Timeline ──────────────────────────────────────────────────────── */}
       <div className="flex-1 flex flex-col">
         {history.map((entry, i) => (
           <div key={i} className="flex gap-3">
@@ -64,13 +50,12 @@ function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEdit: () 
                   ? "border-2 border-dashed border-gray-300 bg-transparent"
                   : "bg-white border border-gray-200 shadow-sm"
               )}>
-                {entry.type === "add"     && <AddIcon             sx={{ fontSize: 13, color: "#9CA3AF" }} />}
-                {entry.type === "edit"    && <EditOutlinedIcon    sx={{ fontSize: 12, color: "#7C3AED" }} />}
-                {entry.type === "purchase"&& <ShoppingCartOutlinedIcon sx={{ fontSize: 12, color: "#7C3AED" }} />}
+                {entry.type === "add"      && <AddIcon                    sx={{ fontSize: 13, color: "#9CA3AF" }} />}
+                {entry.type === "edit"     && <EditOutlinedIcon           sx={{ fontSize: 12, color: "#7C3AED" }} />}
+                {entry.type === "purchase" && <ShoppingCartOutlinedIcon   sx={{ fontSize: 12, color: "#7C3AED" }} />}
               </div>
               {i < history.length - 1 && <div className="w-px flex-1 bg-gray-200 my-1" />}
             </div>
-
             <div className="pb-6 flex items-center gap-1 flex-wrap text-sm">
               <span className="font-semibold text-gray-800">{contact.name}</span>
               <span className="text-gray-500">{entry.text}</span>
@@ -79,8 +64,6 @@ function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEdit: () 
           </div>
         ))}
       </div>
-
-      {/* ── Ações ─────────────────────────────────────────────────────────── */}
       <div className="flex flex-col gap-2 justify-start pt-0.5">
         <button
           onClick={onEdit}
@@ -94,7 +77,11 @@ function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEdit: () 
   )
 }
 
-export function ContactsTable() {
+export interface ContactsTableHandle {
+  openAdd: () => void
+}
+
+export function ContactsTable({ onOpenAdd }: { onOpenAdd?: (fn: () => void) => void }) {
   const [activeTab, setActiveTab]         = useState("all")
   const [page, setPage]                   = useState(1)
   const [pageSize, setPageSize]           = useState(DEFAULT_PAGE_SIZE)
@@ -109,12 +96,13 @@ export function ContactsTable() {
   const [formOpen, setFormOpen]           = useState(false)
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
 
-  const { status, purchasesMin, purchasesMax, createdYear, engagement, excludeInactive } = serverFilters
+  const { purchasesMin, purchasesMax, createdYear, engagement, excludeInactive } = serverFilters
 
   useEffect(() => {
     let cancelled = false
+    setLoading(true)
 
-    fetchContacts({ page, pageSize, tab: activeTab, status, purchasesMin, purchasesMax, createdYear, engagement, sortBy, sortDir, excludeInactive })
+    fetchContacts({ page, pageSize, tab: activeTab, purchasesMin, purchasesMax, createdYear, engagement, sortBy, sortDir, excludeInactive })
       .then((res) => {
         if (cancelled) return
         setContacts(res.data)
@@ -124,80 +112,56 @@ export function ContactsTable() {
       .finally(() => { if (!cancelled) setLoading(false) })
 
     return () => { cancelled = true }
-  }, [page, pageSize, activeTab, status, purchasesMin, purchasesMax, createdYear, engagement, sortBy, sortDir, excludeInactive, refetchKey])
+  }, [page, pageSize, activeTab, purchasesMin, purchasesMax, createdYear, engagement, sortBy, sortDir, excludeInactive, refetchKey])
+
+  const openAdd  = () => { setEditingContact(null); setFormOpen(true) }
+  const openEdit = (c: Contact) => { setEditingContact(c); setFormOpen(true) }
+
+  useEffect(() => { onOpenAdd?.(openAdd) }, [])
 
   const onToggleExpand = (id: string) =>
     setExpandedRowId(prev => prev === id ? null : id)
 
-  const handleSortChange = (key: string | null, dir: "asc" | "desc") => {
-    setSortBy(key)
-    setSortDir(dir)
+  const handleSortChange = (sort: { key: string; direction: "asc" | "desc" } | null) => {
+    setSortBy(sort?.key ?? null)
+    setSortDir(sort?.direction ?? "asc")
     setPage(1)
   }
 
-  const handleTabChange = (tabId: string) => {
-    setLoading(true)
-    setActiveTab(tabId)
-    setPage(1)
-  }
-
-  const handlePageChange = (newPage: number) => {
-    setLoading(true)
-    setPage(newPage)
-  }
-
-  const handlePageSizeChange = (newSize: number) => {
-    setLoading(true)
-    setPageSize(newSize)
-    setPage(1)
-  }
+  const handlePageChange    = (newPage: number) => setPage(newPage)
+  const handlePageSizeChange = (newSize: number) => { setPageSize(newSize); setPage(1) }
 
   const handleFiltersChange = (active: ActiveFilters) => {
-    const sf = active["status"]
     const pf = active["purchases"]
     const cf = active["createdAt"]
     const ef = active["engagement"]
-    setLoading(true)
+    const hf = active["hideInactive"]
     setServerFilters({
-      status:          sf?.type === "select"       && sf.value !== ""  ? sf.value      : "",
-      purchasesMin:    pf?.type === "number-range"                     ? pf.min        : null,
-      purchasesMax:    pf?.type === "number-range"                     ? pf.max        : null,
-      createdYear:     cf?.type === "select"       && cf.value !== ""  ? cf.value      : "",
-      engagement:      ef?.type === "select"       && ef.value !== ""  ? ef.value      : "",
-      excludeInactive: hf?.type === "toggle"                          ? hf.active     : false,
+      purchasesMin:    pf?.type === "number-range"                    ? pf.min    : null,
+      purchasesMax:    pf?.type === "number-range"                    ? pf.max    : null,
+      createdYear:     cf?.type === "select"       && cf.value !== "" ? cf.value  : "",
+      engagement:      ef?.type === "select"       && ef.value !== "" ? ef.value  : "",
+      excludeInactive: hf?.type === "toggle"                         ? hf.active : true,
     })
     setPage(1)
   }
 
-  const openEdit = (c: Contact) => { setEditingContact(c); setFormOpen(true) }
-  const openAdd  = ()           => { setEditingContact(null); setFormOpen(true) }
-
   return (
     <>
-      <div className="flex justify-end mb-1">
-        <button
-          onClick={openAdd}
-          className="flex items-center gap-1.5 text-sm font-medium px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm"
-        >
-          <PersonAddOutlinedIcon sx={{ fontSize: 16 }} />
-          Adicionar contato
-        </button>
-      </div>
-
       <DataTable
-        data={loading ? [] : contacts}
+        data={contacts}
+        loading={loading}
         columns={makeContactColumns(expandedRowId, onToggleExpand)}
         getRowId={(c) => c.id}
         tabs={TABS}
         activeTab={activeTab}
-        onTabChange={handleTabChange}
+        onTabChange={(tabId) => { setActiveTab(tabId); setPage(1) }}
         onFiltersChange={handleFiltersChange}
         onSortChange={handleSortChange}
-        rightFilterKey="status"
         headerClassName="bg-[#F0DDFD]"
         dividersClassName="divide-[#9F83B2]"
         rowsPerPageOptions={[10, 25, 50]}
-        expandedRowId={expandedRowId}
+        expandedRowIds={expandedRowId ? new Set([expandedRowId]) : undefined}
         renderExpandedRow={(c) => <ContactExpandedRow contact={c} onEdit={() => openEdit(c)} />}
         serverPagination={{
           total,

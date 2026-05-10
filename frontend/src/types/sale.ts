@@ -1,11 +1,12 @@
-export type SaleStatus = "Em andamento" | "Concluída" | "Falha" | "Reembolsada" | "Cancelada"
+export type SaleStatus = "Aprovado" | "Processando" | "Recusado" | "Reembolsado"
 
 export interface Sale {
   id: string
   product: string
-  client_name: string
+  categoria: string | null
   amount: number
-  date: string 
+  value: number
+  date: string
   status: SaleStatus
   payment_method: string
 }

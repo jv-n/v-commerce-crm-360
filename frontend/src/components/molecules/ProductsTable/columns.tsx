@@ -5,26 +5,20 @@ import { CiCircleChevRight, CiCircleChevDown } from "react-icons/ci"
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward"
 
 const ALL_CATEGORIES: ProductCategory[] = [
-  "Perfumaria", "Artes", "Esportes", "Infantil", "Utilidades",
-  "Instrumentos", "Derivados", "Mobiliário", "Eletrodomésticos",
-  "Construção", "Alimentos", "Saúde", "Tecnologia",
+  "Automotivo", "Beleza", "Brinquedos", "Casa", "Eletronicos",
+  "Esportes", "Indefinida", "Moveis", "Vestuario",
 ]
 
-
 const CATEGORY_STYLES: Record<ProductCategory, string> = {
-  "Perfumaria":       "bg-pink-100 text-pink-700",
-  "Artes":            "bg-indigo-100 text-indigo-600",
-  "Esportes":         "bg-green-100 text-green-700",
-  "Infantil":         "bg-violet-100 text-violet-700",
-  "Utilidades":       "bg-orange-100 text-orange-600",
-  "Instrumentos":     "bg-lime-100 text-lime-700",
-  "Derivados":        "bg-fuchsia-100 text-fuchsia-700",
-  "Mobiliário":       "bg-amber-100 text-amber-700",
-  "Eletrodomésticos": "bg-sky-100 text-sky-600",
-  "Construção":       "bg-rose-100 text-rose-600",
-  "Alimentos":        "bg-yellow-100 text-yellow-700",
-  "Saúde":            "bg-teal-100 text-teal-700",
-  "Tecnologia":       "bg-blue-100 text-blue-700",
+  "Automotivo":  "bg-slate-100 text-slate-700",
+  "Beleza":      "bg-pink-100 text-pink-700",
+  "Brinquedos":  "bg-violet-100 text-violet-700",
+  "Casa":        "bg-amber-100 text-amber-700",
+  "Eletronicos": "bg-blue-100 text-blue-700",
+  "Esportes":    "bg-green-100 text-green-700",
+  "Indefinida":  "bg-gray-100 text-gray-500",
+  "Moveis":      "bg-orange-100 text-orange-700",
+  "Vestuario":   "bg-teal-100 text-teal-700",
 }
 
 function getRatingStyles(rating: number): { dot: string; badge: string; text: string } {

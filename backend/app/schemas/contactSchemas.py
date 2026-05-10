@@ -5,14 +5,12 @@ class ContactCreate(BaseModel):
     name: str
     email: str | None = None
     phone: str | None = None
-    status: str = "Cliente Ativo"
 
 
 class ContactUpdate(BaseModel):
     name: str | None = None
     email: str | None = None
     phone: str | None = None
-    status: str | None = None
 
 
 class ContactOut(BaseModel):
@@ -20,7 +18,6 @@ class ContactOut(BaseModel):
 
     id: str
     name: str | None
-    status: str | None
     email: str | None
     phone: str | None
     lastPurchase: str | None

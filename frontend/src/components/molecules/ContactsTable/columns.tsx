@@ -1,6 +1,5 @@
 import type { Column } from "@/components/organisms/DataTable/types"
-import type { Contact, ContactStatus, EngagementType } from "@/types/contact"
-import { StatusBadge } from "@/components/atoms/badge"
+import type { Contact, EngagementType } from "@/types/contact"
 import { cn } from "@/lib/utils"
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined"
 import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
@@ -12,10 +11,6 @@ const ENGAGEMENT: Record<EngagementType, { bar: string; text: string; width: str
   Detrator:      { bar: "bg-red-500",    text: "text-red-600",    width: "22%" },
   "Nenhum NPS":  { bar: "bg-gray-200",   text: "text-gray-400",   width: "0%"  },
 }
-
-const ALL_STATUSES: ContactStatus[] = [
-  "Cliente Ativo", "Cliente VIP", "Em risco", "Lead", "Cliente Inativo", "Desativado",
-]
 
 export function makeContactColumns(
   expandedRowId: string | null,
@@ -31,7 +26,7 @@ export function makeContactColumns(
       type: "toggle" as const,
       label: "Sem inativos",
       defaultActive: true,
-      filterFn: (c: Contact) => c.status !== "Cliente Inativo",
+      filterFn: () => true,
     },
     render: () => null,
   },
@@ -68,20 +63,6 @@ export function makeContactColumns(
         {c.name}
       </button>
     ),
-  },
-
-  // ── Status — select filter (used as rightFilterKey) ─────────────────────────
-  {
-    key: "status",
-    header: "Status",
-    minWidth: "130px",
-    filter: {
-      type: "select",
-      label: "Todos os estados",
-      options: ALL_STATUSES,
-      filterFn: (c, value) => c.status === (value as ContactStatus),
-    },
-    render: (c) => <StatusBadge status={c.status ?? "Cliente Ativo"} />,
   },
 
   // ── Última compra ──────────────────────────────────────────────────────────
@@ -155,7 +136,6 @@ export function makeContactColumns(
     minWidth: "140px",
     sortable: true,
     sortValue: (c) => c.engagementScore,
-    filterOptional: true,
     filter: {
       type: "select",
       label: "Engajamento",
