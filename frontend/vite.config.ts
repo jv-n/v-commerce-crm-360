@@ -12,9 +12,12 @@ export default defineConfig({
     },
   },
   server: {
+    watch: {
+      usePolling: true, // necessário para hot reload funcionar via Docker no Windows
+    },
     proxy: {
       '/api': {
-        target: 'http://localhost:8000',
+        target: 'http://backend:8000',
         rewrite: (path) => path.replace(/^\/api/, ''),
       },
     },

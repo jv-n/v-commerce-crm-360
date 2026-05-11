@@ -9,9 +9,11 @@ import SearchInput from "../SearchInput";
 import Dropdown from "../Dropdown";
 import { Separator } from "@/components/atoms/separator";
 
+interface AppNavbarProps {
+    onOpenAI?: () => void;
+}
 
-
-export default function AppNavbar() {
+export default function AppNavbar({ onOpenAI }: AppNavbarProps) {
 
     const [unreadNotifications, setUnreadNotifications] = useState(4);
 

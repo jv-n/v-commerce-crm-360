@@ -7,10 +7,8 @@ import {
 import { Input } from "@/components/atoms/input"
 import { Label } from "@/components/atoms/label"
 import { Button } from "@/components/atoms/button"
-import type { Contact, ContactStatus } from "@/types/contact"
+import type { Contact } from "@/types/contact"
 import { createContact, updateContact } from "@/lib/api/contacts"
-
-const STATUSES: ContactStatus[] = ["Cliente Ativo", "Cliente VIP", "Em risco", "Cliente Inativo"]
 
 interface ContactFormSheetProps {
   open: boolean
@@ -24,7 +22,6 @@ export function ContactFormSheet({ open, onClose, contact, onSuccess }: ContactF
     name: "",
     email: "",
     phone: "",
-    status: "Cliente Ativo" as ContactStatus,
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
@@ -32,13 +29,12 @@ export function ContactFormSheet({ open, onClose, contact, onSuccess }: ContactF
   useEffect(() => {
     if (contact) {
       setForm({
-        name:   contact.name   ?? "",
-        email:  contact.email  ?? "",
-        phone:  contact.phone  ?? "",
-        status: contact.status ?? "Cliente Ativo",
+        name:  contact.name  ?? "",
+        email: contact.email ?? "",
+        phone: contact.phone ?? "",
       })
     } else {
-      setForm({ name: "", email: "", phone: "", status: "Cliente Ativo" })
+      setForm({ name: "", email: "", phone: "" })
     }
     setError("")
   }, [contact, open])
@@ -106,20 +102,6 @@ export function ContactFormSheet({ open, onClose, contact, onSuccess }: ContactF
                 onChange={e => setForm(f => ({ ...f, phone: e.target.value }))}
                 placeholder="(00) 00000-0000"
               />
-            </div>
-
-            <div className="flex flex-col gap-1.5">
-              <Label htmlFor="cf-status">Status</Label>
-              <select
-                id="cf-status"
-                value={form.status}
-                onChange={e => setForm(f => ({ ...f, status: e.target.value as ContactStatus }))}
-                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-              >
-                {STATUSES.map(s => (
-                  <option key={s} value={s}>{s}</option>
-                ))}
-              </select>
             </div>
 
             {error && <p className="text-sm text-red-500">{error}</p>}

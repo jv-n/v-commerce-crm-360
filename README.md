@@ -53,7 +53,50 @@ Com os CSVs nas pastas corretas, rode o script de seed (as dependências já est
 python backend/database/seed.py
 ``` 
 
-## 4. Rodar o backend
+## 4. Rodar com Docker (recomendado)
+
+Requer **Docker** e **Docker Compose** instalados.
+
+### 4.1. Configurar o `.env` do backend
+
+Crie o arquivo `backend/.env` a partir do exemplo:
+
+```bash
+cp backend/.env.example backend/.env
+```
+
+Edite `backend/.env` e preencha sua chave da API do Google AI Studio:
+
+```env
+GEMINI_API_KEY=sua-chave-aqui
+```
+
+> **Importante:** não adicione a variável `DATABASE_URL` ao `.env`. O caminho do banco é resolvido automaticamente pelo `config.py` e uma URL com caminho absoluto do host vai quebrar dentro do container.
+
+### 4.2. Subir os containers
+
+```bash
+docker compose up --build
+```
+
+- Backend disponível em `http://localhost:8000` (docs em `http://localhost:8000/docs`)
+- Frontend disponível em `http://localhost:5173`
+
+### 4.3. Verificar se o banco está acessível
+
+```bash
+curl http://localhost:8000/agent/health
+```
+
+O campo `"database"` deve retornar `"ok"`. Se retornar `"banco não encontrado"`, rode o seed dentro do container:
+
+```bash
+docker compose exec backend python database/seed.py
+```
+
+---
+
+## 5. Rodar o backend manualmente (sem Docker)
 
 **Windows:**
 ```bash
@@ -77,7 +120,7 @@ A API ficará disponível em `http://localhost:8000`. Documentação interativa 
 
 ---
 
-## 5. Rodar o frontend
+## 6. Rodar o frontend manualmente (sem Docker)
 
 Requer **Node.js v22+**. Para instalar via CLI:
 

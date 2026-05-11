@@ -3,15 +3,20 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import userRouter, contactRouter, agentRouter, productRouter
 from database.database import Base, engine
 from app.models import userModel, contactModel, productModel, orderModel
-
+from app.routes import conversationRouter, mentionRouter
 # Injeta a GEMINI_API_KEY no ambiente para o PydanticAI/Google SDK
 # (lida do .env via pydantic-settings no config.py)
 from app.config import settings
 if settings.GEMINI_API_KEY:
     os.environ.setdefault("GEMINI_API_KEY", settings.GEMINI_API_KEY)
+
+# Garante que a tabela de conversas existe no banco (cria se necessário)
+from database.database import engine
+from app.models.conversationModel import Conversation  # noqa: F401 — importar registra o model no metadata
+from database.database import Base
+Base.metadata.create_all(bind=engine, checkfirst=True)
 
 app = FastAPI(
     title="V-Commerce CRM 360 API",
@@ -37,7 +42,10 @@ Base.metadata.create_all(bind=engine)
 app.include_router(userRouter.router)
 app.include_router(contactRouter.router)
 app.include_router(agentRouter.router)
+app.include_router(saleRouter.router)
 app.include_router(productRouter.router)
+app.include_router(conversationRouter.router)
+app.include_router(mentionRouter.router)
 
 @app.get("/", tags=["Health"])
 async def health_check():
