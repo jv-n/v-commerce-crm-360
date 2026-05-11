@@ -26,6 +26,8 @@ def get_products(
     sales_max: Optional[float] = Query(None, ge=0),
     date_from: Optional[str] = Query(None, description="DD/MM/YYYY"),
     date_to: Optional[str] = Query(None, description="DD/MM/YYYY"),
+    sort_by: Optional[str] = Query(None, description="name|price|stock|rating|totalSales"),
+    sort_dir: Optional[str] = Query("asc", description="asc|desc"),
     db: Session = Depends(get_db),
 ):
     data, total = ProductService(db).get_products(
@@ -45,6 +47,8 @@ def get_products(
         sales_max=sales_max,
         date_from=date_from,
         date_to=date_to,
+        sort_by=sort_by,
+        sort_dir=sort_dir,
     )
     return {"data": data, "total": total, "page": page, "pageSize": pageSize}
 
