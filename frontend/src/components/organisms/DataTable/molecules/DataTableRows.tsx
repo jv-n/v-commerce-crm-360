@@ -64,7 +64,7 @@ export function DataTableRows<T,>({
                 <th
                   key={col.key}
                   style={col.minWidth ? { minWidth: col.minWidth } : undefined}
-                  className="px-3 py-3 text-left text-xs font-semibold text-gray-500"
+                  className="px-3 py-3 text-left text-sm font-semibold text-gray-500"
                 >
                   {col.sortable && col.header ? (
                     <button
