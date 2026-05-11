@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import type { ProductState } from "@/types/product"
 import TuneIcon from "@mui/icons-material/Tune"
@@ -44,11 +45,23 @@ function RangeRow({
   labelB: string; valB: string; onB: (v: string) => void
   extra?: React.InputHTMLAttributes<HTMLInputElement>
 }) {
-  const cls = "w-full border border-gray-200 rounded-md px-2.5 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-300"
+  const isInvalid = valA !== "" && valB !== "" && Number(valA) > Number(valB)
+  const base = "w-full border rounded-md px-2.5 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1"
+  const cls = isInvalid
+    ? `${base} border-red-400 focus:ring-red-300`
+    : `${base} border-gray-200 focus:ring-purple-300`
+
+  const strip = (v: string) => v.replace(/^-/, "")
+
   return (
-    <div className="flex gap-2">
-      <input type="number" placeholder={labelA} value={valA} onChange={e => onA(e.target.value)} {...extra} className={cls} />
-      <input type="number" placeholder={labelB} value={valB} onChange={e => onB(e.target.value)} {...extra} className={cls} />
+    <div className="space-y-1.5">
+      <div className="flex gap-2">
+        <input type="number" min={0} placeholder={labelA} value={valA} onChange={e => onA(strip(e.target.value))} {...extra} className={cls} />
+        <input type="number" min={0} placeholder={labelB} value={valB} onChange={e => onB(strip(e.target.value))} {...extra} className={cls} />
+      </div>
+      {isInvalid && (
+        <p className="text-xs text-red-500">Mín não pode ser maior que Máx</p>
+      )}
     </div>
   )
 }
@@ -66,15 +79,30 @@ export function AdvancedFiltersDrawer({
   onClose: () => void
   onClear: () => void
 }) {
-  const toggleState = (s: ProductState) =>
-    onChange({
-      ...filters,
-      states: filters.states.includes(s)
-        ? filters.states.filter(x => x !== s)
-        : [...filters.states, s],
-    })
+  const [draft, setDraft] = useState<AdvancedFilters>(filters)
 
-  const hasAny = advancedActiveCount(filters) > 0
+  useEffect(() => {
+    if (open) setDraft(filters)
+  }, [open])
+
+  const set = (patch: Partial<AdvancedFilters>) => setDraft(d => ({ ...d, ...patch }))
+
+  const toggleState = (s: ProductState) =>
+    setDraft(d => ({
+      ...d,
+      states: d.states.includes(s) ? d.states.filter(x => x !== s) : [...d.states, s],
+    }))
+
+  const dateInvalid = draft.dateFrom !== "" && draft.dateTo !== "" && draft.dateFrom > draft.dateTo
+  const rangeInvalid =
+    (draft.priceMin  !== "" && draft.priceMax  !== "" && Number(draft.priceMin)  > Number(draft.priceMax))  ||
+    (draft.ratingMin !== "" && draft.ratingMax !== "" && Number(draft.ratingMin) > Number(draft.ratingMax)) ||
+    (draft.stockMin  !== "" && draft.stockMax  !== "" && Number(draft.stockMin)  > Number(draft.stockMax))
+  const hasError = dateInvalid || rangeInvalid
+
+  const hasDraftAny = advancedActiveCount(draft) > 0
+
+  const dateCls = `w-full border rounded-md px-2.5 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 ${dateInvalid ? "border-red-400 focus:ring-red-300" : "border-gray-200 focus:ring-purple-300"}`
 
   return (
     <>
@@ -102,7 +130,7 @@ export function AdvancedFiltersDrawer({
                 <label key={s} className="flex items-center gap-2.5 cursor-pointer group select-none">
                   <input
                     type="checkbox"
-                    checked={filters.states.includes(s)}
+                    checked={draft.states.includes(s)}
                     onChange={() => toggleState(s)}
                     className="w-4 h-4 rounded border-gray-300 accent-purple-600 cursor-pointer"
                   />
@@ -117,8 +145,8 @@ export function AdvancedFiltersDrawer({
           <section>
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Preço (R$)</h3>
             <RangeRow
-              labelA="Mín" valA={filters.priceMin} onA={v => onChange({ ...filters, priceMin: v })}
-              labelB="Máx" valB={filters.priceMax} onB={v => onChange({ ...filters, priceMax: v })}
+              labelA="Mín" valA={draft.priceMin}  onA={v => set({ priceMin: v })}
+              labelB="Máx" valB={draft.priceMax}  onB={v => set({ priceMax: v })}
             />
           </section>
 
@@ -127,8 +155,8 @@ export function AdvancedFiltersDrawer({
           <section>
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Avaliação (0 – 10)</h3>
             <RangeRow
-              labelA="Mín" valA={filters.ratingMin} onA={v => onChange({ ...filters, ratingMin: v })}
-              labelB="Máx" valB={filters.ratingMax} onB={v => onChange({ ...filters, ratingMax: v })}
+              labelA="Mín" valA={draft.ratingMin} onA={v => set({ ratingMin: v })}
+              labelB="Máx" valB={draft.ratingMax} onB={v => set({ ratingMax: v })}
               extra={{ min: 0, max: 10, step: 0.1 }}
             />
           </section>
@@ -138,8 +166,8 @@ export function AdvancedFiltersDrawer({
           <section>
             <h3 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-3">Estoque</h3>
             <RangeRow
-              labelA="Mín" valA={filters.stockMin} onA={v => onChange({ ...filters, stockMin: v })}
-              labelB="Máx" valB={filters.stockMax} onB={v => onChange({ ...filters, stockMax: v })}
+              labelA="Mín" valA={draft.stockMin}  onA={v => set({ stockMin: v })}
+              labelB="Máx" valB={draft.stockMax}  onB={v => set({ stockMax: v })}
             />
           </section>
 
@@ -150,37 +178,34 @@ export function AdvancedFiltersDrawer({
             <div className="flex flex-col gap-2">
               <div>
                 <p className="text-xs text-gray-400 mb-1">De</p>
-                <input
-                  type="date"
-                  value={filters.dateFrom}
-                  onChange={e => onChange({ ...filters, dateFrom: e.target.value })}
-                  className="w-full border border-gray-200 rounded-md px-2.5 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-300"
-                />
+                <input type="date" value={draft.dateFrom} onChange={e => set({ dateFrom: e.target.value })} className={dateCls} />
               </div>
               <div>
                 <p className="text-xs text-gray-400 mb-1">Até</p>
-                <input
-                  type="date"
-                  value={filters.dateTo}
-                  onChange={e => onChange({ ...filters, dateTo: e.target.value })}
-                  className="w-full border border-gray-200 rounded-md px-2.5 py-1.5 text-sm text-gray-700 focus:outline-none focus:ring-1 focus:ring-purple-300"
-                />
+                <input type="date" value={draft.dateTo} onChange={e => set({ dateTo: e.target.value })} className={dateCls} />
               </div>
+              {dateInvalid && <p className="text-xs text-red-500">"De" não pode ser posterior a "Até"</p>}
             </div>
           </section>
         </div>
 
-        <div className={cn(
-          "px-5 py-4 border-t border-gray-200 transition-opacity duration-200",
-          hasAny ? "opacity-100" : "opacity-0 pointer-events-none"
-        )}>
+        <div className="px-5 py-4 border-t border-gray-200 flex flex-col gap-2">
           <button
-            onClick={onClear}
-            className="w-full flex items-center justify-center gap-1.5 text-sm text-red-500 hover:text-red-700 transition-colors py-1"
+            disabled={hasError}
+            onClick={() => { onChange(draft); onClose() }}
+            className="w-full bg-[#EACAFF] border border-[#B899CC] text-black rounded-md py-2 text-sm font-medium hover:bg-[#d9adff] hover:border-[#9e72b8] active:bg-[#c99aee] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#EACAFF] disabled:hover:border-[#B899CC]"
           >
-            <CloseIcon sx={{ fontSize: 14 }} />
-            Limpar filtros avançados
+            Aplicar filtros
           </button>
+          {hasDraftAny && (
+            <button
+              onClick={() => { setDraft(EMPTY_ADVANCED); onClear() }}
+              className="w-full flex items-center justify-center gap-1.5 text-sm text-red-500 hover:text-red-700 transition-colors py-1"
+            >
+              <CloseIcon sx={{ fontSize: 14 }} />
+              Limpar filtros avançados
+            </button>
+          )}
         </div>
       </div>
     </>
