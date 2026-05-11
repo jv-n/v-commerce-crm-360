@@ -34,6 +34,11 @@ from app.schemas.agentSchemas import (  # noqa: E402
 
 router = APIRouter(prefix="/agent", tags=["agent"])
 
+# Caminho do banco resolvido a partir da localização deste arquivo:
+# No Docker : /app/app/routes/agentRouter.py → parents[2] = /app → /app/database/vcommerce.db
+# Localmente: backend/app/routes/agentRouter.py → parents[2] = backend/ → backend/database/vcommerce.db
+_DB_PATH = Path(__file__).resolve().parents[2] / "database" / "vcommerce.db"
+
 # Instância compartilhada do DatabaseTools
 _db: DatabaseTools | None = None
 
@@ -42,7 +47,7 @@ def _get_db() -> DatabaseTools:
     """Retorna a instância singleton do DatabaseTools."""
     global _db
     if _db is None:
-        _db = DatabaseTools()
+        _db = DatabaseTools(db_path=_DB_PATH)
     return _db
 
 
