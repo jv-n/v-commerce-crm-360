@@ -43,6 +43,7 @@ export function DataTable<T,>({
   onSearchChange,
   headerClassName,
   rowClassName,
+  expandedRowClassName,
   dividersClassName,
   expandedRowIds,
   renderExpandedRow,
@@ -231,7 +232,7 @@ export function DataTable<T,>({
         <div className="fixed inset-0 z-40" onClick={() => filters.setOpenFilter(null)} />
       )}
 
-      <div className={cn("flex flex-col bg-white overflow-hidden")}>
+      <div className={cn("flex flex-col bg-white overflow-hidden flex-1 min-h-0")}>
         {tabs.length > 0 && (
           <DataTableTabs
             tabs={tabs}
@@ -270,6 +271,7 @@ export function DataTable<T,>({
           onToggleRow={selection.toggleRow}
           headerClassName={headerClassName}
           rowClassName={rowClassName}
+          expandedRowClassName={expandedRowClassName}
           dividersClassName={dividersClassName}
           expandedRowIds={expandedRowIds}
           renderExpandedRow={renderExpandedRow}

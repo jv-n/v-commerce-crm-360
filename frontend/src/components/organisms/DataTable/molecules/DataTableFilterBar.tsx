@@ -46,10 +46,12 @@ export function DataTableFilterBar({
       {children}
 
       {availableOptionalFilters.length > 0 && (
-        <div className="relative" ref={ref}>
+        <>
+          <div className="w-px h-4 bg-gray-200 self-center" />
+          <div className="relative" ref={ref}>
           <button
             onClick={() => setDropdownOpen(o => !o)}
-            className="p-1.5 text-gray-500 hover:text-gray-700 rounded-md hover:bg-gray-50"
+            className="p-1.5 text-gray-500 hover:text-gray-700 rounded-md hover:bg-[#F7EBFF]"
           >
             <AddIcon sx={{ fontSize: 14 }} />
           </button>
@@ -60,7 +62,7 @@ export function DataTableFilterBar({
                 <button
                   key={f.key}
                   onClick={() => { onAddFilter(f.key); setDropdownOpen(false) }}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-[#F7EBFF] transition-colors"
                 >
                   {f.label}
                 </button>
@@ -68,6 +70,7 @@ export function DataTableFilterBar({
             </div>
           )}
         </div>
+        </>
       )}
 
       {extra}

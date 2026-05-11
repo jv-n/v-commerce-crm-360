@@ -20,6 +20,8 @@ export function NumberRangeDropdown({ current, onApply, onClear, minBound, maxBo
   const [max, setMax] = useState(current?.max?.toString() ?? "")
   const hasActive = current?.min != null || current?.max != null
 
+  const isRangeInvalid = min !== "" && max !== "" && Number(min) > Number(max)
+
   if (variant === "slider") {
     const pct = (v: number) => ((v - lo) / (hi - lo)) * 100
 
@@ -86,24 +88,32 @@ export function NumberRangeDropdown({ current, onApply, onClear, minBound, maxBo
       <div className="flex items-center gap-2">
         <input
           type="number"
-          min={0}
+          min={minBound ?? 0}
+          max={maxBound}
+          step={maxBound != null && maxBound <= 10 ? 0.1 : undefined}
           value={min}
           onChange={e => setMin(e.target.value.replace(/^-/, ""))}
           placeholder="Mín"
-          className="w-[72px] border border-gray-200 rounded-md px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-purple-300"
+          className={`w-[72px] border rounded-md px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-1 ${isRangeInvalid ? "border-red-400 focus:ring-red-300" : "border-gray-200 focus:ring-purple-300"}`}
         />
         <span className="text-gray-400 text-sm">–</span>
         <input
           type="number"
-          min={0}
+          min={minBound ?? 0}
+          max={maxBound}
+          step={maxBound != null && maxBound <= 10 ? 0.1 : undefined}
           value={max}
           onChange={e => setMax(e.target.value.replace(/^-/, ""))}
           placeholder="Máx"
-          className="w-[72px] border border-gray-200 rounded-md px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-purple-300"
+          className={`w-[72px] border rounded-md px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-1 ${isRangeInvalid ? "border-red-400 focus:ring-red-300" : "border-gray-200 focus:ring-purple-300"}`}
         />
       </div>
+      {isRangeInvalid && (
+        <p className="text-xs text-red-500">Mín não pode ser maior que Máx</p>
+      )}
       <div className="flex gap-1.5">
         <button
+          disabled={isRangeInvalid}
           onClick={() => {
             const clamp = (v: string, lo?: number, hi?: number) => {
               if (!v) return null
@@ -114,7 +124,7 @@ export function NumberRangeDropdown({ current, onApply, onClear, minBound, maxBo
             }
             onApply(clamp(min, minBound, maxBound), clamp(max, minBound, maxBound))
           }}
-          className="flex-1 bg-purple-600 text-white rounded-md py-1.5 text-xs font-medium hover:bg-purple-700 transition-colors"
+          className="flex-1 bg-[#EACAFF] border border-[#B899CC] text-black rounded-md py-1.5 text-xs font-medium hover:bg-[#d9adff] hover:border-[#9e72b8] active:bg-[#c99aee] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#EACAFF] disabled:hover:border-[#B899CC]"
         >
           Aplicar
         </button>
