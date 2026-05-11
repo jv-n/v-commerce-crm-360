@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+      - ./ai-agent:/ai-agent
+    env_file:
+      - ./backend/.env # Certifique-se de que cada membro tenha um .env criado a partir do .env.example
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules # Evita sobrescrever os módulos do container com a pasta local vazia
+    depends_on:
+      - backend
