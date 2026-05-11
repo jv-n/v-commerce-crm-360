@@ -8,6 +8,7 @@ services:
     volumes:
       - ./backend:/app
       - ./ai-agent:/ai-agent
+      - ./data-engineering:/data-engineering
     env_file:
       - ./backend/.env # Certifique-se de que cada membro tenha um .env criado a partir do .env.example
 
