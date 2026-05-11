@@ -65,7 +65,7 @@ const CHIP_CLASS: Record<MentionType, string> = {
   contact:
     "inline-flex items-center mx-0.5 px-1.5 py-0.5 rounded border text-xs font-medium bg-blue-50 text-blue-700 border-blue-200 cursor-default select-none",
   lead:
-    "inline-flex items-center mx-0.5 px-1.5 py-0.5 rounded border text-xs font-medium bg-sky-50 text-sky-700 border-sky-200 cursor-default select-none",
+    "inline-flex items-center mx-0.5 px-1.5 py-0.5 rounded border text-xs font-medium bg-red-50 text-red-700 border-red-200 cursor-default select-none",
   product:
     "inline-flex items-center mx-0.5 px-1.5 py-0.5 rounded border text-xs font-medium bg-emerald-50 text-emerald-700 border-emerald-200 cursor-default select-none",
   order:
@@ -76,7 +76,7 @@ const CHIP_CLASS: Record<MentionType, string> = {
 
 const BADGE_CLASS: Record<MentionType, string> = {
   contact: "text-[10px] font-bold px-1 py-0.5 rounded bg-blue-100 text-blue-600",
-  lead:    "text-[10px] font-bold px-1 py-0.5 rounded bg-sky-100 text-sky-600",
+  lead:    "text-[10px] font-bold px-1 py-0.5 rounded bg-red-100 text-red-600",
   product: "text-[10px] font-bold px-1 py-0.5 rounded bg-emerald-100 text-emerald-600",
   order:   "text-[10px] font-bold px-1 py-0.5 rounded bg-orange-100 text-orange-600",
   agent:   "text-[10px] font-bold px-1 py-0.5 rounded bg-purple-100 text-purple-600",
