@@ -27,7 +27,7 @@ def search_mentions(
     limit: int = Query(5, ge=1, le=10),
     db: Session = Depends(get_db),
 ):
-    pattern = f"%{q}%"
+    pattern = f"{q}%"
     results: List[MentionResult] = []
 
     # ── Clientes / Leads (dim_clientes + gold_cliente_360) ───────────────────
