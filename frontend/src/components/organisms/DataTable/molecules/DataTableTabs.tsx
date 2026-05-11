@@ -49,7 +49,7 @@ export function DataTableTabs({
             onClick={() => onTabChange(tab.id)}
           />
         ))}
-        <button className="p-2 ml-1 text-gray-400 hover:text-gray-600 rounded hover:bg-gray-100">
+        <button className="p-2 ml-1 text-gray-400 hover:text-gray-600 rounded hover:bg-[#F7EBFF]">
           <AddIcon sx={{ fontSize: 16 }} />
         </button>
       </div>
@@ -78,7 +78,7 @@ export function DataTableTabs({
         ) : (
           <button
             onClick={onSearchOpen}
-            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded"
+            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-[#F7EBFF] rounded"
           >
             <SearchOutlinedIcon sx={{ fontSize: 18 }} />
           </button>
