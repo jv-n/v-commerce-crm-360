@@ -7,6 +7,7 @@ services:
       - "8000:8000"
     volumes:
       - ./backend:/app
+      - ./ai-agent:/ai-agent
     env_file:
       - ./backend/.env # Certifique-se de que cada membro tenha um .env criado a partir do .env.example
 
