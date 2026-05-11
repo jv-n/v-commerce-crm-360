@@ -62,36 +62,80 @@ Requer **Docker** e **Docker Compose** instalados.
 Crie o arquivo `backend/.env` a partir do exemplo:
 
 ```bash
+# Linux/macOS
 cp backend/.env.example backend/.env
+
+# Windows (PowerShell)
+Copy-Item backend\.env.example backend\.env
 ```
 
-Edite `backend/.env` e preencha sua chave da API do Google AI Studio:
+Edite `backend/.env` e preencha **apenas** a chave da API do Google AI Studio:
 
 ```env
 GEMINI_API_KEY=sua-chave-aqui
 ```
 
-> **Importante:** não adicione a variável `DATABASE_URL` ao `.env`. O caminho do banco é resolvido automaticamente pelo `config.py` e uma URL com caminho absoluto do host vai quebrar dentro do container.
+> **Importante:** deixe a variável `DATABASE_URL` fora do `.env` (ou remova-a se estiver lá). O `config.py` resolve o caminho do banco automaticamente com `Path(__file__)`, e uma URL com caminho absoluto do host vai quebrar dentro do container.
 
 ### 4.2. Subir os containers
+
+Na raiz do repositório:
 
 ```bash
 docker compose up --build
 ```
 
-- Backend disponível em `http://localhost:8000` (docs em `http://localhost:8000/docs`)
-- Frontend disponível em `http://localhost:5173`
+Na primeira execução o Docker vai baixar as imagens base e instalar as dependências — pode demorar alguns minutos. Nas próximas vezes, sem o flag `--build`, sobe instantaneamente:
 
-### 4.3. Verificar se o banco está acessível
+```bash
+docker compose up
+```
+
+Serviços disponíveis após o boot:
+
+| Serviço  | URL                                        |
+|----------|--------------------------------------------|
+| Backend  | http://localhost:8000                      |
+| API Docs | http://localhost:8000/docs                 |
+| Frontend | http://localhost:5173                      |
+
+### 4.3. Popular o banco (primeira vez)
+
+Se o banco ainda não foi gerado pelo seed, rode dentro do container do backend:
+
+```bash
+docker compose exec backend python database/seed.py
+```
+
+### 4.4. Verificar se o banco está acessível
 
 ```bash
 curl http://localhost:8000/agent/health
 ```
 
-O campo `"database"` deve retornar `"ok"`. Se retornar `"banco não encontrado"`, rode o seed dentro do container:
+O campo `"database"` deve retornar `"ok"`. Se retornar `"banco não encontrado"`, repita o passo 4.3.
+
+### 4.5. Ver logs em tempo real
 
 ```bash
-docker compose exec backend python database/seed.py
+# Todos os serviços
+docker compose logs -f
+
+# Apenas o backend
+docker compose logs -f backend
+
+# Apenas o frontend
+docker compose logs -f frontend
+```
+
+### 4.6. Parar os containers
+
+```bash
+# Para e mantém os containers (sobe rápido depois com `docker compose up`)
+docker compose stop
+
+# Para e remove os containers (próximo `up` recria tudo)
+docker compose down
 ```
 
 ---
