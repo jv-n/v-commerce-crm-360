@@ -7,17 +7,23 @@ from sqlalchemy import func, asc, desc
 from app.models.contactModel import GoldCliente360, DimCliente
 from app.schemas.contactSchemas import ContactOut, ContactsPageOut, ContactCreate, ContactUpdate
 
-# Tabs do frontend → filtros de segmento_cliente no banco
-_TAB_FILTER = {
-    "clients": ["Ativo", "Inativo", "VIP"],
-    "leads":   [],  # leads não existem no gold — retorna vazio
-}
+_VALID_STATUSES = {"Ativo", "Inativo", "VIP", "Lead", "Em risco"}
 
 
-def _format_date(raw: str | None) -> str | None:
+def _fmt_phone(raw: str | None) -> str | None:
     if not raw:
         return None
-    # gold armazena como "YYYY-MM-DD" ou "YYYY-MM-DD HH:MM:SS"
+    digits = "".join(c for c in str(raw).split(".")[0] if c.isdigit())
+    if len(digits) == 11:
+        return f"({digits[:2]}){digits[2:7]}-{digits[7:]}"
+    if len(digits) == 10:
+        return f"({digits[:2]}){digits[2:6]}-{digits[6:]}"
+    return digits or None
+
+
+def _fmt_date(raw: str | None) -> str | None:
+    if not raw:
+        return None
     try:
         date_part = raw.split(" ")[0]
         y, m, d = date_part.split("-")
@@ -38,70 +44,82 @@ def _normalize_score(nota_nps: float | None) -> float:
     return round(nota_nps * 10, 1)
 
 
-def _to_contact_out(gold: GoldCliente360, dim: DimCliente | None) -> ContactOut:
+def _to_contact_out(g: GoldCliente360, phone: str | None = None) -> ContactOut:
+    first = _fmt_date(g.data_primeiro_pedido)
     return ContactOut(
-        id=gold.id_cliente,
-        name=gold.nome_completo,
-        email=gold.email,
-        phone=dim.telefone if dim else None,
-        lastPurchase=_format_date(gold.data_ultimo_pedido),
-        purchases=int(gold.total_pedidos or 0),
-        engagement=_normalize_engagement(gold.categoria_nps_recente),
-        engagementScore=_normalize_score(gold.nota_nps_media),
-        createdAt=_format_date(dim.data_cadastro if dim else None),
+        # Identidade
+        id=g.id_cliente,
+        name=g.nome_completo,
+        email=g.email,
+        phone=_fmt_phone(phone),
+        # Segmentação
+        clientStatus=g.segmento_cliente,
+        region=g.regiao,
+        origin=g.origem,
+        # Pedidos
+        purchases=int(g.total_pedidos or 0),
+        distinctProducts=int(g.total_produtos_distintos or 0),
+        totalRevenue=round(g.receita_total or 0.0, 2),
+        avgTicket=round(g.ticket_medio or 0.0, 2),
+        firstPurchase=first,
+        lastPurchase=_fmt_date(g.data_ultimo_pedido),
+        favPaymentMethod=g.metodo_pagamento_favorito,
+        # Suporte
+        totalTickets=int(g.total_tickets or 0),
+        resolutionRate=round(g.taxa_resolucao or 0.0, 4),
+        avgSupportRating=g.nota_media_atendimento,
+        # NPS / engajamento
+        engagement=_normalize_engagement(g.categoria_nps_recente),
+        engagementScore=_normalize_score(g.nota_nps_media),
+        productRating=g.nota_produto_media,
+        # Compat.
+        createdAt=first,
     )
 
 
 class ContactService:
+
     @staticmethod
     def create_contact(db: Session, data: ContactCreate) -> ContactOut:
         contact_id = str(uuid.uuid4())
         today = date.today().strftime("%Y-%m-%d")
 
-        dim = DimCliente(
-            id_cliente=contact_id,
-            nome_completo=data.name,
-            email=data.email,
-            telefone=data.phone,
-            data_cadastro=today,
-        )
         gold = GoldCliente360(
             id_cliente=contact_id,
             nome_completo=data.name,
             email=data.email,
             segmento_cliente="Ativo",
             total_pedidos=0,
+            total_produtos_distintos=0,
+            receita_total=0,
+            ticket_medio=0,
+            total_tickets=0,
+            taxa_resolucao=0,
+            data_primeiro_pedido=today,
+            timestamp_ingestion=today,
         )
-        db.add(dim)
         db.add(gold)
         db.commit()
         db.refresh(gold)
-        db.refresh(dim)
-        return _to_contact_out(gold, dim)
+        return _to_contact_out(gold, phone=None)
 
     @staticmethod
     def update_contact(db: Session, contact_id: str, data: ContactUpdate) -> ContactOut | None:
         gold = db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()
         if not gold:
             return None
-        dim = db.query(DimCliente).filter(DimCliente.id_cliente == contact_id).first()
 
         if data.name is not None:
             gold.nome_completo = data.name
-            if dim:
-                dim.nome_completo = data.name
         if data.email is not None:
             gold.email = data.email
-            if dim:
-                dim.email = data.email
-        if data.phone is not None and dim:
-            dim.telefone = data.phone
+        if data.clientStatus is not None and data.clientStatus in _VALID_STATUSES:
+            gold.segmento_cliente = data.clientStatus
 
         db.commit()
         db.refresh(gold)
-        if dim:
-            db.refresh(dim)
-        return _to_contact_out(gold, dim)
+        dim = db.query(DimCliente).filter(DimCliente.id_cliente == contact_id).first()
+        return _to_contact_out(gold, phone=dim.telefone if dim else None)
 
     @staticmethod
     def get_contacts(
@@ -114,21 +132,39 @@ class ContactService:
         purchases_max: int | None = None,
         created_year: str = "",
         engagement: str = "",
+        client_status: list[str] | None = None,
+        has_phone: bool = False,
         sort_by: str = "",
         sort_dir: str = "asc",
-        exclude_inactive: bool = True,
+        regioes: list[str] | None = None,
+        origens: list[str] | None = None,
+        pagamentos: list[str] | None = None,
+        receita_min: float | None = None,
+        receita_max: float | None = None,
+        ticket_medio_min: float | None = None,
+        ticket_medio_max: float | None = None,
+        primeira_compra_from: str = "",
+        primeira_compra_to: str = "",
+        ultima_compra_from: str = "",
+        ultima_compra_to: str = "",
+        tickets_suporte_min: int | None = None,
+        tickets_suporte_max: int | None = None,
+        nota_atend_min: float | None = None,
+        nota_atend_max: float | None = None,
+        nps_min: float | None = None,
+        nps_max: float | None = None,
+        nota_prod_min: float | None = None,
+        nota_prod_max: float | None = None,
     ) -> ContactsPageOut:
-        # tab "leads" não tem correspondência no gold — retorna vazio
         if tab == "leads":
             return ContactsPageOut(data=[], total=0, page=page, pageSize=page_size)
 
-        query = (
-            db.query(GoldCliente360, DimCliente)
-            .outerjoin(DimCliente, GoldCliente360.id_cliente == DimCliente.id_cliente)
+        query = db.query(GoldCliente360, DimCliente.telefone).outerjoin(
+            DimCliente, DimCliente.id_cliente == GoldCliente360.id_cliente
         )
 
         if tab == "clients":
-            query = query.filter(GoldCliente360.segmento_cliente.in_(_TAB_FILTER["clients"]))
+            query = query.filter(GoldCliente360.segmento_cliente.in_(["Ativo", "Inativo", "VIP"]))
 
         if search:
             term = f"%{search}%"
@@ -137,9 +173,6 @@ class ContactService:
                 | GoldCliente360.email.ilike(term)
             )
 
-        if exclude_inactive:
-            query = query.filter(GoldCliente360.segmento_cliente != "Inativo")
-
         if purchases_min is not None:
             query = query.filter(GoldCliente360.total_pedidos >= purchases_min)
 
@@ -147,7 +180,7 @@ class ContactService:
             query = query.filter(GoldCliente360.total_pedidos <= purchases_max)
 
         if created_year:
-            query = query.filter(DimCliente.data_cadastro.like(f"{created_year}%"))
+            query = query.filter(GoldCliente360.data_primeiro_pedido.like(f"{created_year}%"))
 
         if engagement:
             if engagement == "Nenhum NPS":
@@ -158,13 +191,68 @@ class ContactService:
             else:
                 query = query.filter(GoldCliente360.categoria_nps_recente == engagement)
 
-        total = query.with_entities(func.count(GoldCliente360.id_cliente)).scalar()
+        if client_status:
+            query = query.filter(GoldCliente360.segmento_cliente.in_(client_status))
+
+        if has_phone:
+            query = query.filter(DimCliente.telefone.isnot(None))
+
+        if regioes:
+            query = query.filter(GoldCliente360.regiao.in_(regioes))
+        if origens:
+            query = query.filter(GoldCliente360.origem.in_(origens))
+        if pagamentos:
+            query = query.filter(GoldCliente360.metodo_pagamento_favorito.in_(pagamentos))
+
+        if receita_min is not None:
+            query = query.filter(GoldCliente360.receita_total >= receita_min)
+        if receita_max is not None:
+            query = query.filter(GoldCliente360.receita_total <= receita_max)
+
+        if ticket_medio_min is not None:
+            query = query.filter(GoldCliente360.ticket_medio >= ticket_medio_min)
+        if ticket_medio_max is not None:
+            query = query.filter(GoldCliente360.ticket_medio <= ticket_medio_max)
+
+        if primeira_compra_from:
+            query = query.filter(GoldCliente360.data_primeiro_pedido >= primeira_compra_from)
+        if primeira_compra_to:
+            query = query.filter(GoldCliente360.data_primeiro_pedido <= primeira_compra_to)
+
+        if ultima_compra_from:
+            query = query.filter(GoldCliente360.data_ultimo_pedido >= ultima_compra_from)
+        if ultima_compra_to:
+            query = query.filter(GoldCliente360.data_ultimo_pedido <= ultima_compra_to)
+
+        if tickets_suporte_min is not None:
+            query = query.filter(GoldCliente360.total_tickets >= tickets_suporte_min)
+        if tickets_suporte_max is not None:
+            query = query.filter(GoldCliente360.total_tickets <= tickets_suporte_max)
+
+        if nota_atend_min is not None:
+            query = query.filter(GoldCliente360.nota_media_atendimento >= nota_atend_min)
+        if nota_atend_max is not None:
+            query = query.filter(GoldCliente360.nota_media_atendimento <= nota_atend_max)
+
+        if nps_min is not None:
+            query = query.filter(GoldCliente360.nota_nps_media >= nps_min / 10)
+        if nps_max is not None:
+            query = query.filter(GoldCliente360.nota_nps_media <= nps_max / 10)
+
+        if nota_prod_min is not None:
+            query = query.filter(GoldCliente360.nota_produto_media >= nota_prod_min)
+        if nota_prod_max is not None:
+            query = query.filter(GoldCliente360.nota_produto_media <= nota_prod_max)
+
+        total = query.with_entities(func.count(GoldCliente360.id_cliente)).scalar()  # type: ignore[union-attr]
 
         _SORT_COLS = {
             "name":         GoldCliente360.nome_completo,
             "purchases":    GoldCliente360.total_pedidos,
             "lastPurchase": GoldCliente360.data_ultimo_pedido,
             "engagement":   GoldCliente360.nota_nps_media,
+            "totalRevenue": GoldCliente360.receita_total,
+            "avgTicket":    GoldCliente360.ticket_medio,
         }
         sort_col = _SORT_COLS.get(sort_by, GoldCliente360.nome_completo)
         order_fn = desc if sort_dir == "desc" else asc
@@ -177,6 +265,9 @@ class ContactService:
             .all()
         )
 
-        data = [_to_contact_out(gold, dim) for gold, dim in rows]
-
-        return ContactsPageOut(data=data, total=total, page=page, pageSize=page_size)
+        return ContactsPageOut(
+            data=[_to_contact_out(g, phone=phone) for g, phone in rows],
+            total=total,
+            page=page,
+            pageSize=page_size,
+        )

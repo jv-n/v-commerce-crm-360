@@ -75,7 +75,7 @@ export function useFilterState<T>(columns: Column<T>[], data: T[], onChange?: (f
         if (def.type === "toggle" && active.type === "toggle" && active.active)
           return def.filterFn(row)
         if (def.type === "multi-select" && active.type === "multi-select")
-          return def.filterFn(row, active.values)
+          return !def.filterFn || def.filterFn(row, active.values)
         return true
       })
     )
