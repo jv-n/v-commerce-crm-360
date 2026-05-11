@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from database.database import Base, engine
 from app.models import userModel, contactModel, productModel, orderModel
-from app.routes import conversationRouter, mentionRouter
+from app.routes import conversationRouter, mentionRouter, userRouter, contactRouter, agentRouter, saleRouter, productRouter
 # Injeta a GEMINI_API_KEY no ambiente para o PydanticAI/Google SDK
 # (lida do .env via pydantic-settings no config.py)
 from app.config import settings
