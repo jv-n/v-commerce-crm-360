@@ -5,6 +5,7 @@ import type { ReactNode } from "react"
 import ArrowUpwardIcon   from "@mui/icons-material/ArrowUpward"
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward"
 import UnfoldMoreIcon    from "@mui/icons-material/UnfoldMore"
+import { Checkbox } from "@/components/atoms/checkbox"
 
 interface DataTableRowsProps<T> {
   columns: Column<T>[]
@@ -51,11 +52,10 @@ export function DataTableRows<T,>({
         <thead>
           <tr className={cn("border-b border-gray-200", headerClassName)}>
             <th className="w-10 px-4 py-3">
-              <input
-                type="checkbox"
+              <Checkbox
                 checked={isAllSelected}
-                onChange={onToggleAll}
-                className="w-4 h-4 rounded border-gray-300 cursor-pointer accent-gray-800"
+                onCheckedChange={onToggleAll}
+                className="border-purple-300 cursor-pointer"
               />
             </th>
             {columns.map(col => {
@@ -122,11 +122,10 @@ export function DataTableRows<T,>({
                       )}
                     >
                       <td className="px-4 py-3">
-                        <input
-                          type="checkbox"
+                        <Checkbox
                           checked={isSelected}
-                          onChange={() => onToggleRow(id)}
-                          className="w-4 h-4 rounded border-gray-300 cursor-pointer accent-gray-800"
+                          onCheckedChange={() => onToggleRow(id)}
+                          className="border-purple-300 cursor-pointer"
                         />
                       </td>
                       {columns.map(col => (
