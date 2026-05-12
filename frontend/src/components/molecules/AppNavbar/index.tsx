@@ -8,12 +8,21 @@ import { useState } from "react"
 import SearchInput from "../SearchInput";
 import Dropdown from "../Dropdown";
 import { Separator } from "@/components/atoms/separator";
+import { useAuth } from "@/contexts/AuthContext";
+import { useNavigate } from "react-router-dom";
 
 interface AppNavbarProps {
     onOpenAI?: () => void;
 }
 
 export default function AppNavbar({ onOpenAI }: AppNavbarProps) {
+    const { user, logout } = useAuth();
+    const navigate = useNavigate();
+
+    function handleLogout() {
+        logout();
+        navigate("/login");
+    }
 
     const [unreadNotifications, setUnreadNotifications] = useState(4);
 
@@ -42,7 +51,7 @@ export default function AppNavbar({ onOpenAI }: AppNavbarProps) {
                 <Dropdown title="Settings" buttonIcon={<SettingsOutlinedIcon sx={{color: "#74FF60"}}/>} menuItems={["Preferences", "Help"]} />
                 <Dropdown title="Notifications" buttonIcon={hasUnreadNotifications()} menuItems={["Notification 1", "Notification 2", "Notification 3"]} onOpenChange={(open) => { if(open) markNotificationsAsRead()}} />
                 <Separator orientation="vertical" className="bg-foreground/30" />
-                <UserMenu name="Joao Victor" avatarSrc="profile_pic.jpg"/>
+                <UserMenu name={user?.name ?? "Usuário"} onLogout={handleLogout} />
             </div>
         </div>
     );
