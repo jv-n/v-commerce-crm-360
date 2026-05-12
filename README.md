@@ -82,10 +82,10 @@ GEMINI_API_KEY=sua-chave-aqui
 Na raiz do repositório:
 
 ```bash
-docker compose up --build
+docker compose up --buildgit stash
 ```
 
-Na primeira execução o Docker vai baixar as imagens base e instalar as dependências — pode demorar alguns minutos. Nas próximas vezes, sem o flag `--build`, sobe instantaneamente:
+Na primeira execução o Docker vai baixar as imagens base e instalar as dependências — pode demorar alguns minutos. Nas próximas vezes, você pode subir sem o flag `--build` **somente se não houver mudanças no código ou nas dependências**. Sempre que houver alteração de código, Dockerfile, `requirements.txt`, `package.json` ou qualquer outra dependência, rode novamente com `--build`.
 
 ```bash
 docker compose up
