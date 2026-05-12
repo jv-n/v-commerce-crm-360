@@ -208,44 +208,47 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
     }
 
     return (
-      <DataTable
-        data={tickets}
-        loading={loading}
-        columns={columns}
-        getRowId={ticket => ticket.id}
-        tabs={TABS}
-        activeTab={activeTab}
-        onTabChange={handleTabChange}
-        onFiltersChange={handleFiltersChange}
-        headerClassName="bg-[#F0DDFD]"
-        dividersClassName="divide-[#9F83B2]"
-        rowsPerPageOptions={[10, 25, 50]}
-        searchPlaceholder="Pesquisar tickets..."
-        searchFn={(ticket, query) => {
-          const normalizedQuery = query.toLowerCase()
+      <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
+        <DataTable
+          data={tickets}
+          loading={loading}
+          columns={columns}
+          getRowId={ticket => ticket.id}
+          tabs={TABS}
+          activeTab={activeTab}
+          onTabChange={handleTabChange}
+          onFiltersChange={handleFiltersChange}
+          headerClassName="bg-[#F0DDFD]"
+          dividersClassName="divide-[#9F83B2]"
+          rowsPerPageOptions={[10, 25, 50]}
+          searchPlaceholder="Pesquisar tickets..."
+          searchFn={(ticket, query) => {
+            const normalizedQuery = query.toLowerCase()
 
-          return [
-            ticket.id,
-            ticket.client,
-            ticket.orderId,
-            ticket.responsible.name,
-            ticket.problem,
-            ticket.openedAt,
-            ticket.status,
-            ticket.score ?? "Sem avaliação",
-          ]
-            .join(" ")
-            .toLowerCase()
-            .includes(normalizedQuery)
-        }}
-        serverPagination={{
-          total,
-          page,
-          pageSize,
-          onPageChange: handlePageChange,
-          onPageSizeChange: handlePageSizeChange,
-        }}
-      />
+            return [
+              ticket.id,
+              ticket.client,
+              ticket.clientId,
+              ticket.orderId,
+              ticket.responsible.name,
+              ticket.problem,
+              ticket.openedAt,
+              ticket.status,
+              ticket.score ?? "Sem avaliação",
+            ]
+              .join(" ")
+              .toLowerCase()
+              .includes(normalizedQuery)
+          }}
+          serverPagination={{
+            total,
+            page,
+            pageSize,
+            onPageChange: handlePageChange,
+            onPageSizeChange: handlePageSizeChange,
+          }}
+        />
+      </div>
     )
   }
 )

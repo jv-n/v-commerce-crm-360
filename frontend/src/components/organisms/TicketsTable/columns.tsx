@@ -34,10 +34,10 @@ const ALL_SCORES = [
 ]
 
 const idButtonClassName =
-  "block truncate rounded-md px-3 py-1 text-sm font-medium text-gray-900 transition-colors hover:bg-[#F0DDFD]"
+  "block truncate rounded-md px-2 py-0.5 text-[13px] font-medium text-gray-900 transition-colors hover:bg-[#F0DDFD]"
 
 function getProblemIcon(problem: TicketProblem): ReactNode {
-  const iconStyle = { fontSize: 20, color: "#A855F7" }
+  const iconStyle = { fontSize: 18, color: "#A855F7" }
 
   const icons: Record<TicketProblem, ReactNode> = {
     Produto: <ShoppingCartOutlinedIcon sx={iconStyle} />,
@@ -92,17 +92,17 @@ export function getTicketColumns(
     {
       key: "open",
       header: "",
-      minWidth: "34px",
+      minWidth: "30px",
       render: () => <OpenCircleButton title="Abrir ticket" />,
     },
     {
       key: "id",
       header: "ID Ticket",
-      minWidth: "145px",
+      minWidth: "125px",
       render: ticket => (
         <button
           type="button"
-          className={`${idButtonClassName} max-w-[145px]`}
+          className={`${idButtonClassName} max-w-[125px]`}
           title={ticket.id}
         >
           {ticket.id}
@@ -112,14 +112,14 @@ export function getTicketColumns(
     {
       key: "openedAt",
       header: "Data abertura",
-      minWidth: "140px",
+      minWidth: "115px",
       render: ticket => (
         <div className="flex flex-col leading-tight">
-          <span className="text-sm font-semibold text-gray-900">
+          <span className="text-[13px] font-semibold text-gray-900">
             {formatTicketDate(ticket.openedAt)}
           </span>
 
-          <span className="text-xs font-medium text-gray-500">
+          <span className="text-[11px] font-medium text-gray-500">
             {formatTicketTime(ticket.openedAt)}
           </span>
         </div>
@@ -128,11 +128,11 @@ export function getTicketColumns(
     {
       key: "client",
       header: "Cliente",
-      minWidth: "145px",
+      minWidth: "130px",
       render: ticket => (
         <button
           type="button"
-          className={`${idButtonClassName} max-w-[145px]`}
+          className={`${idButtonClassName} max-w-[130px]`}
           title={ticket.clientId}
         >
           {ticket.client}
@@ -142,11 +142,11 @@ export function getTicketColumns(
     {
       key: "orderId",
       header: "Pedido",
-      minWidth: "135px",
+      minWidth: "120px",
       render: ticket => (
         <button
           type="button"
-          className={`${idButtonClassName} max-w-[135px]`}
+          className={`${idButtonClassName} max-w-[120px]`}
           title={ticket.orderId}
         >
           {ticket.orderId}
@@ -156,7 +156,7 @@ export function getTicketColumns(
     {
       key: "responsible",
       header: "Responsavel Ticket",
-      minWidth: "155px",
+      minWidth: "140px",
       filter: {
         type: "select",
         label: "Responsavel",
@@ -166,14 +166,14 @@ export function getTicketColumns(
       render: ticket => (
         <button
           type="button"
-          className="flex max-w-[155px] items-center gap-2 rounded-md px-2 py-1 text-left transition-colors hover:bg-[#F0DDFD]"
+          className="flex max-w-[140px] items-center gap-1.5 rounded-md px-1.5 py-0.5 text-left transition-colors hover:bg-[#F0DDFD]"
           title={ticket.responsible.name}
         >
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#F0DDFD] text-xs text-[#6F2B90]">
+          <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#F0DDFD] text-[11px] text-[#6F2B90]">
             {ticket.responsible.initials}
           </span>
 
-          <span className="truncate text-sm font-medium text-gray-900">
+          <span className="truncate text-[13px] font-medium text-gray-900">
             {ticket.responsible.name}
           </span>
         </button>
@@ -182,7 +182,7 @@ export function getTicketColumns(
     {
       key: "problem",
       header: "Problema",
-      minWidth: "115px",
+      minWidth: "105px",
       filter: {
         type: "select",
         label: "Problema",
@@ -190,9 +190,9 @@ export function getTicketColumns(
         filterFn: (ticket, value) => ticket.problem === value,
       },
       render: ticket => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           {getProblemIcon(ticket.problem)}
-          <span className="text-sm font-medium text-gray-900">
+          <span className="text-[13px] font-medium text-gray-900">
             {ticket.problem}
           </span>
         </div>
@@ -201,7 +201,7 @@ export function getTicketColumns(
     {
       key: "status",
       header: "Status",
-      minWidth: "125px",
+      minWidth: "110px",
       filter: {
         type: "select",
         label: "Status",
@@ -213,7 +213,7 @@ export function getTicketColumns(
     {
       key: "score",
       header: "Nota",
-      minWidth: "90px",
+      minWidth: "70px",
       filter: {
         type: "select",
         label: "Nota",
@@ -227,11 +227,11 @@ export function getTicketColumns(
         },
       },
       render: ticket => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
           <ScoreBadge score={ticket.score} />
 
           {ticket.score === null && (
-            <span className="inline-flex items-center rounded px-2 py-1 text-xs font-medium bg-[#F0DDFD] text-[#6B4A7A] whitespace-nowrap">
+            <span className="inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium bg-[#F0DDFD] text-[#6B4A7A] whitespace-nowrap">
               Sem avaliação
             </span>
           )}
@@ -241,13 +241,13 @@ export function getTicketColumns(
     {
       key: "forward",
       header: "",
-      minWidth: "36px",
+      minWidth: "32px",
       render: () => (
         <button
           type="button"
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D1B1E5] bg-[#F7EBFF] transition-colors hover:bg-[#F0DDFD]"
+          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#D1B1E5] bg-[#F7EBFF] transition-colors hover:bg-[#F0DDFD]"
         >
-          <ArrowForwardIcon sx={{ fontSize: 20, color: "#111827" }} />
+          <ArrowForwardIcon sx={{ fontSize: 18, color: "#111827" }} />
         </button>
       ),
     },
