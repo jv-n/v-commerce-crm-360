@@ -1,4 +1,4 @@
-from sqlalchemy import func, or_, text
+from sqlalchemy import bindparam, func, or_, text
 from sqlalchemy.orm import Session
 from fastapi import HTTPException
 from uuid import uuid4
@@ -13,6 +13,50 @@ from app.schemas.ticketSchemas import (
 
 
 class TicketService:
+    @staticmethod
+    def _get_client_names_by_ids(db: Session, client_ids: list[str]) -> dict[str, str]:
+        if not client_ids:
+            return {}
+
+        rows = db.execute(
+            text("""
+                SELECT id_cliente, nome_completo
+                FROM dim_clientes
+                WHERE id_cliente IN :client_ids
+            """).bindparams(bindparam("client_ids", expanding=True)),
+            {"client_ids": client_ids},
+        ).fetchall()
+
+        return {
+            row[0]: row[1]
+            for row in rows
+            if row[0] and row[1]
+        }
+
+    @staticmethod
+    def _build_ticket_out(
+        ticket: FtTicketSuporte,
+        client_names: dict[str, str] | None = None,
+    ) -> TicketOut:
+        client_names = client_names or {}
+
+        return TicketOut(
+            ticket_id=ticket.ticket_id,
+            id_cliente=ticket.id_cliente,
+            nome_cliente=client_names.get(ticket.id_cliente) if ticket.id_cliente else None,
+            id_pedido=ticket.id_pedido,
+            tipo_problema=ticket.tipo_problema,
+            data_abertura=ticket.data_abertura,
+            data_resolucao=ticket.data_resolucao,
+            tempo_resolucao_minutos=ticket.tempo_resolucao_minutos,
+            tempo_resolucao_horas=ticket.tempo_resolucao_horas,
+            agente_suporte=ticket.agente_suporte,
+            nota_avaliacao=ticket.nota_avaliacao,
+            resolvido=ticket.resolvido,
+            hora_abertura=ticket.hora_abertura,
+            dia_semana_abertura=ticket.dia_semana_abertura,
+        )
+
     @staticmethod
     def get_tickets(
         db: Session,
@@ -45,9 +89,6 @@ class TicketService:
 
         if problem:
             query = query.filter(FtTicketSuporte.tipo_problema == problem)
-
-        print("STATUS RECEBIDO:", status)
-        print("SCORE RECEBIDO:", score)
 
         if status:
             normalized_status = status.strip().lower()
@@ -104,8 +145,19 @@ class TicketService:
             .all()
         )
 
+        client_ids = list({
+            ticket.id_cliente
+            for ticket in rows
+            if ticket.id_cliente
+        })
+
+        client_names = TicketService._get_client_names_by_ids(db, client_ids)
+
         return TicketsPageOut(
-            data=[TicketOut.model_validate(row) for row in rows],
+            data=[
+                TicketService._build_ticket_out(ticket, client_names)
+                for ticket in rows
+            ],
             total=total,
             page=page,
             pageSize=page_size,
@@ -132,7 +184,12 @@ class TicketService:
         if not row:
             raise HTTPException(status_code=404, detail="Ticket não encontrado")
 
-        return TicketOut.model_validate(row)
+        client_names = TicketService._get_client_names_by_ids(
+            db,
+            [row.id_cliente] if row.id_cliente else [],
+        )
+
+        return TicketService._build_ticket_out(row, client_names)
 
     @staticmethod
     def create_ticket(db: Session, ticket_in: TicketCreate) -> TicketOut:
@@ -145,7 +202,12 @@ class TicketService:
         db.commit()
         db.refresh(row)
 
-        return TicketOut.model_validate(row)
+        client_names = TicketService._get_client_names_by_ids(
+            db,
+            [row.id_cliente] if row.id_cliente else [],
+        )
+
+        return TicketService._build_ticket_out(row, client_names)
 
     @staticmethod
     def update_ticket(
@@ -164,7 +226,12 @@ class TicketService:
         db.commit()
         db.refresh(row)
 
-        return TicketOut.model_validate(row)
+        client_names = TicketService._get_client_names_by_ids(
+            db,
+            [row.id_cliente] if row.id_cliente else [],
+        )
+
+        return TicketService._build_ticket_out(row, client_names)
 
     @staticmethod
     def delete_ticket(db: Session, ticket_id: str) -> None:

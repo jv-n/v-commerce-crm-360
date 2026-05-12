@@ -1,9 +1,9 @@
 import { useRef, useState } from "react"
 
-import AddCircleOutlinedIcon from "@mui/icons-material/AddCircleOutlined"
 import UndoIcon from "@mui/icons-material/Undo"
 import RefreshIcon from "@mui/icons-material/Refresh"
 
+import { AddCircleButtonIcon } from "@/components/atoms/add-circle-button-icon"
 import { cn } from "@/lib/utils"
 import {
   TicketsTable,
@@ -19,8 +19,8 @@ export default function Tickets() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Tickets</h1>
 
-        <button className="flex items-center gap-2 bg-[#F7EBFF] border border-[#D1B1E5] rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors">
-          <AddCircleOutlinedIcon sx={{ fontSize: 18 }} />
+        <button className="flex items-center gap-2 rounded-lg border border-[#D1B1E5] bg-[#F7EBFF] px-3.5 py-1.5 text-[15px] font-medium text-[#06121C] shadow-sm transition-colors hover:bg-[#F0DDFD]">
+          <AddCircleButtonIcon />
           Adicionar Ticket
         </button>
       </div>

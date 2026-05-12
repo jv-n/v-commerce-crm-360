@@ -3,6 +3,7 @@ import type { Ticket, TicketProblem, TicketStatus } from "@/types/ticket"
 interface TicketApi {
   ticket_id: string
   id_cliente: string | null
+  nome_cliente: string | null
   id_pedido: string | null
   tipo_problema: TicketProblem | null
   data_abertura: string | null
@@ -75,7 +76,8 @@ function mapTicketFromApi(ticket: TicketApi): Ticket {
 
   return {
     id: ticket.ticket_id,
-    client: ticket.id_cliente || "Cliente não informado",
+    client: ticket.nome_cliente || "Cliente não informado",
+    clientId: ticket.id_cliente || "ID não informado",
     orderId: ticket.id_pedido || "Pedido não informado",
     openedAt: ticket.data_abertura || "",
     responsible: {

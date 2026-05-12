@@ -5,6 +5,7 @@ export type TicketProblem = "Produto" | "Entrega" | "Pagamento" | "Reembolso"
 export interface Ticket {
   id: string
   client: string
+  clientId: string
   orderId: string
   openedAt: string
   responsible: {

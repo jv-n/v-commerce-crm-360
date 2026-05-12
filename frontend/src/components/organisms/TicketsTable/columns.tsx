@@ -1,11 +1,11 @@
 import type { ReactNode } from "react"
 
+import { OpenCircleButton } from "@/components/atoms/open-circle-button"
 import type { Column } from "@/components/organisms/DataTable/types"
 import type { Ticket, TicketProblem, TicketStatus } from "@/types/ticket"
 import { ScoreBadge, TicketStatusBadge } from "./tableComponents/badge"
 
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward"
-import RadioButtonUncheckedIcon from "@mui/icons-material/RadioButtonUnchecked"
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
 import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined"
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined"
@@ -93,9 +93,7 @@ export function getTicketColumns(
       key: "open",
       header: "",
       minWidth: "34px",
-      render: () => (
-        <RadioButtonUncheckedIcon sx={{ fontSize: 17, color: "#111827" }} />
-      ),
+      render: () => <OpenCircleButton title="Abrir ticket" />,
     },
     {
       key: "id",
@@ -112,6 +110,22 @@ export function getTicketColumns(
       ),
     },
     {
+      key: "openedAt",
+      header: "Data abertura",
+      minWidth: "140px",
+      render: ticket => (
+        <div className="flex flex-col leading-tight">
+          <span className="text-sm font-semibold text-gray-900">
+            {formatTicketDate(ticket.openedAt)}
+          </span>
+
+          <span className="text-xs font-medium text-gray-500">
+            {formatTicketTime(ticket.openedAt)}
+          </span>
+        </div>
+      ),
+    },
+    {
       key: "client",
       header: "Cliente",
       minWidth: "145px",
@@ -119,7 +133,7 @@ export function getTicketColumns(
         <button
           type="button"
           className={`${idButtonClassName} max-w-[145px]`}
-          title={ticket.client}
+          title={ticket.clientId}
         >
           {ticket.client}
         </button>
@@ -181,22 +195,6 @@ export function getTicketColumns(
           <span className="text-sm font-medium text-gray-900">
             {ticket.problem}
           </span>
-        </div>
-      ),
-    },
-    {
-      key: "openedAt",
-      header: "Data abertura",
-      minWidth: "140px",
-      render: ticket => (
-        <div className="flex flex-col leading-tight">
-            <span className="text-sm font-semibold text-gray-900">
-                {formatTicketDate(ticket.openedAt)}
-            </span>
-
-            <span className="text-xs font-medium text-gray-500">
-                {formatTicketTime(ticket.openedAt)}
-            </span>
         </div>
       ),
     },

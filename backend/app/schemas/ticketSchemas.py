@@ -34,6 +34,7 @@ class TicketOut(TicketBase):
     model_config = ConfigDict(from_attributes=True)
 
     ticket_id: str
+    nome_cliente: str | None = None
 
 
 class TicketsPageOut(BaseModel):
