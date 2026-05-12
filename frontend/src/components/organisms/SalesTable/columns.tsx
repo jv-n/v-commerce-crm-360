@@ -1,6 +1,5 @@
 import type { Column } from "@/components/organisms/DataTable/types"
 import { StatusBadge } from "./tableComponents/badge"
-import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined"
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward"
 import type { Sale, SaleStatus } from "@/types/sale"
 
@@ -19,11 +18,19 @@ function formatBRL(value: number): string {
 
 export const saleColumns: Column<Sale>[] = [
   {
+    key: "client",
+    header: "Cliente",
+    minWidth: "150px",
+    render: (c) => (
+      <span className="font-medium text-[#06121C] truncate block max-w-[200px]">{c.client}</span>
+    ),
+  },
+  {
     key: "product",
     header: "Produto",
     minWidth: "180px",
     render: (c) => (
-      <span className="font-medium text-gray-900 truncate block max-w-[220px]">{c.product}</span>
+      <span className="font-medium text-[#06121C] truncate block max-w-[220px]">{c.product}</span>
     ),
   },
 
@@ -38,7 +45,7 @@ export const saleColumns: Column<Sale>[] = [
       filterFn: (c, value) => c.categoria === value,
     },
     render: (c) => (
-      <span className="text-gray-600 text-sm">{c.categoria ?? "—"}</span>
+      <span className="text-[#06121C] text-sm">{c.categoria ?? "—"}</span>
     ),
   },
 
@@ -47,7 +54,7 @@ export const saleColumns: Column<Sale>[] = [
     header: "Valor",
     minWidth: "110px",
     render: (c) => (
-      <span className="font-medium text-gray-800">{formatBRL(c.value)}</span>
+      <span className="font-medium text-[#06121C]">{formatBRL(c.value)}</span>
     ),
   },
 
@@ -57,8 +64,7 @@ export const saleColumns: Column<Sale>[] = [
     minWidth: "130px",
     render: (c) =>
       c.date ? (
-        <div className="flex items-center gap-1.5 text-gray-600">
-          <AccessTimeOutlinedIcon sx={{ fontSize: 14, color: "#9CA3AF" }} />
+        <div className="flex items-center gap-1.5 text-[#06121C]">
           <span className="text-xs">{c.date}</span>
         </div>
       ) : (
@@ -89,7 +95,7 @@ export const saleColumns: Column<Sale>[] = [
       options: ALL_PAYMENT_METHODS,
       filterFn: (c, value) => c.payment_method === value,
     },
-    render: (c) => <span className="text-gray-700 text-sm">{c.payment_method}</span>,
+    render: (c) => <span className="text-[#06121C] text-sm">{c.payment_method}</span>,
   },
 
   {

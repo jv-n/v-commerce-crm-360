@@ -8,6 +8,7 @@ class SaleOut(BaseModel):
     id_cliente: str | None
     id_produto: str | None
     nome_produto: str | None
+    nome_cliente: str | None
     categoria: str | None
     ativo: int | None
     data_pedido: str | None
@@ -26,6 +27,7 @@ class SaleCreate(BaseModel):
     id_cliente: str | None = None
     id_produto: str | None = None
     nome_produto: str | None = None
+    nome_cliente: str | None = None
     categoria: str | None = None
     ativo: int | None = None
     data_pedido: str | None = None
@@ -42,6 +44,7 @@ class SaleUpdate(BaseModel):
     id_cliente: str | None = None
     id_produto: str | None = None
     nome_produto: str | None = None
+    nome_cliente: str | None = None
     categoria: str | None = None
     ativo: int | None = None
     data_pedido: str | None = None
