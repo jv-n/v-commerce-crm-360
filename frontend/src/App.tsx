@@ -9,6 +9,7 @@ import Contacts from './Pages/Contacts'
 import Sales from './Pages/Sales'
 import Products from './Pages/Products'
 import Chat from './Pages/Chat'
+import Dashboard from './Pages/Dashboard'
 
 function App() {
   return (
@@ -23,6 +24,7 @@ function App() {
               <Route path="/sales" element={<Sales />} />
               <Route path="/products" element={<Products />} />
               <Route path="/chat" element={<Chat />} />
+              <Route path="/dashboard" element={<Dashboard />} />
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />

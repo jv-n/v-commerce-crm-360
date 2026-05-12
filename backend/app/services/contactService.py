@@ -133,7 +133,6 @@ class ContactService:
         created_year: str = "",
         engagement: str = "",
         client_status: list[str] | None = None,
-        has_phone: bool = False,
         sort_by: str = "",
         sort_dir: str = "asc",
         regioes: list[str] | None = None,
@@ -159,9 +158,7 @@ class ContactService:
         if tab == "leads":
             return ContactsPageOut(data=[], total=0, page=page, pageSize=page_size)
 
-        query = db.query(GoldCliente360, DimCliente.telefone).outerjoin(
-            DimCliente, DimCliente.id_cliente == GoldCliente360.id_cliente
-        )
+        query = db.query(GoldCliente360)
 
         if tab == "clients":
             query = query.filter(GoldCliente360.segmento_cliente.in_(["Ativo", "Inativo", "VIP"]))
@@ -193,9 +190,6 @@ class ContactService:
 
         if client_status:
             query = query.filter(GoldCliente360.segmento_cliente.in_(client_status))
-
-        if has_phone:
-            query = query.filter(DimCliente.telefone.isnot(None))
 
         if regioes:
             query = query.filter(GoldCliente360.regiao.in_(regioes))
@@ -257,7 +251,7 @@ class ContactService:
         sort_col = _SORT_COLS.get(sort_by, GoldCliente360.nome_completo)
         order_fn = desc if sort_dir == "desc" else asc
 
-        rows = (
+        rows: list[GoldCliente360] = (
             query
             .order_by(order_fn(sort_col))
             .offset((page - 1) * page_size)
@@ -265,8 +259,18 @@ class ContactService:
             .all()
         )
 
+        phones_map: dict[str, str | None] = {}
+        if rows:
+            ids = [g.id_cliente for g in rows]
+            phones_map = {
+                d.id_cliente: d.telefone
+                for d in db.query(DimCliente.id_cliente, DimCliente.telefone)
+                .filter(DimCliente.id_cliente.in_(ids))
+                .all()
+            }
+
         return ContactsPageOut(
-            data=[_to_contact_out(g, phone=phone) for g, phone in rows],
+            data=[_to_contact_out(g, phone=phones_map.get(g.id_cliente)) for g in rows],
             total=total,
             page=page,
             pageSize=page_size,

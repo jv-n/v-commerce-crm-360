@@ -132,20 +132,6 @@ export function makeContactColumns(
     render: () => null,
   },
 
-  // ── Telefone — toggle filter (hidden column) ──────────────────────────────
-  {
-    key: "phone",
-    header: "",
-    visible: false,
-    filter: {
-      type: "toggle",
-      label: "Com telefone",
-      filterFn: (c) => c.phone != null,
-    },
-    render: () => null,
-  },
-
-
   // ── Engajamento ────────────────────────────────────────────────────────────
   {
     key: "engagement",

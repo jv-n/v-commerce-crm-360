@@ -32,7 +32,6 @@ def get_contacts(
     created_year: str = Query(""),
     engagement: str = Query(""),
     client_status: list[str] = Query(default=[]),
-    has_phone: bool = Query(False),
     sort_by: str = Query(""),
     sort_dir: str = Query("asc"),
     # advanced filters
@@ -68,7 +67,6 @@ def get_contacts(
         created_year=created_year,
         engagement=engagement,
         client_status=client_status,
-        has_phone=has_phone,
         sort_by=sort_by,
         sort_dir=sort_dir,
         regioes=regioes,
