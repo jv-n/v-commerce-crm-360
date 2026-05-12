@@ -48,6 +48,14 @@ export const saleColumns: Column<Sale>[] = [
       <span className="text-[#06121C] text-sm">{c.categoria ?? "—"}</span>
     ),
   },
+  {
+    key: "amount",
+    header: "Quantidade",
+    minWidth: "60px",
+    render: (c) => (
+      <span className="text-[#06121C] text-sm">{c.amount}</span>
+    ),
+  },
 
   {
     key: "value",
@@ -88,7 +96,7 @@ export const saleColumns: Column<Sale>[] = [
   {
     key: "paymentMethod",
     header: "Método de pagamento",
-    minWidth: "160px",
+    minWidth: "130px",
     filter: {
       type: "select",
       label: "Todos os métodos",

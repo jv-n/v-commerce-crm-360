@@ -86,7 +86,6 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
         .then((res) => {
           if (cancelled) return
           setSales(res.data)
-          console.log("Fetched sales example:", res.data[0])
           setTotal(res.total)
         })
         .catch(console.error)
