@@ -54,7 +54,7 @@ export const saleColumns: Column<Sale>[] = [
     minWidth: "130px",
     filter: {
       type: "select",
-      label: "Todas as categorias",
+      label: "Categoria",
       options: ALL_CATEGORIES,
       filterFn: (c, value) => c.categoria === value,
     },
@@ -105,7 +105,7 @@ export const saleColumns: Column<Sale>[] = [
     minWidth: "100px",
     filter: {
       type: "select",
-      label: "Todos os status",
+      label: "Status",
       options: ALL_STATUSES,
       filterFn: (c, value) => c.status === (value as SaleStatus),
     },
@@ -118,7 +118,7 @@ export const saleColumns: Column<Sale>[] = [
     minWidth: "130px",
     filter: {
       type: "select",
-      label: "Todos os métodos",
+      label: "Métodos",
       options: ALL_PAYMENT_METHODS,
       filterFn: (c, value) => c.payment_method === value,
     },
