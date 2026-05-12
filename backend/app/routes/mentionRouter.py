@@ -23,11 +23,11 @@ class MentionSearchResponse(BaseModel):
 
 @router.get("/search", response_model=MentionSearchResponse)
 def search_mentions(
-    q: str = Query(..., min_length=1),
+    q: str = Query("", min_length=0),
     limit: int = Query(5, ge=1, le=10),
     db: Session = Depends(get_db),
 ):
-    pattern = f"{q}%"
+    pattern = f"{q}%" if q else "%"
     results: List[MentionResult] = []
 
     # ── Clientes / Leads (dim_clientes + gold_cliente_360) ───────────────────
@@ -35,25 +35,25 @@ def search_mentions(
     rows = db.execute(
         text("""
             SELECT
-                c.id_cliente,
+                c.giid_cliente,
                 c.nome_completo,
                 c.email,
                 c.telefone,
                 COALESCE(g.total_pedidos, 0) AS total_pedidos
             FROM dim_clientes c
-            LEFT JOIN gold_cliente_360 g ON g.id_cliente = c.id_cliente
-            WHERE c.nome_completo LIKE :p OR c.id_cliente LIKE :p
+            LEFT JOIN gold_cliente_360 g ON g.id_cliente = c.giid_cliente
+            WHERE c.nome_completo LIKE :p OR c.giid_cliente LIKE :p
             LIMIT :lim
         """),
         {"p": pattern, "lim": limit},
     ).fetchall()
 
     for r in rows:
-        nome = r.nome_completo or r.id_cliente
+        nome = r.nome_completo or r.giid_cliente
         sublabel = r.email or r.telefone or None
         tipo = "lead" if (r.total_pedidos == 0) else "contact"
         results.append(MentionResult(
-            id=r.id_cliente,
+            id=r.giid_cliente,
             type=tipo,
             display=nome,
             label=nome,
