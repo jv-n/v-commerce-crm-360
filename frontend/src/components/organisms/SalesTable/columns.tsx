@@ -129,8 +129,8 @@ export const saleColumns: Column<Sale>[] = [
     key: "forward",
     header: "",
     render: () => 
-      <div className="flex flex-row justify-center items-center w-[2.2rem] h-[2.2rem] rounded-md bg-[#F7EBFF] border-[#D1B1E5] border hover:bg-[#F0D4FF] cursor-pointer transition-colors">
-        <ArrowForwardIcon sx={{ color: "#06121C" }} />,
+      <div className="flex justify-center items-center w-[2.2rem] h-[2.2rem] rounded-md bg-[#F7EBFF] border-[#D1B1E5] border hover:bg-[#F0D4FF] cursor-pointer transition-colors">
+        <ArrowForwardIcon sx={{ color: "#06121C" }} />
       </div>
   },
 ]
