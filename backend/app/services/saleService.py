@@ -21,6 +21,7 @@ class SaleService:
         status: str = "",
         metodo_pagamento: str = "",
         categoria: str = "",
+        cliente: str = "",
         ano_mes: str = "",
     ) -> SalesPageOut:
         query = db.query(GoldPedidoDetalhado)
@@ -35,6 +36,8 @@ class SaleService:
             query = query.filter(GoldPedidoDetalhado.categoria == categoria)
         if ano_mes:
             query = query.filter(GoldPedidoDetalhado.ano_mes == ano_mes)
+        if cliente:
+            query = query.filter(GoldPedidoDetalhado.nome_cliente.ilike(f"%{cliente}%"))
 
         total = query.with_entities(func.count(GoldPedidoDetalhado.id_pedido)).scalar()
 
