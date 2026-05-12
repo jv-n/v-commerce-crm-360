@@ -280,15 +280,16 @@ export function DataTable<T,>({
           onSort={handleSort}
         />
 
-        <DataTablePagination
-          {...pageInfo}
-          currentPage={safePage}
-          rowsPerPage={serverPagination?.pageSize ?? pagination.rowsPerPage}
-          rowsPerPageOptions={rowsPerPageOptions}
-          onPageChange={serverPagination?.onPageChange ?? pagination.setCurrentPage}
-          onRowsPerPageChange={serverPagination?.onPageSizeChange ?? pagination.changeRowsPerPage}
-        />
       </div>
+
+      <DataTablePagination
+        {...pageInfo}
+        currentPage={safePage}
+        rowsPerPage={serverPagination?.pageSize ?? pagination.rowsPerPage}
+        rowsPerPageOptions={rowsPerPageOptions}
+        onPageChange={serverPagination?.onPageChange ?? pagination.setCurrentPage}
+        onRowsPerPageChange={serverPagination?.onPageSizeChange ?? pagination.changeRowsPerPage}
+      />
     </>
   )
 }

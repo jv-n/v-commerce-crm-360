@@ -255,6 +255,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
       />
 
       <DataTable
+        loading={loading}
         data={loading ? [] : products}
         columns={makeProductColumns(expandedRowIds, onToggleExpand, products.map(p => p.id), onToggleAllExpand)}
         getRowId={(p) => p.id}
