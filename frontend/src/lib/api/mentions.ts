@@ -11,7 +11,6 @@ export interface MentionItem {
 }
 
 export async function searchMentions(q: string, limit = 5): Promise<MentionItem[]> {
-  if (!q.trim()) return [];
   const res = await fetch(
     `${BASE_URL}/mentions/search?q=${encodeURIComponent(q)}&limit=${limit}`
   );
