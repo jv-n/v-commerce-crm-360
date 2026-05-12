@@ -99,6 +99,7 @@ export interface DataTableProps<T> {
   noBorder?: boolean
   headerClassName?: string
   rowClassName?: string
+  expandedRowClassName?: string
   dividersClassName?: string
   expandedRowIds?: Set<string>
   renderExpandedRow?: (row: T) => React.ReactNode

@@ -44,7 +44,7 @@ export function DataTablePagination({
   return (
     <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
       <div className="flex items-center gap-2 text-sm text-gray-600">
-        <span>Rows per page</span>
+        <span>Linhas por página</span>
         <select
           value={rowsPerPage}
           onChange={e => onRowsPerPageChange(Number(e.target.value))}

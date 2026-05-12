@@ -4,15 +4,12 @@ import { makeProductColumns } from "./columns"
 import { cn } from "@/lib/utils"
 import { ProductExpandedRow } from "./ProductExpandedRow"
 import { AdvancedFiltersDrawer, EMPTY_ADVANCED, advancedActiveCount } from "./AdvancedFiltersDrawer"
-import { GroupedUFDropdown } from "./GroupedUFDropdown"
 import { fetchProducts } from "@/lib/api/products"
 import type { AdvancedFilters } from "./AdvancedFiltersDrawer"
 import type { ProductsParams } from "@/lib/api/products"
 import type { ActiveFilters, Tab } from "@/components/organisms/DataTable/types"
 import type { Product } from "@/types/product"
-import TuneIcon from "@mui/icons-material/Tune"
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
-import CloseIcon from "@mui/icons-material/Close"
+import { MdFilterList, MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md"
 
 const TABS: Tab[] = [
   { id: "all", label: "Todos os produtos" },
@@ -71,10 +68,10 @@ function buildParams(
   page: number,
   pageSize: number,
   tab: string,
-  uf: string | null,
   adv: AdvancedFilters,
   colFilters: ActiveFilters,
   search: string,
+  sort?: { key: string; direction: "asc" | "desc" } | null,
 ): ProductsParams {
   let status: string | undefined
   let tabDateFrom: string | undefined
@@ -93,7 +90,7 @@ function buildParams(
     pageSize,
     ...(search             && { search }),
     ...(status             && { status }),
-    ...(uf                 && { uf }),
+
     ...(adv.priceMin  !== "" && { price_min:  Number(adv.priceMin)  }),
     ...(adv.priceMax  !== "" && { price_max:  Number(adv.priceMax)  }),
     ...(adv.stockMin  !== "" && { stock_min:  Number(adv.stockMin)  }),
@@ -103,6 +100,7 @@ function buildParams(
     ...(effectiveDateFrom  && { date_from: effectiveDateFrom }),
     ...(adv.dateTo         && { date_to:   isoToDMY(adv.dateTo) }),
     ...columnFiltersToParams(colFilters),
+    ...(sort && { sort_by: sort.key, sort_dir: sort.direction }),
   }
 }
 
@@ -119,19 +117,19 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
   const [total,          setTotal]          = useState(0)
   const [loading,        setLoading]        = useState(true)
   const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(new Set())
-  const [selectedUF,     setSelectedUF]     = useState<string | null>(null)
-  const [ufOpen,         setUfOpen]         = useState(false)
+
   const [advanced,       setAdvanced]       = useState<AdvancedFilters>(EMPTY_ADVANCED)
   const [drawerOpen,     setDrawerOpen]     = useState(false)
   const [colFilters,     setColFilters]     = useState<ActiveFilters>({})
   const [searchQuery,    setSearchQuery]    = useState("")
   const [products,       setProducts]       = useState<Product[]>([])
   const [error,          setError]          = useState<string | null>(null)
+  const [sort,           setSort]           = useState<{ key: string; direction: "asc" | "desc" } | null>(null)
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
-    const params = buildParams(page, pageSize, activeTab, selectedUF, advanced, colFilters, searchQuery)
+    const params = buildParams(page, pageSize, activeTab, advanced, colFilters, searchQuery, sort)
 
     const hasTextInput =
       searchQuery !== "" ||
@@ -163,7 +161,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
       cancelled = true
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
-  }, [page, pageSize, activeTab, selectedUF, advanced, colFilters, searchQuery])
+  }, [page, pageSize, activeTab, advanced, colFilters, searchQuery, sort])
 
   const advCount = advancedActiveCount(advanced)
 
@@ -183,6 +181,11 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
 
   const handleSearchChange = (q: string) => {
     setSearchQuery(q)
+    resetPage()
+  }
+
+  const handleSortChange = (s: { key: string; direction: "asc" | "desc" } | null) => {
+    setSort(s)
     resetPage()
   }
 
@@ -209,62 +212,33 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
     undo: () => {},
     reset: () => {
       setActiveTab("all")
-      setSelectedUF(null)
       setAdvanced(EMPTY_ADVANCED)
       setColFilters({})
       setSearchQuery("")
+      setSort(null)
       setPage(1)
       setPageSize(DEFAULT_PAGE_SIZE)
       onCanUndoChange?.(false)
     },
   }))
 
-  const tabsRightSlot = (
-    <div className="relative">
-      {ufOpen && <div className="fixed inset-0 z-[9998]" onClick={() => setUfOpen(false)} />}
-      <button
-        onClick={() => setUfOpen(o => !o)}
-        className={cn(
-          "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md transition-colors",
-          selectedUF ? "bg-purple-50 text-purple-700 font-medium" : "text-gray-600 hover:bg-gray-100"
-        )}
-      >
-        {selectedUF ?? "Todos os estados"}
-        {selectedUF && (
-          <span role="button" onClick={e => { e.stopPropagation(); setSelectedUF(null); resetPage() }} className="hover:opacity-70">
-            <CloseIcon sx={{ fontSize: 12 }} />
-          </span>
-        )}
-        <KeyboardArrowDownIcon sx={{ fontSize: 16 }} />
-      </button>
-
-      {ufOpen && (
-        <div className="absolute top-full right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-[9999] min-w-[220px]">
-          <GroupedUFDropdown
-            products={products}
-            selected={selectedUF}
-            onSelect={uf => { setSelectedUF(uf); setUfOpen(false); resetPage() }}
-          />
-        </div>
-      )}
-    </div>
-  )
 
   const filterBarExtra = (
     <button
-      onClick={() => setDrawerOpen(true)}
+      onClick={() => setDrawerOpen(o => !o)}
       className={cn(
-        "flex items-center gap-1.5 text-sm transition-colors",
-        advCount > 0 ? "text-purple-700 font-medium" : "text-gray-400 hover:text-gray-600"
+        "flex items-center gap-1.5 text-sm transition-colors px-2 py-1 rounded-md",
+        advCount > 0 ? "text-purple-700 font-medium hover:bg-[#F7EBFF]" : "text-gray-400 hover:text-gray-600 hover:bg-[#F7EBFF]"
       )}
     >
-      <TuneIcon sx={{ fontSize: 15 }} />
+      <MdFilterList size={15} />
       Filtros avançados
       {advCount > 0 && (
         <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-600 text-white text-[10px] font-bold leading-none">
           {advCount}
         </span>
       )}
+      {drawerOpen ? <MdKeyboardArrowUp size={15} /> : <MdKeyboardArrowDown size={15} />}
     </button>
   )
 
@@ -293,11 +267,14 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
         searchPlaceholder="Buscar produto..."
         noBorder
         headerClassName="bg-[#F0DDFD]"
+        rowClassName="hover:bg-[#F7EBFF]"
+        expandedRowClassName="bg-[#F7EBFF]"
         dividersClassName="divide-[#9F83B2]"
         rowsPerPageOptions={[10, 25, 50]}
         expandedRowIds={expandedRowIds}
         renderExpandedRow={(p) => <ProductExpandedRow product={p} />}
-        tabsRightSlot={tabsRightSlot}
+
+        onSortChange={handleSortChange}
         filterBarExtra={filterBarExtra}
         serverPagination={{
           total,
