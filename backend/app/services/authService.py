@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from backend.app.schemas.authSchemas import LoginRequest, LoginResponse
+from app.schemas.authSchemas import LoginRequest, LoginResponse
 from app.models.userModel import User
 from database.database import get_db
 from fastapi import Depends, HTTPException, status
