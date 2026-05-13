@@ -6,6 +6,7 @@ import ArrowUpwardIcon   from "@mui/icons-material/ArrowUpward"
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward"
 import UnfoldMoreIcon    from "@mui/icons-material/UnfoldMore"
 import { Checkbox } from "@/components/atoms/checkbox"
+import { CopyIdButton } from "@/components/atoms/CopyIdButton"
 
 interface DataTableRowsProps<T> {
   columns: Column<T>[]
@@ -26,6 +27,7 @@ interface DataTableRowsProps<T> {
   sortKey?: string | null
   sortDir?: "asc" | "desc"
   onSort?: (key: string) => void
+  onRowClick?: (row: T) => void
 }
 
 export function DataTableRows<T,>({
@@ -47,6 +49,7 @@ export function DataTableRows<T,>({
   sortKey,
   sortDir,
   onSort,
+  onRowClick,
 }: DataTableRowsProps<T>) {
   const scrollRef  = useRef<HTMLDivElement>(null)
   const thumbRef   = useRef<HTMLDivElement>(null)
@@ -207,13 +210,15 @@ export function DataTableRows<T,>({
                     <Fragment key={id}>
                       <tr
                         className={cn(
-                          "transition-colors",
+                          "group/row transition-colors",
                           rowClassName || "hover:bg-gray-50/80",
                           isExpanded && expandedRowClassName,
-                          isSelected && "bg-blue-50/60"
+                          isSelected && "bg-blue-50/60",
+                          onRowClick && "cursor-pointer"
                         )}
+                        onClick={() => onRowClick?.(row)}
                       >
-                        <td className="px-4 py-3">
+                        <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
                           <Checkbox
                             checked={isSelected}
                             onCheckedChange={() => onToggleRow(id)}
@@ -222,7 +227,14 @@ export function DataTableRows<T,>({
                         </td>
                         {columns.map(col => (
                           <td key={col.key} className="px-3 py-3">
-                            {col.render(row)}
+                            {col.copyId ? (
+                              <div className="flex items-center gap-1.5">
+                                {col.render(row)}
+                                <CopyIdButton id={col.copyId(row)} />
+                              </div>
+                            ) : (
+                              col.render(row)
+                            )}
                           </td>
                         ))}
                       </tr>

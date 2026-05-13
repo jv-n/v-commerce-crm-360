@@ -52,6 +52,7 @@ export function DataTable<T,>({
   searchFn,
   searchPlaceholder,
   onSortChange,
+  onRowClick,
 }: DataTableProps<T>) {
   const [searchOpen,  setSearchOpen]  = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -278,6 +279,7 @@ export function DataTable<T,>({
           sortKey={sortKey}
           sortDir={sortDir}
           onSort={handleSort}
+          onRowClick={onRowClick}
         />
 
       </div>

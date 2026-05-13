@@ -274,7 +274,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
         rowsPerPageOptions={[10, 25, 50]}
         expandedRowIds={expandedRowIds}
         renderExpandedRow={(p) => <ProductExpandedRow product={p} />}
-
+        onRowClick={(p) => onToggleExpand(p.id)}
         onSortChange={handleSortChange}
         filterBarExtra={filterBarExtra}
         serverPagination={{
