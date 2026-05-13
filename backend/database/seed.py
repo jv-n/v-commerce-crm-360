@@ -15,12 +15,43 @@ import pandas as pd
 from pathlib import Path
 import sys
 import time
+import uuid
+from pwdlib import PasswordHash
+
+_password_hasher = PasswordHash.recommended()
 
 # ── Caminhos ──────────────────────────────────────────────────────────────────
 ROOT         = Path(__file__).resolve().parents[2]
 SILVER_DIR   = ROOT / "data-engineering" / "silver-data-csvs"
 GOLD_DIR     = ROOT / "data-engineering" / "gold-data-csvs"
 DB_PATH      = Path(__file__).resolve().parent / "vcommerce.db"
+
+# ── Usuários
+USERS = [{
+    "name":"Gustavo Admin",
+    "email":"gustavo.admin@vcommerce.com",
+    "password":"admin123",
+    "role":"admin"
+},
+{
+    "name":"Joao Vendas",
+    "email":"joao.vendas@vcommerce.com",
+    "password":"vendas123",
+    "role":"sales"
+},
+{
+    "name":"Maria Suporte",
+    "email":"maria.suporte@vcommerce.com",
+    "password":"support123",
+    "role":"support"
+},
+{
+    "name":"Caio Vendas",
+    "email":"caio.vendas@vcommerce.com",
+    "password":"sales123",
+    "role":"sales"
+}
+]
 
 # ── Tabelas Silver ────────────────────────────────────────────────────────────
 # (nome_do_arquivo_sem_extensao, nome_da_tabela_no_banco)
@@ -117,10 +148,23 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_click_cliente      ON ft_clickstream(id_cliente)",
     "CREATE INDEX IF NOT EXISTS idx_click_produto      ON ft_clickstream(id_produto)",
     "CREATE INDEX IF NOT EXISTS idx_click_tipo         ON ft_clickstream(tipo_evento)",
+    # Gold — gold_pedidos_detalhado (sort + filtros da página de pedidos)
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_data_pedido   ON gold_pedidos_detalhado(data_pedido DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_status        ON gold_pedidos_detalhado(status)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_categoria     ON gold_pedidos_detalhado(categoria)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_metodo        ON gold_pedidos_detalhado(metodo_pagamento)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_ano_mes       ON gold_pedidos_detalhado(ano_mes)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_status_data   ON gold_pedidos_detalhado(status, data_pedido DESC)",
     # Gold — gold_cliente_360
     "CREATE INDEX IF NOT EXISTS idx_g360_email         ON gold_cliente_360(email)",
     "CREATE INDEX IF NOT EXISTS idx_g360_regiao        ON gold_cliente_360(regiao)",
     "CREATE INDEX IF NOT EXISTS idx_g360_segmento      ON gold_cliente_360(segmento_cliente)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_nome_completo ON gold_cliente_360(nome_completo)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_total_pedidos ON gold_cliente_360(total_pedidos)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_data_ultimo   ON gold_cliente_360(data_ultimo_pedido)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_nps_media     ON gold_cliente_360(nota_nps_media)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_receita       ON gold_cliente_360(receita_total)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_ticket_medio  ON gold_cliente_360(ticket_medio)",
     # Gold — gold_kpis_vendas_mensal
     "CREATE INDEX IF NOT EXISTS idx_gkpis_ano_mes      ON gold_kpis_vendas_mensal(ano_mes)",
     # Gold — gold_vendas_por_dimensao
@@ -169,6 +213,27 @@ def create_indexes(conn: sqlite3.Connection) -> None:
             pass  # tabela não existe ainda (ex: ft_pedidos ausente)
     conn.commit()
 
+def seed_users(conn: sqlite3.Connection) -> None:
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id       TEXT PRIMARY KEY,
+            name     TEXT NOT NULL,
+            email    TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            role     TEXT NOT NULL
+        )
+    """)
+    cursor = conn.cursor()
+    for user in USERS:
+        user_id = str(uuid.uuid4())
+        hashed = _password_hasher.hash(user["password"])
+        cursor.execute(
+            "INSERT OR IGNORE INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)",
+            (user_id, user["name"], user["email"], hashed, user["role"]),
+        )
+    conn.commit()
+    print(f"   {'users':<30} {len(USERS):>8,} linhas  [seed estático]")
+ 
 
 def seed() -> None:
     print(f"\n{'='*60}")
@@ -220,6 +285,12 @@ def seed() -> None:
             print(f"  [{time.time() - t0:.1f}s]")
             total_rows += len(df)
 
+    # ── Usuários ─────────────────────────────
+    
+    print()
+    print("  [ Usuários ]")
+    seed_users(conn)
+    
     # ── Índices ───────────────────────────────────────────────────────────────
     print(f"\n  Criando índices...", end=" ", flush=True)
     create_indexes(conn)

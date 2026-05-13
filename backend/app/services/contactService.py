@@ -2,12 +2,21 @@ import uuid
 from datetime import date
 
 from sqlalchemy.orm import Session
-from sqlalchemy import func, asc, desc
+from sqlalchemy import asc, desc, select
 
 from app.models.contactModel import GoldCliente360, DimCliente
 from app.schemas.contactSchemas import ContactOut, ContactsPageOut, ContactCreate, ContactUpdate
 
 _VALID_STATUSES = {"Ativo", "Inativo", "VIP", "Lead", "Em risco"}
+
+_SORT_COLS = {
+    "name":         GoldCliente360.nome_completo,
+    "purchases":    GoldCliente360.total_pedidos,
+    "lastPurchase": GoldCliente360.data_ultimo_pedido,
+    "engagement":   GoldCliente360.nota_nps_media,
+    "totalRevenue": GoldCliente360.receita_total,
+    "avgTicket":    GoldCliente360.ticket_medio,
+}
 
 
 def _fmt_phone(raw: str | None) -> str | None:
@@ -47,16 +56,13 @@ def _normalize_score(nota_nps: float | None) -> float:
 def _to_contact_out(g: GoldCliente360, phone: str | None = None) -> ContactOut:
     first = _fmt_date(g.data_primeiro_pedido)
     return ContactOut(
-        # Identidade
         id=g.id_cliente,
         name=g.nome_completo,
         email=g.email,
         phone=_fmt_phone(phone),
-        # Segmentação
         clientStatus=g.segmento_cliente,
         region=g.regiao,
         origin=g.origem,
-        # Pedidos
         purchases=int(g.total_pedidos or 0),
         distinctProducts=int(g.total_produtos_distintos or 0),
         totalRevenue=round(g.receita_total or 0.0, 2),
@@ -64,105 +70,30 @@ def _to_contact_out(g: GoldCliente360, phone: str | None = None) -> ContactOut:
         firstPurchase=first,
         lastPurchase=_fmt_date(g.data_ultimo_pedido),
         favPaymentMethod=g.metodo_pagamento_favorito,
-        # Suporte
         totalTickets=int(g.total_tickets or 0),
         resolutionRate=round(g.taxa_resolucao or 0.0, 4),
         avgSupportRating=g.nota_media_atendimento,
-        # NPS / engajamento
         engagement=_normalize_engagement(g.categoria_nps_recente),
         engagementScore=_normalize_score(g.nota_nps_media),
         productRating=g.nota_produto_media,
-        # Compat.
         createdAt=first,
     )
 
 
 class ContactService:
+    def __init__(self, db: Session):
+        self.db = db
 
-    @staticmethod
-    def create_contact(db: Session, data: ContactCreate) -> ContactOut:
-        contact_id = str(uuid.uuid4())
-        today = date.today().strftime("%Y-%m-%d")
-
-        gold = GoldCliente360(
-            id_cliente=contact_id,
-            nome_completo=data.name,
-            email=data.email,
-            segmento_cliente="Ativo",
-            total_pedidos=0,
-            total_produtos_distintos=0,
-            receita_total=0,
-            ticket_medio=0,
-            total_tickets=0,
-            taxa_resolucao=0,
-            data_primeiro_pedido=today,
-            timestamp_ingestion=today,
-        )
-        db.add(gold)
-        db.commit()
-        db.refresh(gold)
-        return _to_contact_out(gold, phone=None)
-
-    @staticmethod
-    def update_contact(db: Session, contact_id: str, data: ContactUpdate) -> ContactOut | None:
-        gold = db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()
-        if not gold:
-            return None
-
-        if data.name is not None:
-            gold.nome_completo = data.name
-        if data.email is not None:
-            gold.email = data.email
-        if data.clientStatus is not None and data.clientStatus in _VALID_STATUSES:
-            gold.segmento_cliente = data.clientStatus
-
-        db.commit()
-        db.refresh(gold)
-        dim = db.query(DimCliente).filter(DimCliente.id_cliente == contact_id).first()
-        return _to_contact_out(gold, phone=dim.telefone if dim else None)
-
-    @staticmethod
-    def get_contacts(
-        db: Session,
-        page: int = 1,
-        page_size: int = 20,
-        tab: str = "all",
-        search: str = "",
-        purchases_min: int | None = None,
-        purchases_max: int | None = None,
-        created_year: str = "",
-        engagement: str = "",
-        client_status: list[str] | None = None,
-        has_phone: bool = False,
-        sort_by: str = "",
-        sort_dir: str = "asc",
-        regioes: list[str] | None = None,
-        origens: list[str] | None = None,
-        pagamentos: list[str] | None = None,
-        receita_min: float | None = None,
-        receita_max: float | None = None,
-        ticket_medio_min: float | None = None,
-        ticket_medio_max: float | None = None,
-        primeira_compra_from: str = "",
-        primeira_compra_to: str = "",
-        ultima_compra_from: str = "",
-        ultima_compra_to: str = "",
-        tickets_suporte_min: int | None = None,
-        tickets_suporte_max: int | None = None,
-        nota_atend_min: float | None = None,
-        nota_atend_max: float | None = None,
-        nps_min: float | None = None,
-        nps_max: float | None = None,
-        nota_prod_min: float | None = None,
-        nota_prod_max: float | None = None,
-    ) -> ContactsPageOut:
-        if tab == "leads":
-            return ContactsPageOut(data=[], total=0, page=page, pageSize=page_size)
-
-        query = db.query(GoldCliente360, DimCliente.telefone).outerjoin(
-            DimCliente, DimCliente.id_cliente == GoldCliente360.id_cliente
-        )
-
+    def _apply_filters(self, query, tab, search, purchases_min, purchases_max,
+                       created_year, engagement, client_status, has_phone,
+                       regioes, origens, pagamentos,
+                       receita_min, receita_max, ticket_medio_min, ticket_medio_max,
+                       primeira_compra_from, primeira_compra_to,
+                       ultima_compra_from, ultima_compra_to,
+                       tickets_suporte_min, tickets_suporte_max,
+                       nota_atend_min, nota_atend_max,
+                       nps_min, nps_max, nota_prod_min, nota_prod_max):
+        """Aplica todos os filtros em GoldCliente360. Join com DimCliente não incluído."""
         if tab == "clients":
             query = query.filter(GoldCliente360.segmento_cliente.in_(["Ativo", "Inativo", "VIP"]))
 
@@ -175,7 +106,6 @@ class ContactService:
 
         if purchases_min is not None:
             query = query.filter(GoldCliente360.total_pedidos >= purchases_min)
-
         if purchases_max is not None:
             query = query.filter(GoldCliente360.total_pedidos <= purchases_max)
 
@@ -194,8 +124,15 @@ class ContactService:
         if client_status:
             query = query.filter(GoldCliente360.segmento_cliente.in_(client_status))
 
+        # has_phone: EXISTS subquery — evita o join completo só para o count
         if has_phone:
-            query = query.filter(DimCliente.telefone.isnot(None))
+            phone_exists = (
+                select(DimCliente.id_cliente)
+                .where(DimCliente.id_cliente == GoldCliente360.id_cliente)
+                .where(DimCliente.telefone.isnot(None))
+                .exists()
+            )
+            query = query.filter(phone_exists)
 
         if regioes:
             query = query.filter(GoldCliente360.regiao.in_(regioes))
@@ -244,29 +181,123 @@ class ContactService:
         if nota_prod_max is not None:
             query = query.filter(GoldCliente360.nota_produto_media <= nota_prod_max)
 
-        total = query.with_entities(func.count(GoldCliente360.id_cliente)).scalar()  # type: ignore[union-attr]
+        return query
 
-        _SORT_COLS = {
-            "name":         GoldCliente360.nome_completo,
-            "purchases":    GoldCliente360.total_pedidos,
-            "lastPurchase": GoldCliente360.data_ultimo_pedido,
-            "engagement":   GoldCliente360.nota_nps_media,
-            "totalRevenue": GoldCliente360.receita_total,
-            "avgTicket":    GoldCliente360.ticket_medio,
-        }
+    def create_contact(self, data: ContactCreate) -> ContactOut:
+        contact_id = str(uuid.uuid4())
+        today = date.today().strftime("%Y-%m-%d")
+
+        gold = GoldCliente360(
+            id_cliente=contact_id,
+            nome_completo=data.name,
+            email=data.email,
+            segmento_cliente="Ativo",
+            total_pedidos=0,
+            total_produtos_distintos=0,
+            receita_total=0,
+            ticket_medio=0,
+            total_tickets=0,
+            taxa_resolucao=0,
+            data_primeiro_pedido=today,
+            timestamp_ingestion=today,
+        )
+        self.db.add(gold)
+        self.db.commit()
+        self.db.refresh(gold)
+        return _to_contact_out(gold, phone=None)
+
+    def update_contact(self, contact_id: str, data: ContactUpdate) -> ContactOut | None:
+        gold = self.db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()
+        if not gold:
+            return None
+
+        if data.name is not None:
+            gold.nome_completo = data.name
+        if data.email is not None:
+            gold.email = data.email
+        if data.clientStatus is not None and data.clientStatus in _VALID_STATUSES:
+            gold.segmento_cliente = data.clientStatus
+
+        self.db.commit()
+        self.db.refresh(gold)
+        dim = self.db.query(DimCliente).filter(DimCliente.id_cliente == contact_id).first()
+        return _to_contact_out(gold, phone=dim.telefone if dim else None)
+
+    def get_contacts(
+        self,
+        page: int = 1,
+        page_size: int = 20,
+        tab: str = "all",
+        search: str = "",
+        purchases_min: int | None = None,
+        purchases_max: int | None = None,
+        created_year: str = "",
+        engagement: str = "",
+        client_status: list[str] | None = None,
+        has_phone: bool = False,
+        sort_by: str = "",
+        sort_dir: str = "asc",
+        regioes: list[str] | None = None,
+        origens: list[str] | None = None,
+        pagamentos: list[str] | None = None,
+        receita_min: float | None = None,
+        receita_max: float | None = None,
+        ticket_medio_min: float | None = None,
+        ticket_medio_max: float | None = None,
+        primeira_compra_from: str = "",
+        primeira_compra_to: str = "",
+        ultima_compra_from: str = "",
+        ultima_compra_to: str = "",
+        tickets_suporte_min: int | None = None,
+        tickets_suporte_max: int | None = None,
+        nota_atend_min: float | None = None,
+        nota_atend_max: float | None = None,
+        nps_min: float | None = None,
+        nps_max: float | None = None,
+        nota_prod_min: float | None = None,
+        nota_prod_max: float | None = None,
+    ) -> ContactsPageOut:
+        if tab == "leads":
+            return ContactsPageOut(data=[], total=0, page=page, pageSize=page_size)
+
+        filter_args = (
+            tab, search, purchases_min, purchases_max, created_year, engagement,
+            client_status, has_phone, regioes, origens, pagamentos,
+            receita_min, receita_max, ticket_medio_min, ticket_medio_max,
+            primeira_compra_from, primeira_compra_to, ultima_compra_from, ultima_compra_to,
+            tickets_suporte_min, tickets_suporte_max, nota_atend_min, nota_atend_max,
+            nps_min, nps_max, nota_prod_min, nota_prod_max,
+        )
+
+        # ── Count: só em GoldCliente360, sem join ─────────────────────────────
+        count_q = self._apply_filters(self.db.query(GoldCliente360), *filter_args)
+        total = count_q.count()
+
+        # ── Dados paginados: ORDER BY + LIMIT em GoldCliente360 ───────────────
         sort_col = _SORT_COLS.get(sort_by, GoldCliente360.nome_completo)
         order_fn = desc if sort_dir == "desc" else asc
 
-        rows = (
-            query
+        gold_rows: list[GoldCliente360] = (
+            count_q
             .order_by(order_fn(sort_col))
             .offset((page - 1) * page_size)
             .limit(page_size)
             .all()
         )
 
+        # ── Telefones: um único IN para os IDs desta página ───────────────────
+        ids = [g.id_cliente for g in gold_rows]
+        phone_map: dict[str, str | None] = {}
+        if ids:
+            dim_rows = (
+                self.db.query(DimCliente)
+                .filter(DimCliente.id_cliente.in_(ids))
+                .all()
+            )
+            phone_map = {d.id_cliente: d.telefone for d in dim_rows}
+
         return ContactsPageOut(
-            data=[_to_contact_out(g, phone=phone) for g, phone in rows],
+            data=[_to_contact_out(g, phone=phone_map.get(g.id_cliente)) for g in gold_rows],
             total=total,
             page=page,
             pageSize=page_size,
