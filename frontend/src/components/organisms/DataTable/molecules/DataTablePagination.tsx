@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
+
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft"
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight"
 import KeyboardDoubleArrowLeftIcon from "@mui/icons-material/KeyboardDoubleArrowLeft"
@@ -33,7 +34,6 @@ export function DataTablePagination({
 }: DataTablePaginationProps) {
   const totalPages = pageNumbers.length
   const totalWindows = Math.ceil(totalPages / WINDOW_SIZE)
-
   const [pageWindow, setPageWindow] = useState(() => Math.floor((currentPage - 1) / WINDOW_SIZE))
   const [rppOpen, setRppOpen] = useState(false)
   const rppRef = useRef<HTMLDivElement>(null)
@@ -55,7 +55,7 @@ export function DataTablePagination({
 
   return (
     <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-      <div className="flex items-center gap-2 text-sm text-gray-600">
+      <div className="flex items-center gap-3 text-sm text-gray-900">
         <span>Linhas por página</span>
         <div className="relative" ref={rppRef}>
           <button
@@ -137,7 +137,7 @@ export function DataTablePagination({
         </button>
       </div>
 
-      <span className="text-sm text-gray-500">
+      <span className="text-sm font-medium text-gray-900">
         {startItem}–{endItem} of {totalItems}
       </span>
     </div>
