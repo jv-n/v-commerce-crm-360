@@ -15,12 +15,43 @@ import pandas as pd
 from pathlib import Path
 import sys
 import time
+import uuid
+from pwdlib import PasswordHash
+
+_password_hasher = PasswordHash.recommended()
 
 # ── Caminhos ──────────────────────────────────────────────────────────────────
 ROOT         = Path(__file__).resolve().parents[2]
 SILVER_DIR   = ROOT / "data-engineering" / "silver-data-csvs"
 GOLD_DIR     = ROOT / "data-engineering" / "gold-data-csvs"
 DB_PATH      = Path(__file__).resolve().parent / "vcommerce.db"
+
+# ── Usuários
+USERS = [{
+    "name":"Gustavo Admin",
+    "email":"gustavo.admin@vcommerce.com",
+    "password":"admin123",
+    "role":"admin"
+},
+{
+    "name":"Joao Vendas",
+    "email":"joao.vendas@vcommerce.com",
+    "password":"vendas123",
+    "role":"sales"
+},
+{
+    "name":"Maria Suporte",
+    "email":"maria.suporte@vcommerce.com",
+    "password":"support123",
+    "role":"support"
+},
+{
+    "name":"Caio Vendas",
+    "email":"caio.vendas@vcommerce.com",
+    "password":"sales123",
+    "role":"sales"
+}
+]
 
 # ── Tabelas Silver ────────────────────────────────────────────────────────────
 # (nome_do_arquivo_sem_extensao, nome_da_tabela_no_banco)
@@ -181,6 +212,27 @@ def create_indexes(conn: sqlite3.Connection) -> None:
             pass  # tabela não existe ainda (ex: ft_pedidos ausente)
     conn.commit()
 
+def seed_users(conn: sqlite3.Connection) -> None:
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id       TEXT PRIMARY KEY,
+            name     TEXT NOT NULL,
+            email    TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            role     TEXT NOT NULL
+        )
+    """)
+    cursor = conn.cursor()
+    for user in USERS:
+        user_id = str(uuid.uuid4())
+        hashed = _password_hasher.hash(user["password"])
+        cursor.execute(
+            "INSERT OR IGNORE INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)",
+            (user_id, user["name"], user["email"], hashed, user["role"]),
+        )
+    conn.commit()
+    print(f"   {'users':<30} {len(USERS):>8,} linhas  [seed estático]")
+ 
 
 def seed() -> None:
     print(f"\n{'='*60}")
@@ -232,6 +284,12 @@ def seed() -> None:
             print(f"  [{time.time() - t0:.1f}s]")
             total_rows += len(df)
 
+    # ── Usuários ─────────────────────────────
+    
+    print()
+    print("  [ Usuários ]")
+    seed_users(conn)
+    
     # ── Índices ───────────────────────────────────────────────────────────────
     print(f"\n  Criando índices...", end=" ", flush=True)
     create_indexes(conn)
