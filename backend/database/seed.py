@@ -147,10 +147,23 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_click_cliente      ON ft_clickstream(id_cliente)",
     "CREATE INDEX IF NOT EXISTS idx_click_produto      ON ft_clickstream(id_produto)",
     "CREATE INDEX IF NOT EXISTS idx_click_tipo         ON ft_clickstream(tipo_evento)",
+    # Gold — gold_pedidos_detalhado (sort + filtros da página de pedidos)
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_data_pedido   ON gold_pedidos_detalhado(data_pedido DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_status        ON gold_pedidos_detalhado(status)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_categoria     ON gold_pedidos_detalhado(categoria)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_metodo        ON gold_pedidos_detalhado(metodo_pagamento)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_ano_mes       ON gold_pedidos_detalhado(ano_mes)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_status_data   ON gold_pedidos_detalhado(status, data_pedido DESC)",
     # Gold — gold_cliente_360
     "CREATE INDEX IF NOT EXISTS idx_g360_email         ON gold_cliente_360(email)",
     "CREATE INDEX IF NOT EXISTS idx_g360_regiao        ON gold_cliente_360(regiao)",
     "CREATE INDEX IF NOT EXISTS idx_g360_segmento      ON gold_cliente_360(segmento_cliente)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_nome_completo ON gold_cliente_360(nome_completo)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_total_pedidos ON gold_cliente_360(total_pedidos)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_data_ultimo   ON gold_cliente_360(data_ultimo_pedido)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_nps_media     ON gold_cliente_360(nota_nps_media)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_receita       ON gold_cliente_360(receita_total)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_ticket_medio  ON gold_cliente_360(ticket_medio)",
     # Gold — gold_kpis_vendas_mensal
     "CREATE INDEX IF NOT EXISTS idx_gkpis_ano_mes      ON gold_kpis_vendas_mensal(ano_mes)",
     # Gold — gold_vendas_por_dimensao

@@ -10,12 +10,12 @@ router = APIRouter(prefix="/contacts", tags=["contacts"])
 
 @router.post("/", response_model=ContactOut, status_code=201)
 def create_contact(body: ContactCreate, db: Session = Depends(get_db)):
-    return ContactService.create_contact(db, body)
+    return ContactService(db).create_contact(body)
 
 
 @router.put("/{contact_id}", response_model=ContactOut)
 def update_contact(contact_id: str, body: ContactUpdate, db: Session = Depends(get_db)):
-    result = ContactService.update_contact(db, contact_id, body)
+    result = ContactService(db).update_contact(contact_id, body)
     if not result:
         raise HTTPException(status_code=404, detail="Contact not found")
     return result
@@ -57,8 +57,7 @@ def get_contacts(
     nota_prod_max: float | None = Query(None),
     db: Session = Depends(get_db),
 ):
-    return ContactService.get_contacts(
-        db,
+    return ContactService(db).get_contacts(
         page=page,
         page_size=pageSize,
         tab=tab,

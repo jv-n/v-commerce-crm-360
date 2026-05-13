@@ -1,4 +1,4 @@
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, field_validator
 
 
 class SaleOut(BaseModel):
@@ -6,9 +6,19 @@ class SaleOut(BaseModel):
 
     id_pedido: str
     id_cliente: str | None
+    nome_cliente: str | None
+    email: str | None
+    telefone: str | None
+
+    @field_validator("telefone", mode="before")
+    @classmethod
+    def coerce_telefone(cls, v):
+        if v is None:
+            return None
+        return str(int(float(str(v).split(".")[0]))) if str(v).replace(".", "").isdigit() else str(v)
+
     id_produto: str | None
     nome_produto: str | None
-    nome_cliente: str | None
     categoria: str | None
     ativo: int | None
     data_pedido: str | None
