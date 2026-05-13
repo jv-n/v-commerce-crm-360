@@ -1,8 +1,8 @@
 import { useRef, useState } from "react"
 import { ProductsTable } from "@/components/molecules/ProductsTable"
 import type { ProductsTableHandle } from "@/components/molecules/ProductsTable"
-import { MdAddCircleOutline } from "react-icons/md"
 import UndoIcon from "@mui/icons-material/Undo"
+import { IoMdAddCircleOutline } from "react-icons/io"
 import RefreshIcon from "@mui/icons-material/Refresh"
 import { cn } from "@/lib/utils"
 
@@ -13,17 +13,17 @@ export default function Products() {
   return (
     <div className="relative p-6 h-full flex flex-col gap-5 bg-white min-h-full rounded-xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Catálogo</h1>
+        <h1 className="text-[40px] font-bold text-gray-900">Catálogo</h1>
         <button className="flex items-center gap-2 bg-[#F7EBFF] border border-[#D1B1E5] rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors">
-          <MdAddCircleOutline />
+          <IoMdAddCircleOutline />
           Adicionar produto
         </button>
       </div>
 
       <ProductsTable ref={tableRef} onCanUndoChange={setCanUndo} />
 
-      {/* Botões flutuantes */}
-      <div className="fixed bottom-6 right-6 flex items-center gap-2 z-50">
+      <hr className="border-gray-200" />
+      <div className="self-end flex items-center gap-2">
         <button
           onClick={() => tableRef.current?.undo()}
           disabled={!canUndo}

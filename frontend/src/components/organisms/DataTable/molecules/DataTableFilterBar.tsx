@@ -1,7 +1,6 @@
 import type { ReactNode } from "react"
 import { useState, useRef, useEffect } from "react"
 import AddIcon from "@mui/icons-material/Add"
-import TuneIcon from "@mui/icons-material/Tune"
 import CloseIcon from "@mui/icons-material/Close"
 
 interface OptionalFilter {
@@ -15,6 +14,7 @@ interface DataTableFilterBarProps {
   onClearAll: () => void
   availableOptionalFilters: OptionalFilter[]
   onAddFilter: (key: string) => void
+  extra?: ReactNode
 }
 
 export function DataTableFilterBar({
@@ -23,6 +23,7 @@ export function DataTableFilterBar({
   onClearAll,
   availableOptionalFilters,
   onAddFilter,
+  extra,
 }: DataTableFilterBarProps) {
   const [dropdownOpen, setDropdownOpen] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -39,16 +40,18 @@ export function DataTableFilterBar({
   }, [dropdownOpen])
 
   return (
-    <div className="flex items-center gap-2.5 px-4 py-2.5 border-b border-gray-200 bg-gray-50/60 flex-wrap relative z-50">
-      <span className="text-sm text-gray-400 font-medium">Filtrar por:</span>
+    <div className="flex items-center gap-2.5 px-4 py-2.5 flex-wrap relative z-50">
+      <span className="text-sm text-gray-800 font-bold">Filtrar por:</span>
 
       {children}
 
       {availableOptionalFilters.length > 0 && (
-        <div className="relative" ref={ref}>
+        <>
+          <div className="w-px h-4 bg-gray-200 self-center" />
+          <div className="relative" ref={ref}>
           <button
             onClick={() => setDropdownOpen(o => !o)}
-            className="p-1.5 text-gray-500 hover:text-gray-700 bg-white border border-gray-200 rounded-md shadow-sm hover:bg-gray-50"
+            className="p-1.5 text-gray-500 hover:text-gray-700 rounded-md hover:bg-[#F7EBFF]"
           >
             <AddIcon sx={{ fontSize: 14 }} />
           </button>
@@ -59,7 +62,7 @@ export function DataTableFilterBar({
                 <button
                   key={f.key}
                   onClick={() => { onAddFilter(f.key); setDropdownOpen(false) }}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-[#F7EBFF] transition-colors"
                 >
                   {f.label}
                 </button>
@@ -67,7 +70,10 @@ export function DataTableFilterBar({
             </div>
           )}
         </div>
+        </>
       )}
+
+      {extra}
 
       {activeFilterCount > 0 && (
         <button
@@ -79,10 +85,6 @@ export function DataTableFilterBar({
         </button>
       )}
 
-      <button className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-gray-600 ml-1">
-        <TuneIcon sx={{ fontSize: 15 }} />
-        Filtros avançados
-      </button>
     </div>
   )
 }

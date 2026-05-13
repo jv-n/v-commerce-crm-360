@@ -1,28 +1,40 @@
 import type { Column } from "@/components/organisms/DataTable/types"
-import type { Contact, ContactStatus, EngagementType } from "@/types/contact"
-import { StatusBadge } from "@/components/atoms/badge"
+import type { Contact, EngagementType, ClientStatusType } from "@/types/contact"
 import { cn } from "@/lib/utils"
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined"
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
+import ChevronRightIcon from "@mui/icons-material/ChevronRight"
+import { ClientStatusBadge, ALL_CLIENT_STATUSES } from "./ClientStatusBadge"
 
 
-const ENGAGEMENT: Record<EngagementType, { bar: string; text: string; width: string }> = {
-  Promotor:      { bar: "bg-green-500",  text: "text-green-700",  width: "80%" },
-  Neutro:        { bar: "bg-yellow-400", text: "text-yellow-600", width: "50%" },
-  Detrator:      { bar: "bg-red-500",    text: "text-red-600",    width: "22%" },
-  "Nenhum NPS":  { bar: "bg-gray-200",   text: "text-gray-400",   width: "0%"  },
+const ENGAGEMENT: Record<EngagementType, { text: string }> = {
+  Promotor:      { text: "text-green-700"  },
+  Neutro:        { text: "text-yellow-600" },
+  Detrator:      { text: "text-red-600"    },
+  "Nenhum NPS":  { text: "text-gray-400"   },
 }
 
-const ALL_STATUSES: ContactStatus[] = [
-  "Cliente Ativo", "Cliente VIP", "Em risco", "Lead", "Cliente Inativo", "Desativado",
-]
-
-export const contactColumns: Column<Contact>[] = [
-  // ── Info icon (decorative) ─────────────────────────────────────────────────
+export function makeContactColumns(
+  expandedRowId: string | null,
+  onToggle: (id: string) => void,
+): Column<Contact>[] {
+  return [
+  // ── Info icon ──────────────────────────────────────────────────────────────
   {
     key: "info",
     header: "",
-    render: () => <InfoOutlinedIcon sx={{ fontSize: 15, color: "#D1D5DB" }} />,
+    render: (c) => (
+      <button
+        onClick={(e) => { e.stopPropagation(); onToggle(c.id) }}
+        className="flex items-center justify-center"
+      >
+        <ChevronRightIcon sx={{
+          fontSize: 16,
+          color: expandedRowId === c.id ? "#7C3AED" : "#9CA3AF",
+          transform: expandedRowId === c.id ? "rotate(90deg)" : "rotate(0deg)",
+          transition: "transform 0.2s ease, color 0.2s ease",
+        }} />
+      </button>
+    ),
   },
 
   // ── Nome ───────────────────────────────────────────────────────────────────
@@ -30,23 +42,30 @@ export const contactColumns: Column<Contact>[] = [
     key: "name",
     header: "Nome",
     minWidth: "160px",
+    sortable: true,
+    sortValue: (c) => c.name ?? "",
     render: (c) => (
-      <span className="font-medium text-gray-900 truncate block max-w-[200px]">{c.name}</span>
+      <button
+        onClick={() => onToggle(c.id)}
+        className="font-medium text-gray-900 truncate block max-w-[200px] text-left hover:text-purple-700 transition-colors"
+      >
+        {c.name}
+      </button>
     ),
   },
 
-  // ── Status — select filter (used as rightFilterKey) ─────────────────────────
+  // ── Status do cliente ──────────────────────────────────────────────────────
   {
-    key: "status",
+    key: "clientStatus",
     header: "Status",
-    minWidth: "130px",
+    minWidth: "140px",
     filter: {
-      type: "select",
-      label: "Todos os estados",
-      options: ALL_STATUSES,
-      filterFn: (c, value) => c.status === (value as ContactStatus),
+      type: "multi-select" as const,
+      label: "Status",
+      options: ALL_CLIENT_STATUSES,
+      renderOption: (value) => <ClientStatusBadge status={value as ClientStatusType} />,
     },
-    render: (c) => <StatusBadge status={c.status ?? "Cliente Ativo"} />,
+    render: (c) => <ClientStatusBadge status={c.clientStatus} />,
   },
 
   // ── Última compra ──────────────────────────────────────────────────────────
@@ -54,6 +73,8 @@ export const contactColumns: Column<Contact>[] = [
     key: "lastPurchase",
     header: "Última compra",
     minWidth: "130px",
+    sortable: true,
+    sortValue: (c) => c.lastPurchase ?? "",
     render: (c) =>
       c.lastPurchase ? (
         <div className="flex items-center gap-1.5 text-gray-600">
@@ -70,6 +91,8 @@ export const contactColumns: Column<Contact>[] = [
     key: "purchases",
     header: "Compras",
     minWidth: "80px",
+    sortable: true,
+    sortValue: (c) => c.purchases,
     filter: {
       type: "number-range",
       label: "Compras",
@@ -109,12 +132,27 @@ export const contactColumns: Column<Contact>[] = [
     render: () => null,
   },
 
+  // ── Telefone — toggle filter (hidden column) ──────────────────────────────
+  {
+    key: "phone",
+    header: "",
+    visible: false,
+    filter: {
+      type: "toggle",
+      label: "Com telefone",
+      filterFn: (c) => c.phone != null,
+    },
+    render: () => null,
+  },
+
+
   // ── Engajamento ────────────────────────────────────────────────────────────
   {
     key: "engagement",
     header: "Engajamento",
     minWidth: "140px",
-    filterOptional: true,
+    sortable: true,
+    sortValue: (c) => c.engagementScore,
     filter: {
       type: "select",
       label: "Engajamento",
@@ -123,14 +161,8 @@ export const contactColumns: Column<Contact>[] = [
     },
     render: (c) => {
       const eng = ENGAGEMENT[c.engagement]
-      return (
-        <div className="flex flex-col gap-1 min-w-[110px]">
-          <span className={cn("text-xs font-medium", eng.text)}>{c.engagement}</span>
-          <div className="w-full bg-gray-100 rounded-full h-1.5">
-            <div className={cn("h-1.5 rounded-full", eng.bar)} style={{ width: `${c.engagementScore}%` }} />
-          </div>
-        </div>
-      )
+      return <span className={cn("text-xs font-medium", eng.text)}>{c.engagement}</span>
     },
   },
-]
+  ]
+}

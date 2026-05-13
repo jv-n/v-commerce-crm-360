@@ -17,8 +17,8 @@ export function SelectDropdown({ options, activeValue, onSelect, onClear }: Sele
           className={cn(
             "w-full text-left px-3 py-2 text-sm transition-colors",
             activeValue === opt
-              ? "bg-blue-50 text-blue-700 font-medium"
-              : "hover:bg-gray-100 text-gray-700"
+              ? "bg-purple-50 text-purple-700 font-medium"
+              : "hover:bg-[#EACAFF] text-gray-700"
           )}
         >
           {opt}
