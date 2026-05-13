@@ -55,7 +55,7 @@ export function makeProductColumns(
       key: "id",
       header: "ID",
       minWidth: "130px",
-      render: (p) => <CellText value={p.id} variant="muted" />,
+      render: (p) => <CellText value={p.id} variant="primary" />,
     },
 
     {

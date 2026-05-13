@@ -8,7 +8,7 @@ interface RowExpandButtonProps {
 
 export function RowExpandButton({ expanded, onClick }: RowExpandButtonProps) {
   const icon = expanded
-    ? <CiCircleChevDown size={18} color="#7C3AED" />
+    ? <CiCircleChevDown size={18} color="#06121C" />
     : <CiCircleChevRight size={18} color="#06121C" />
 
   if (onClick) {

@@ -32,7 +32,7 @@ export function FilterPill({
           "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md transition-colors",
           isActive
             ? "bg-purple-50 text-purple-700 font-medium"
-            : "text-gray-600 hover:bg-[#F7EBFF]"
+            : "text-gray-900 hover:bg-[#F7EBFF]"
         )}
       >
         <span>{isActive ? `${label}: ${activeValue}` : label}</span>
