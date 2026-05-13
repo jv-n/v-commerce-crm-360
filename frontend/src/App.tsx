@@ -21,8 +21,10 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<AppFrame />}>
               <Route path="/" element={<Home />} />
-              <Route path="/contacts" element={<Contacts />} />
-              <Route path="/sales" element={<Sales />} />
+              <Route element={<ProtectedRoute allowedRoles={["admin", "sales"]}/>}>
+                <Route path="/contacts" element={<Contacts />} />
+                <Route path="/sales" element={<Sales />} />
+              </Route>
               <Route path="/products" element={<Products />} />
               <Route path="/chat" element={<Chat />} />
             </Route>
