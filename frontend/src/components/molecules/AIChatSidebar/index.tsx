@@ -334,10 +334,10 @@ export default function AIChatSidebar({
 
   return (
     <div
-      className="shrink-0 overflow-hidden transition-[width] duration-300 ease-in-out"
-      style={{ width: open ? "420px" : "0px" }}
+      className="shrink-0 h-full overflow-hidden transition-[width] duration-300 ease-in-out"
+      style={{ width: open ? "420px" : "0px", backgroundColor: "var(--background)", borderRadius: "0.875rem" }}
     >
-    <div className="w-[420px] h-full flex flex-col bg-white" style={{ borderLeft: "1px solid #e5e7eb" }}>
+    <div className="w-[420px] h-full flex flex-col bg-white" style={{ borderLeft: "1px solid #e5e7eb", overflow: "hidden" }}>
       {/* ── Header ── */}
       <div className="flex items-center justify-between px-5 pt-5 pb-4 shrink-0">
         {viaBadge}

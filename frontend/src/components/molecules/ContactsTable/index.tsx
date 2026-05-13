@@ -1,14 +1,21 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { DataTable } from "@/components/organisms/DataTable"
 import { makeContactColumns } from "./columns"
 import { fetchContacts } from "@/lib/api/contacts"
 import { ContactFormSheet } from "./ContactFormSheet"
+import {
+  ContactAdvancedFiltersDrawer,
+  EMPTY_CONTACT_ADVANCED,
+  contactAdvancedActiveCount,
+} from "./AdvancedFiltersDrawer"
+import type { ContactAdvancedFilters } from "./AdvancedFiltersDrawer"
 import type { Contact } from "@/types/contact"
 import type { Tab, ActiveFilters } from "@/components/organisms/DataTable/types"
 import { cn } from "@/lib/utils"
 import AddIcon from "@mui/icons-material/Add"
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined"
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
+import TuneIcon from "@mui/icons-material/Tune"
 
 const TABS: Tab[] = [
   { id: "all", label: "Todos os contatos" },
@@ -17,16 +24,18 @@ const TABS: Tab[] = [
 const DEFAULT_PAGE_SIZE = 10
 
 interface ServerFilters {
-  purchasesMin:    number | null
-  purchasesMax:    number | null
-  createdYear:     string
-  engagement:      string
-  excludeInactive: boolean
+  purchasesMin:   number | null
+  purchasesMax:   number | null
+  createdYear:    string
+  engagement:     string
+  clientStatuses: string[]
+  hasPhone:       boolean
 }
 
 const EMPTY_FILTERS: ServerFilters = {
   purchasesMin: null, purchasesMax: null,
-  createdYear: "", engagement: "", excludeInactive: true,
+  createdYear: "", engagement: "", clientStatuses: [],
+  hasPhone: false,
 }
 
 function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEdit: () => void }) {
@@ -89,30 +98,79 @@ export function ContactsTable({ onOpenAdd }: { onOpenAdd?: (fn: () => void) => v
   const [total, setTotal]                 = useState(0)
   const [loading, setLoading]             = useState(true)
   const [serverFilters, setServerFilters] = useState<ServerFilters>(EMPTY_FILTERS)
+  const [advanced, setAdvanced]           = useState<ContactAdvancedFilters>(EMPTY_CONTACT_ADVANCED)
+  const [drawerOpen, setDrawerOpen]       = useState(false)
   const [expandedRowId, setExpandedRowId] = useState<string | null>(null)
   const [sortBy,  setSortBy]  = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
-  const [refetchKey, setRefetchKey]       = useState(0)
-  const [formOpen, setFormOpen]           = useState(false)
+  const [refetchKey, setRefetchKey]         = useState(0)
+  const [formOpen, setFormOpen]             = useState(false)
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
+  const [fetchError, setFetchError]         = useState(false)
 
-  const { purchasesMin, purchasesMax, createdYear, engagement, excludeInactive } = serverFilters
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  const { purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone } = serverFilters
 
   useEffect(() => {
+    const hasText =
+      advanced.receitaMin !== "" || advanced.receitaMax !== "" ||
+      advanced.ticketMedioMin !== "" || advanced.ticketMedioMax !== "" ||
+      advanced.ticketsSuporteMin !== "" || advanced.ticketsSuporteMax !== "" ||
+      advanced.notaAtendMin !== "" || advanced.notaAtendMax !== "" ||
+      advanced.npsMin !== "" || advanced.npsMax !== "" ||
+      advanced.notaProdMin !== "" || advanced.notaProdMax !== ""
+
+    const delay = hasText ? 300 : 0
+    if (debounceRef.current) clearTimeout(debounceRef.current)
+
     let cancelled = false
-    setLoading(true)
-
-    fetchContacts({ page, pageSize, tab: activeTab, purchasesMin, purchasesMax, createdYear, engagement, sortBy, sortDir, excludeInactive })
-      .then((res) => {
-        if (cancelled) return
-        setContacts(res.data)
-        setTotal(res.total)
+    debounceRef.current = setTimeout(() => {
+      setLoading(true)
+      setFetchError(false)
+      fetchContacts({
+        page, pageSize, tab: activeTab,
+        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone,
+        sortBy, sortDir,
+        regioes:            advanced.regioes,
+        origens:            advanced.origens,
+        pagamentos:         advanced.pagamentos,
+        receitaMin:         advanced.receitaMin   !== "" ? Number(advanced.receitaMin)   : undefined,
+        receitaMax:         advanced.receitaMax   !== "" ? Number(advanced.receitaMax)   : undefined,
+        ticketMedioMin:     advanced.ticketMedioMin !== "" ? Number(advanced.ticketMedioMin) : undefined,
+        ticketMedioMax:     advanced.ticketMedioMax !== "" ? Number(advanced.ticketMedioMax) : undefined,
+        primeiraCompraFrom: advanced.primeiraCompraFrom || undefined,
+        primeiraCompraTo:   advanced.primeiraCompraTo   || undefined,
+        ultimaCompraFrom:   advanced.ultimaCompraFrom   || undefined,
+        ultimaCompraTo:     advanced.ultimaCompraTo     || undefined,
+        ticketsSuporteMin:  advanced.ticketsSuporteMin !== "" ? Number(advanced.ticketsSuporteMin) : undefined,
+        ticketsSuporteMax:  advanced.ticketsSuporteMax !== "" ? Number(advanced.ticketsSuporteMax) : undefined,
+        notaAtendMin:       advanced.notaAtendMin !== "" ? Number(advanced.notaAtendMin) : undefined,
+        notaAtendMax:       advanced.notaAtendMax !== "" ? Number(advanced.notaAtendMax) : undefined,
+        npsMin:             advanced.npsMin !== "" ? Number(advanced.npsMin) : undefined,
+        npsMax:             advanced.npsMax !== "" ? Number(advanced.npsMax) : undefined,
+        notaProdMin:        advanced.notaProdMin !== "" ? Number(advanced.notaProdMin) : undefined,
+        notaProdMax:        advanced.notaProdMax !== "" ? Number(advanced.notaProdMax) : undefined,
       })
-      .catch(console.error)
-      .finally(() => { if (!cancelled) setLoading(false) })
+        .then((res) => {
+          if (cancelled) return
+          setContacts(res.data)
+          setTotal(res.total)
+        })
+        .catch(err => { console.error(err); if (!cancelled) setFetchError(true) })
+        .finally(() => { if (!cancelled) setLoading(false) })
+    }, delay)
 
-    return () => { cancelled = true }
-  }, [page, pageSize, activeTab, purchasesMin, purchasesMax, createdYear, engagement, sortBy, sortDir, excludeInactive, refetchKey])
+    return () => {
+      cancelled = true
+      if (debounceRef.current) clearTimeout(debounceRef.current)
+    }
+  }, [
+    page, pageSize, activeTab,
+    purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone,
+    sortBy, sortDir, refetchKey,
+    advanced,
+  ])
 
   const openAdd  = () => { setEditingContact(null); setFormOpen(true) }
   const openEdit = (c: Contact) => { setEditingContact(c); setFormOpen(true) }
@@ -128,26 +186,61 @@ export function ContactsTable({ onOpenAdd }: { onOpenAdd?: (fn: () => void) => v
     setPage(1)
   }
 
-  const handlePageChange    = (newPage: number) => setPage(newPage)
+  const handlePageChange     = (newPage: number) => setPage(newPage)
   const handlePageSizeChange = (newSize: number) => { setPageSize(newSize); setPage(1) }
 
   const handleFiltersChange = (active: ActiveFilters) => {
     const pf = active["purchases"]
     const cf = active["createdAt"]
     const ef = active["engagement"]
-    const hf = active["hideInactive"]
+    const sf = active["clientStatus"]
+    const hf = active["phone"]
     setServerFilters({
-      purchasesMin:    pf?.type === "number-range"                    ? pf.min    : null,
-      purchasesMax:    pf?.type === "number-range"                    ? pf.max    : null,
-      createdYear:     cf?.type === "select"       && cf.value !== "" ? cf.value  : "",
-      engagement:      ef?.type === "select"       && ef.value !== "" ? ef.value  : "",
-      excludeInactive: hf?.type === "toggle"                         ? hf.active : true,
+      purchasesMin:   pf?.type === "number-range"                      ? pf.min    : null,
+      purchasesMax:   pf?.type === "number-range"                      ? pf.max    : null,
+      createdYear:    cf?.type === "select"         && cf.value !== "" ? cf.value  : "",
+      engagement:     ef?.type === "select"         && ef.value !== "" ? ef.value  : "",
+      clientStatuses: sf?.type === "multi-select"                      ? sf.values : [],
+      hasPhone:       hf?.type === "toggle"                            ? hf.active : false,
     })
     setPage(1)
   }
 
+  const advCount = contactAdvancedActiveCount(advanced)
+
+  const filterBarExtra = (
+    <div className="flex items-center gap-3">
+      {fetchError && (
+        <span className="text-xs text-red-500">Erro ao carregar contatos</span>
+      )}
+      <button
+        onClick={() => setDrawerOpen(true)}
+        className={cn(
+          "flex items-center gap-1.5 text-sm transition-colors",
+          advCount > 0 ? "text-purple-700 font-medium" : "text-gray-400 hover:text-gray-600"
+        )}
+      >
+        <TuneIcon sx={{ fontSize: 15 }} />
+        Filtros avançados
+        {advCount > 0 && (
+          <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-600 text-white text-[10px] font-bold leading-none">
+            {advCount}
+          </span>
+        )}
+      </button>
+    </div>
+  )
+
   return (
     <>
+      <ContactAdvancedFiltersDrawer
+        open={drawerOpen}
+        filters={advanced}
+        onChange={f => { setAdvanced(f); setPage(1) }}
+        onClose={() => setDrawerOpen(false)}
+        onClear={() => { setAdvanced(EMPTY_CONTACT_ADVANCED); setPage(1) }}
+      />
+
       <DataTable
         data={contacts}
         loading={loading}
@@ -158,6 +251,7 @@ export function ContactsTable({ onOpenAdd }: { onOpenAdd?: (fn: () => void) => v
         onTabChange={(tabId) => { setActiveTab(tabId); setPage(1) }}
         onFiltersChange={handleFiltersChange}
         onSortChange={handleSortChange}
+        filterBarExtra={filterBarExtra}
         headerClassName="bg-[#F0DDFD]"
         dividersClassName="divide-[#9F83B2]"
         rowsPerPageOptions={[10, 25, 50]}

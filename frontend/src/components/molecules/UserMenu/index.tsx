@@ -13,6 +13,7 @@ import {
 interface UserMenuProps {
     name: string
     avatarSrc?: string
+    onLogout?: () => void
 }
 
 function getInitials(name: string) {
@@ -24,7 +25,7 @@ function getInitials(name: string) {
         .toUpperCase()
 }
 
-export default function UserMenu({ name, avatarSrc }: UserMenuProps) {
+export default function UserMenu({ name, avatarSrc, onLogout }: UserMenuProps) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -50,7 +51,7 @@ export default function UserMenu({ name, avatarSrc }: UserMenuProps) {
                     </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive">
+                <DropdownMenuItem variant="destructive" onSelect={onLogout}>
                     <LogoutOutlinedIcon />
                     Logout
                 </DropdownMenuItem>

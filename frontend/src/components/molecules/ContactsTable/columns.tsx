@@ -1,15 +1,16 @@
 import type { Column } from "@/components/organisms/DataTable/types"
-import type { Contact, EngagementType } from "@/types/contact"
+import type { Contact, EngagementType, ClientStatusType } from "@/types/contact"
 import { cn } from "@/lib/utils"
 import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined"
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
+import ChevronRightIcon from "@mui/icons-material/ChevronRight"
+import { ClientStatusBadge, ALL_CLIENT_STATUSES } from "./ClientStatusBadge"
 
 
-const ENGAGEMENT: Record<EngagementType, { bar: string; text: string; width: string }> = {
-  Promotor:      { bar: "bg-green-500",  text: "text-green-700",  width: "80%" },
-  Neutro:        { bar: "bg-yellow-400", text: "text-yellow-600", width: "50%" },
-  Detrator:      { bar: "bg-red-500",    text: "text-red-600",    width: "22%" },
-  "Nenhum NPS":  { bar: "bg-gray-200",   text: "text-gray-400",   width: "0%"  },
+const ENGAGEMENT: Record<EngagementType, { text: string }> = {
+  Promotor:      { text: "text-green-700"  },
+  Neutro:        { text: "text-yellow-600" },
+  Detrator:      { text: "text-red-600"    },
+  "Nenhum NPS":  { text: "text-gray-400"   },
 }
 
 export function makeContactColumns(
@@ -17,20 +18,6 @@ export function makeContactColumns(
   onToggle: (id: string) => void,
 ): Column<Contact>[] {
   return [
-  // ── Sem inativos toggle (hidden column, default active) ────────────────────
-  {
-    key: "hideInactive",
-    header: "",
-    visible: false,
-    filter: {
-      type: "toggle" as const,
-      label: "Sem inativos",
-      defaultActive: true,
-      filterFn: () => true,
-    },
-    render: () => null,
-  },
-
   // ── Info icon ──────────────────────────────────────────────────────────────
   {
     key: "info",
@@ -40,9 +27,11 @@ export function makeContactColumns(
         onClick={(e) => { e.stopPropagation(); onToggle(c.id) }}
         className="flex items-center justify-center"
       >
-        <InfoOutlinedIcon sx={{
-          fontSize: 15,
-          color: expandedRowId === c.id ? "#7C3AED" : "#D1D5DB",
+        <ChevronRightIcon sx={{
+          fontSize: 16,
+          color: expandedRowId === c.id ? "#7C3AED" : "#9CA3AF",
+          transform: expandedRowId === c.id ? "rotate(90deg)" : "rotate(0deg)",
+          transition: "transform 0.2s ease, color 0.2s ease",
         }} />
       </button>
     ),
@@ -63,6 +52,20 @@ export function makeContactColumns(
         {c.name}
       </button>
     ),
+  },
+
+  // ── Status do cliente ──────────────────────────────────────────────────────
+  {
+    key: "clientStatus",
+    header: "Status",
+    minWidth: "140px",
+    filter: {
+      type: "multi-select" as const,
+      label: "Status",
+      options: ALL_CLIENT_STATUSES,
+      renderOption: (value) => <ClientStatusBadge status={value as ClientStatusType} />,
+    },
+    render: (c) => <ClientStatusBadge status={c.clientStatus} />,
   },
 
   // ── Última compra ──────────────────────────────────────────────────────────
@@ -129,6 +132,20 @@ export function makeContactColumns(
     render: () => null,
   },
 
+  // ── Telefone — toggle filter (hidden column) ──────────────────────────────
+  {
+    key: "phone",
+    header: "",
+    visible: false,
+    filter: {
+      type: "toggle",
+      label: "Com telefone",
+      filterFn: (c) => c.phone != null,
+    },
+    render: () => null,
+  },
+
+
   // ── Engajamento ────────────────────────────────────────────────────────────
   {
     key: "engagement",
@@ -144,14 +161,7 @@ export function makeContactColumns(
     },
     render: (c) => {
       const eng = ENGAGEMENT[c.engagement]
-      return (
-        <div className="flex flex-col gap-1 min-w-[110px]">
-          <span className={cn("text-xs font-medium", eng.text)}>{c.engagement}</span>
-          <div className="w-full bg-gray-100 rounded-full h-1.5">
-            <div className={cn("h-1.5 rounded-full", eng.bar)} style={{ width: `${c.engagementScore}%` }} />
-          </div>
-        </div>
-      )
+      return <span className={cn("text-xs font-medium", eng.text)}>{c.engagement}</span>
     },
   },
   ]

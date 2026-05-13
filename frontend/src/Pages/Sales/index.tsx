@@ -1,6 +1,6 @@
 
 import { SalesTable, type SalesTableHandle } from "@/components/organisms/SalesTable/salesTable"
-import AddCircleOutlinedIcon from "@mui/icons-material/AddCircleOutlined"
+import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
 import { useRef, useState } from "react"
 import UndoIcon from "@mui/icons-material/Undo"
 import RefreshIcon from "@mui/icons-material/Refresh"
@@ -16,7 +16,7 @@ export default function Sales() {
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Pedidos</h1>
         <button className="flex items-center gap-2 bg-[#F7EBFF] border border-[#D1B1E5] rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors">
-          <AddCircleOutlinedIcon sx={{ fontSize: 18 }} />
+          <AddCircleOutlineOutlinedIcon sx={{ fontSize: 18 }} />
           Adicionar Pedido
         </button>
       </div>

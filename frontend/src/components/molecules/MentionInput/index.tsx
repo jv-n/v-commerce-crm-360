@@ -106,7 +106,7 @@ function extractMentions(el: HTMLElement): MentionItem[] {
 }
 
 /** Constrói o texto plano + contexto de menções para enviar ao agente */
-export function buildMessageText(el: HTMLElement): {
+function buildMessageText(el: HTMLElement): {
   text: string;
   mentions: MentionItem[];
 } {
@@ -188,7 +188,6 @@ const MentionInput = forwardRef<MentionInputHandle, Props>(
 
     const triggerSearch = (q: string) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
-      if (!q) { setResults([]); setShowDropdown(false); return; }
       debounceRef.current = setTimeout(async () => {
         const items = await searchMentions(q, 8);
         setResults(items);
@@ -324,7 +323,7 @@ const MentionInput = forwardRef<MentionInputHandle, Props>(
       <div className="relative">
         {/* Dropdown */}
         {showDropdown && results.length > 0 && (
-          <div className="absolute bottom-full mb-2 left-0 right-0 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden z-10">
+          <div className="absolute bottom-full mb-2 left-0 right-0 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden z-[9999]">
             {results.map((item, i) => (
               <button
                 key={`${item.type}-${item.id}`}

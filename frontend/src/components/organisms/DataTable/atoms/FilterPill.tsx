@@ -1,7 +1,7 @@
 import type { ReactNode } from "react"
 import { cn } from "@/lib/utils"
 import CloseIcon from "@mui/icons-material/Close"
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
+import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md"
 
 interface FilterPillProps {
   label: string
@@ -32,11 +32,11 @@ export function FilterPill({
           "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md transition-colors",
           isActive
             ? "bg-purple-50 text-purple-700 font-medium"
-            : "text-gray-600 hover:bg-gray-100"
+            : "text-gray-600 hover:bg-[#F7EBFF]"
         )}
       >
         <span>{isActive ? `${label}: ${activeValue}` : label}</span>
-        {!isActive && <KeyboardArrowDownIcon sx={{ fontSize: 14 }} />}
+        {!isActive && (isOpen ? <MdKeyboardArrowUp size={14} /> : <MdKeyboardArrowDown size={14} />)}
         {isActive  && <CloseIcon sx={{ fontSize: 13 }} onClick={onClear} />}
       </button>
 

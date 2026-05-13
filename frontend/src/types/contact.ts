@@ -1,13 +1,38 @@
 export type EngagementType = "Promotor" | "Neutro" | "Detrator" | "Nenhum NPS"
 
+export type ClientStatusType = "Ativo" | "Inativo" | "VIP" | "Lead" | "Em risco"
+
 export interface Contact {
+  // Identidade
   id: string
   name: string | null
-  lastPurchase: string | null
-  purchases: number
   email: string | null
-  phone: string | null
+  phone: string | null        // sempre null — não existe em gold_cliente_360
+
+  // Segmentação
+  clientStatus: ClientStatusType | null
+  region: string | null
+  origin: string | null
+
+  // Pedidos / compras
+  purchases: number
+  distinctProducts: number
+  totalRevenue: number
+  avgTicket: number
+  firstPurchase: string | null
+  lastPurchase: string | null
+  favPaymentMethod: string | null
+
+  // Suporte
+  totalTickets: number
+  resolutionRate: number
+  avgSupportRating: number | null
+
+  // NPS / engajamento
   engagement: EngagementType
   engagementScore: number
+  productRating: number | null
+
+  // Compat. (aponta para firstPurchase)
   createdAt: string | null
 }

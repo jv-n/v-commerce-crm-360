@@ -31,7 +31,8 @@ export interface MultiSelectFilterDef<T> {
   label: string
   options: string[]
   renderOption?: (value: string) => ReactNode
-  filterFn: (row: T, values: string[]) => boolean
+  /** Omit when filtering is handled server-side */
+  filterFn?: (row: T, values: string[]) => boolean
 }
 
 export type FilterDef<T> = SelectFilterDef<T> | NumberRangeFilterDef<T> | ToggleFilterDef<T> | MultiSelectFilterDef<T>
@@ -98,6 +99,7 @@ export interface DataTableProps<T> {
   noBorder?: boolean
   headerClassName?: string
   rowClassName?: string
+  expandedRowClassName?: string
   dividersClassName?: string
   expandedRowIds?: Set<string>
   renderExpandedRow?: (row: T) => React.ReactNode

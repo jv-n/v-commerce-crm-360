@@ -183,3 +183,6 @@ data-engineering/venv
 *.db
 *.db-shm
 *.db-wal
+
+# Arquivos temporários do FUSE (Linux/Docker)
+.fuse_hidden*
