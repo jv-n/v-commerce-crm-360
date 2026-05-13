@@ -183,3 +183,5 @@ data-engineering/venv
 *.db
 *.db-shm
 *.db-wal
+
+backend/.env
