@@ -11,6 +11,7 @@ class GoldPedidoDetalhado(Base):
     id_cliente: Mapped[str | None] = mapped_column(String, nullable=True)
     id_produto: Mapped[str | None] = mapped_column(String, nullable=True)
     nome_produto: Mapped[str | None] = mapped_column(String, nullable=True)
+    nome_cliente: Mapped[str | None] = mapped_column(String, nullable=True)
     categoria: Mapped[str | None] = mapped_column(String, nullable=True)
     ativo: Mapped[int | None] = mapped_column(Integer, nullable=True)
     data_pedido: Mapped[str | None] = mapped_column(String, nullable=True)

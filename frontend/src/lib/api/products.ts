@@ -24,6 +24,8 @@ export interface ProductsParams {
   sales_max?: number
   date_from?: string
   date_to?: string
+  sort_by?: string
+  sort_dir?: "asc" | "desc"
 }
 
 interface RawProduct {
@@ -85,6 +87,8 @@ export async function fetchProducts(params: ProductsParams = {}): Promise<Produc
   if (params.sales_max  != null) query.set("sales_max",  String(params.sales_max))
   if (params.date_from)          query.set("date_from",  params.date_from)
   if (params.date_to)            query.set("date_to",    params.date_to)
+  if (params.sort_by)            query.set("sort_by",    params.sort_by)
+  if (params.sort_dir)           query.set("sort_dir",   params.sort_dir)
 
   const res = await fetch(`/api/products?${query}`)
   if (!res.ok) throw new Error(`Erro ao buscar produtos: ${res.status}`)

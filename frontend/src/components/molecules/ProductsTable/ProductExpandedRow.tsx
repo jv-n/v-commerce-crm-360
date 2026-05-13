@@ -41,7 +41,7 @@ export function ProductExpandedRow({ product }: { product: Product }) {
   ]
 
   return (
-    <div className="bg-violet-50/50 px-8 py-5 flex gap-8 border-t border-violet-100">
+    <div className="bg-white px-8 py-5 flex gap-8 border-t border-violet-100">
       <div className="flex-1 flex flex-col">
         {history.map((entry, i) => (
           <div key={i} className="flex gap-3">

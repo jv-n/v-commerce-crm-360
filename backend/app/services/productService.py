@@ -1,3 +1,4 @@
+from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
 
 from app.models.productModel import DimProduto, GoldDesempenhoProduto
@@ -51,6 +52,14 @@ class ProductService:
             )
         )
 
+    _SORT_COLUMNS = {
+        "name":       lambda: DimProduto.nome_produto,
+        "price":      lambda: DimProduto.preco,
+        "stock":      lambda: DimProduto.estoque_disponivel,
+        "rating":     lambda: GoldDesempenhoProduto.nota_media_avaliacao,
+        "totalSales": lambda: GoldDesempenhoProduto.qtd_vendida,
+    }
+
     def get_products(
         self,
         page: int = 1,
@@ -69,6 +78,8 @@ class ProductService:
         sales_max: float | None = None,
         date_from: str | None = None,
         date_to: str | None = None,
+        sort_by: str | None = None,
+        sort_dir: str | None = "asc",
     ) -> tuple[list[ProductSchema], int]:
         query = self._base_query()
 
@@ -120,6 +131,11 @@ class ProductService:
                 query = query.filter(DimProduto.data_cadastro_produto <= _dmy_to_iso(date_to))
             except ValueError:
                 pass
+
+        col_fn = self._SORT_COLUMNS.get(sort_by or "")
+        if col_fn:
+            order = asc(col_fn()) if sort_dir != "desc" else desc(col_fn())
+            query = query.order_by(order)
 
         total = query.count()
         rows = query.offset((page - 1) * page_size).limit(page_size).all()

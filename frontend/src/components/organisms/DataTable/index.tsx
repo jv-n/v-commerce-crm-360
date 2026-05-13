@@ -1,28 +1,20 @@
 import type { ReactNode } from "react"
 import { useMemo, useState } from "react"
-
 import { cn } from "@/lib/utils"
-import type {
-  DataTableProps,
-  NumberRangeFilterDef,
-  SelectFilterDef,
-  ServerPagination,
-} from "./types"
-import {
-  formatActiveFilter,
-  isFilterActive,
-  useFilterState,
-} from "./hooks/useFilterState"
-import { usePagination } from "./hooks/usePagination"
+import type { DataTableProps, SelectFilterDef, NumberRangeFilterDef, MultiSelectFilterDef, ServerPagination } from "./types"
+import { useFilterState, isFilterActive, formatActiveFilter } from "./hooks/useFilterState"
 import { useRowSelection } from "./hooks/useRowSelection"
-import { FilterPill } from "./atoms/FilterPill"
-import { NumberRangeDropdown } from "./atoms/NumberRangeDropdown"
-import { SelectDropdown } from "./atoms/SelectDropdown"
-import { TogglePill } from "./atoms/TogglePill"
+import { usePagination } from "./hooks/usePagination"
+
+import { DataTableTabs } from "./molecules/DataTableTabs"
+import { DataTableRows } from "./molecules/DataTableRows"
 import { DataTableFilterBar } from "./molecules/DataTableFilterBar"
 import { DataTablePagination } from "./molecules/DataTablePagination"
-import { DataTableRows } from "./molecules/DataTableRows"
-import { DataTableTabs } from "./molecules/DataTableTabs"
+import { FilterPill } from "./atoms/FilterPill"
+import { TogglePill } from "./atoms/TogglePill"
+import { SelectDropdown } from "./atoms/SelectDropdown"
+import { NumberRangeDropdown } from "./atoms/NumberRangeDropdown"
+import { MultiSelectDropdown } from "./atoms/MultiSelectDropdown"
 
 function buildServerPageInfo(sp: ServerPagination, dataLength: number) {
   const totalPages = Math.max(1, Math.ceil(sp.total / sp.pageSize))
@@ -53,6 +45,7 @@ export function DataTable<T,>({
   onSearchChange,
   headerClassName,
   rowClassName,
+  expandedRowClassName,
   dividersClassName,
   expandedRowIds,
   renderExpandedRow,
@@ -195,8 +188,9 @@ export function DataTable<T,>({
       }
     }
 
-    const content =
-      def.type === "select" ? (
+    let content: ReactNode
+    if (def.type === "select") {
+      content = (
         <SelectDropdown
           options={(def as SelectFilterDef<T>).options}
           activeValue={active?.type === "select" ? active.value : ""}
@@ -206,7 +200,29 @@ export function DataTable<T,>({
           }}
           onClear={handleClear}
         />
-      ) : (
+      )
+    } else if (def.type === "multi-select") {
+      const msDef = def as MultiSelectFilterDef<T>
+      const activeVals = active?.type === "multi-select" ? active.values : []
+
+      content = (
+        <MultiSelectDropdown
+          options={msDef.options}
+          activeValues={activeVals}
+          renderOption={msDef.renderOption}
+          onToggle={val => {
+            const next = activeVals.includes(val)
+              ? activeVals.filter(v => v !== val)
+              : [...activeVals, val]
+
+            filters.setFilter(colKey, { type: "multi-select", values: next }, true)
+            pagination.resetPage()
+          }}
+          onClear={handleClear}
+        />
+      )
+    } else {
+      content = (
         <NumberRangeDropdown
           current={
             active?.type === "number-range"
@@ -223,6 +239,7 @@ export function DataTable<T,>({
           variant={(def as NumberRangeFilterDef<T>).variant}
         />
       )
+    }
 
     return (
       <FilterPill
@@ -254,83 +271,73 @@ export function DataTable<T,>({
         />
       )}
 
-      <div className={cn("flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-white")}>
+      <div className={cn("flex flex-col bg-white overflow-hidden flex-1 min-h-0")}>
         {tabs.length > 0 && (
-          <div className="shrink-0">
-            <DataTableTabs
-              tabs={tabs}
-              activeTab={activeTab}
-              onTabChange={handleTabChange}
-              rightSlot={tabsRightSlot}
-              searchOpen={searchOpen}
-              searchQuery={searchQuery}
-              onSearchOpen={() => setSearchOpen(true)}
-              onSearchChange={handleSearchChange}
-              onSearchClose={() => {
-                setSearchOpen(false)
-                handleSearchChange("")
-              }}
-              searchPlaceholder={searchPlaceholder}
-            />
-          </div>
+          <DataTableTabs
+            tabs={tabs}
+            activeTab={activeTab}
+            onTabChange={handleTabChange}
+            rightSlot={tabsRightSlot}
+            searchOpen={searchOpen}              
+            searchQuery={searchQuery}
+            onSearchOpen={() => setSearchOpen(true)}
+            onSearchChange={handleSearchChange}
+            onSearchClose={() => {
+              setSearchOpen(false)
+              handleSearchChange("")
+            }}
+            searchPlaceholder={searchPlaceholder}
+          />
         )}
 
         {showFilterBar && (
-          <div className="shrink-0">
-            <DataTableFilterBar
-              activeFilterCount={filters.activeFilterCount}
-              onClearAll={() => {
-                filters.clearAllFilters()
-                pagination.resetPage()
-                setShownOptionalKeys(new Set())
-              }}
-              availableOptionalFilters={availableOptionalFilters}
-              onAddFilter={addOptionalFilter}
-              extra={filterBarExtra}
-            >
-              {filterPillCols.map(col =>
-                renderPill(col.key, false, col.filterOptional)
-              )}
-            </DataTableFilterBar>
-          </div>
+          <DataTableFilterBar
+            activeFilterCount={filters.activeFilterCount}
+            onClearAll={() => {
+              filters.clearAllFilters()
+              pagination.resetPage()
+              setShownOptionalKeys(new Set())
+            }}
+            availableOptionalFilters={availableOptionalFilters}
+            onAddFilter={addOptionalFilter}
+            extra={filterBarExtra}
+          >
+            {filterPillCols.map(col =>
+              renderPill(col.key, false, col.filterOptional)
+            )}
+          </DataTableFilterBar>
         )}
 
-        <div className="min-h-0 flex-1 overflow-auto">
-          <DataTableRows
-            columns={visibleColumns}
-            pageData={pageData}
-            getRowId={getRowId}
-            loading={loading}
-            selectedRows={selection.selectedRows}
-            isAllSelected={selection.isPageAllSelected(pageData)}
-            onToggleAll={() => selection.toggleAll(pageData)}
-            onToggleRow={selection.toggleRow}
-            headerClassName={headerClassName}
-            rowClassName={rowClassName}
-            dividersClassName={dividersClassName}
-            expandedRowIds={expandedRowIds}
-            renderExpandedRow={renderExpandedRow}
-            sortKey={sortKey}
-            sortDir={sortDir}
-            onSort={handleSort}
-          />
-        </div>
+        <DataTableRows
+          columns={visibleColumns}
+          pageData={pageData}
+          getRowId={getRowId}
+          loading={loading}
+          selectedRows={selection.selectedRows}
+          isAllSelected={selection.isPageAllSelected(pageData)}
+          onToggleAll={() => selection.toggleAll(pageData)}
+          onToggleRow={selection.toggleRow}
+          headerClassName={headerClassName}
+          rowClassName={rowClassName}
+          expandedRowClassName={expandedRowClassName}
+          dividersClassName={dividersClassName}
+          expandedRowIds={expandedRowIds}
+          renderExpandedRow={renderExpandedRow}
+          sortKey={sortKey}
+          sortDir={sortDir}
+          onSort={handleSort}
+        />
 
-        <div className="shrink-0">
-          <DataTablePagination
-            {...pageInfo}
-            currentPage={safePage}
-            rowsPerPage={serverPagination?.pageSize ?? pagination.rowsPerPage}
-            rowsPerPageOptions={rowsPerPageOptions}
-            onPageChange={
-              serverPagination?.onPageChange ?? pagination.setCurrentPage
-            }
-            onRowsPerPageChange={
-              serverPagination?.onPageSizeChange ?? pagination.changeRowsPerPage
-            }
-          />
-        </div>
       </div>
+
+        <DataTablePagination
+          {...pageInfo}
+          currentPage={safePage}
+          rowsPerPage={serverPagination?.pageSize ?? pagination.rowsPerPage}
+          rowsPerPageOptions={rowsPerPageOptions}
+          onPageChange={serverPagination?.onPageChange ?? pagination.setCurrentPage}
+          onRowsPerPageChange={serverPagination?.onPageSizeChange ?? pagination.changeRowsPerPage}
+        />
     </>
   )
 }

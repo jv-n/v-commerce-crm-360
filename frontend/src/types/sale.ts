@@ -3,6 +3,7 @@ export type SaleStatus = "Aprovado" | "Processando" | "Recusado" | "Reembolsado"
 export interface Sale {
   id: string
   product: string
+  client: string
   categoria: string | null
   amount: number
   value: number

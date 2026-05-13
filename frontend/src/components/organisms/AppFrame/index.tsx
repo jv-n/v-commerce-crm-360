@@ -79,7 +79,7 @@ export default function AppFrame() {
             case "Book":
                 return <MenuBookOutlinedIcon sx={{color: iconColor(title.toLowerCase())}}/>;
             case "Chat":
-                return <img src="v_ai.svg" alt="Chat Icon" height={40} width={40} />
+                return <img src="v_ai.svg" alt="Chat Icon" height={48} width={48} />
             case "Tickets":
                 return <ConfirmationNumberOutlinedIcon sx={{ color: iconColor("/tickets")} }/>;
             default:
@@ -88,7 +88,7 @@ export default function AppFrame() {
     }
 
     return (
-        <SidebarProvider defaultOpen={true}>
+        <SidebarProvider defaultOpen={true} className="!h-svh overflow-hidden">
             <Sidebar variant="inset" >
                 <SidebarHeader className="w-full align-center justify-center">
                     <img src="vcom360_icon.svg" alt="CRM Icon" height={80} width={80}/>
@@ -142,7 +142,7 @@ export default function AppFrame() {
                                             </SidebarMenuButton>
                                         ) : (
                                             <SidebarMenuButton
-                                                className={`${isAIOpen ? "ring ring-primary" : ""} bg-background w-8 h-8 transition duration-400 hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
+                                                className={`${isAIOpen ? "ring ring-primary" : ""} bg-background !w-11 !h-11 transition duration-400 hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
                                                 onClick={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }}
                                                 title="Abrir assistente V.IA"
                                             >
@@ -156,22 +156,19 @@ export default function AppFrame() {
                     </SidebarGroup>
                 </SidebarContent>
             </Sidebar>
-            <SidebarInset
-                className="m-2 ml-0 rounded-xl flex flex-col transition-all duration-300"
-                style={{ marginRight: isAIOpen ? "488px" : "8px" }}
-            >
+            <SidebarInset className="m-2 ml-0 rounded-xl overflow-hidden flex flex-col transition-all duration-300">
                 <AppNavbar onOpenAI={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }} />
-                <div className="flex-1">
-                    <Outlet />
+                <div className="flex flex-1 min-h-0">
+                    <div className="flex-1 min-h-0 overflow-hidden">
+                        <Outlet />
+                    </div>
+                    <AIChatSidebar
+                        open={isAIOpen}
+                        onClose={() => setIsAIOpen(false)}
+                        userName="Joao Victor"
+                    />
                 </div>
             </SidebarInset>
-
-            {/* Painel do assistente V.IA */}
-            <AIChatSidebar
-                open={isAIOpen}
-                onClose={() => setIsAIOpen(false)}
-                userName="Joao Victor"
-            />
         </SidebarProvider>
     );
 }

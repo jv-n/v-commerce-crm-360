@@ -10,21 +10,21 @@ const ALL_CATEGORIES: ProductCategory[] = [
 ]
 
 const CATEGORY_STYLES: Record<ProductCategory, string> = {
-  "Automotivo":  "bg-slate-100 text-slate-700",
-  "Beleza":      "bg-pink-100 text-pink-700",
-  "Brinquedos":  "bg-violet-100 text-violet-700",
-  "Casa":        "bg-amber-100 text-amber-700",
-  "Eletronicos": "bg-blue-100 text-blue-700",
-  "Esportes":    "bg-green-100 text-green-700",
-  "Indefinida":  "bg-gray-100 text-gray-500",
-  "Moveis":      "bg-orange-100 text-orange-700",
-  "Vestuario":   "bg-teal-100 text-teal-700",
+  "Automotivo":  "bg-slate-100 text-[#06121C]",
+  "Beleza":      "bg-pink-100 text-[#06121C]",
+  "Brinquedos":  "bg-[#E2CBFF] text-[#06121C]",
+  "Casa":        "bg-[#FFE9CB] text-[#06121C]",
+  "Eletronicos": "bg-[#FFA58E] text-[#06121C]",
+  "Esportes":    "bg-[#FFCBFE] text-[#06121C]",
+  "Indefinida":  "bg-gray-100 text-[#06121C]",
+  "Moveis":      "bg-[#FFE9CB] text-[#06121C]",
+  "Vestuario":   "bg-teal-100 text-[#06121C]",
 }
 
 function getRatingStyles(rating: number): { dot: string; badge: string; text: string } {
-  if (rating >= 7) return { dot: "bg-green-500",  badge: "bg-green-50",  text: "text-green-700" }
-  if (rating >= 5) return { dot: "bg-yellow-400", badge: "bg-yellow-50", text: "text-yellow-700" }
-  return              { dot: "bg-red-500",    badge: "bg-red-50",    text: "text-red-600" }
+  if (rating >= 7) return { dot: "bg-[#257719]",  badge: "bg-[#D2F9BE]",  text: "text-[#257719]" }
+  if (rating >= 5) return { dot: "bg-[#D8AE30]", badge: "bg-[#F9ED9B]", text: "text-[#CCA327]" }
+  return              { dot: "bg-[#EF5466]",    badge: "bg-[#FFEDEF]",    text: "text-[#D1293D]" }
 }
 
 export function makeProductColumns(
@@ -64,7 +64,7 @@ export function makeProductColumns(
       header: "ID",
       minWidth: "130px",
       render: (p) => (
-        <span className="text-xs font-mono text-gray-500">{p.id}</span>
+        <span className="text-xs font-medium text-[#06121C]">{p.id}</span>
       ),
     },
 
@@ -72,6 +72,7 @@ export function makeProductColumns(
       key: "name",
       header: "Nome",
       minWidth: "180px",
+      sortable: true,
       render: (p) => (
         <span className="font-medium text-gray-900 truncate block max-w-[220px]">{p.name}</span>
       ),
@@ -89,7 +90,7 @@ export function makeProductColumns(
       },
       render: (p) => (
         <span className={cn(
-          "inline-block text-xs font-medium px-3 py-1 rounded-full whitespace-nowrap",
+          "inline-block text-xs font-medium px-3 py-1 rounded-[3.83px] whitespace-nowrap",
           CATEGORY_STYLES[p.category]
         )}>
           {p.category}
@@ -101,6 +102,7 @@ export function makeProductColumns(
       key: "price",
       header: "Preço",
       minWidth: "100px",
+      sortable: true,
       filterOptional: true,
       filter: {
         type: "number-range",
@@ -124,6 +126,7 @@ export function makeProductColumns(
       key: "stock",
       header: "Estoque disponível",
       minWidth: "150px",
+      sortable: true,
       filterOptional: true,
       filter: {
         type: "number-range",
@@ -143,13 +146,13 @@ export function makeProductColumns(
       key: "rating",
       header: "Avaliação",
       minWidth: "100px",
+      sortable: true,
       filterOptional: true,
       filter: {
         type: "number-range",
         label: "Avaliação (0–10)",
         minBound: 0,
         maxBound: 10,
-        variant: "slider",
         filterFn: (p, min, max) => {
           if (min != null && p.rating < min) return false
           if (max != null && p.rating > max) return false
@@ -159,7 +162,7 @@ export function makeProductColumns(
       render: (p) => {
         const s = getRatingStyles(p.rating)
         return (
-          <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold", s.badge, s.text)}>
+          <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[3.83px] text-xs font-semibold", s.badge, s.text)}>
             <span className={cn("w-2 h-2 rounded-full flex-shrink-0", s.dot)} />
             {p.rating.toFixed(1)}
           </span>
@@ -171,6 +174,7 @@ export function makeProductColumns(
       key: "totalSales",
       header: "Vendas totais",
       minWidth: "110px",
+      sortable: true,
       filter: {
         type: "number-range",
         label: "Vendas totais",
@@ -189,7 +193,7 @@ export function makeProductColumns(
       key: "actions",
       header: "",
       render: () => (
-        <button className="flex items-center justify-center w-8 h-8 rounded-lg border border-purple-200 bg-purple-50 text-purple-500 hover:bg-purple-100 transition-colors">
+        <button className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#D1B1E5] bg-[#F7EBFF] text-black hover:bg-purple-100 transition-colors">
           <ArrowForwardIcon sx={{ fontSize: 16 }} />
         </button>
       ),

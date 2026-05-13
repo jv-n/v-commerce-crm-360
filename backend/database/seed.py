@@ -47,6 +47,7 @@ GOLD_TABLES = [
     ("gold_desempenho_produto",         "gold_desempenho_produto"),
     ("gold_analise_suporte_por_tipo",   "gold_analise_suporte_por_tipo"),
     ("gold_analise_suporte_por_agente", "gold_analise_suporte_por_agente"),
+    ("gold_analise_suporte_cliente",    "gold_analise_suporte_cliente"),
     ("gold_satisfacao_nps",             "gold_satisfacao_nps"),
     ("gold_pedidos_detalhado",          "gold_pedidos_detalhado"),
     ("gold_pedidos_por_status",         "gold_pedidos_por_status"),
