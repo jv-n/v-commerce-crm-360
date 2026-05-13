@@ -41,7 +41,7 @@ export function DataTableFilterBar({
 
   return (
     <div className="flex items-center gap-2.5 px-4 py-2.5 flex-wrap relative z-50">
-      <span className="text-sm text-gray-800 font-bold">Filtrar por:</span>
+      <span className="text-sm text-gray-900 font-bold">Filtrar por:</span>
 
       {children}
 
@@ -51,7 +51,7 @@ export function DataTableFilterBar({
           <div className="relative" ref={ref}>
           <button
             onClick={() => setDropdownOpen(o => !o)}
-            className="p-1.5 text-gray-500 hover:text-gray-700 rounded-md hover:bg-[#F7EBFF]"
+            className="p-1.5 text-gray-900 hover:text-gray-900 rounded-md hover:bg-[#F7EBFF]"
           >
             <AddIcon sx={{ fontSize: 14 }} />
           </button>
@@ -62,7 +62,7 @@ export function DataTableFilterBar({
                 <button
                   key={f.key}
                   onClick={() => { onAddFilter(f.key); setDropdownOpen(false) }}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-[#F7EBFF] transition-colors"
+                  className="w-full text-left px-3 py-2 text-sm text-gray-900 hover:bg-[#F7EBFF] transition-colors"
                 >
                   {f.label}
                 </button>
