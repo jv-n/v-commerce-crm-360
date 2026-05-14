@@ -96,6 +96,8 @@ class ContactService:
         """Aplica todos os filtros em GoldCliente360. Join com DimCliente não incluído."""
         if tab == "clients":
             query = query.filter(GoldCliente360.segmento_cliente.in_(["Ativo", "Inativo", "VIP"]))
+        elif tab == "leads":
+            query = query.filter(GoldCliente360.segmento_cliente == "Lead")
 
         if search:
             term = f"%{search}%"
@@ -257,9 +259,6 @@ class ContactService:
         nota_prod_min: float | None = None,
         nota_prod_max: float | None = None,
     ) -> ContactsPageOut:
-        if tab == "leads":
-            return ContactsPageOut(data=[], total=0, page=page, pageSize=page_size)
-
         filter_args = (
             tab, search, purchases_min, purchases_max, created_year, engagement,
             client_status, has_phone, regioes, origens, pagamentos,
