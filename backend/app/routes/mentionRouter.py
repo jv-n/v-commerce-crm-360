@@ -27,7 +27,12 @@ def search_mentions(
     limit: int = Query(5, ge=1, le=10),
     db: Session = Depends(get_db),
 ):
-    pattern = f"{q}%" if q else "%"
+    # Capitaliza o input para bater com nomes no banco (ex: "caio" → "Caio")
+    q_name = q.capitalize() if q else ""
+    name_pattern = f"{q_name}%" if q_name else "%"
+    # IDs e pedidos são case-insensitive por natureza (hex/uuid)
+    id_pattern = f"{q}%" if q else "%"
+    per_cat = max(1, limit // 2)  # busca menos por categoria para não estourar o total
     results: List[MentionResult] = []
 
     # ── Clientes / Leads (dim_clientes + gold_cliente_360) ───────────────────
@@ -35,25 +40,25 @@ def search_mentions(
     rows = db.execute(
         text("""
             SELECT
-                c.giid_cliente,
+                c.id_cliente,
                 c.nome_completo,
                 c.email,
                 c.telefone,
                 COALESCE(g.total_pedidos, 0) AS total_pedidos
             FROM dim_clientes c
-            LEFT JOIN gold_cliente_360 g ON g.id_cliente = c.giid_cliente
-            WHERE c.nome_completo LIKE :p OR c.giid_cliente LIKE :p
+            LEFT JOIN gold_cliente_360 g ON g.id_cliente = c.id_cliente
+            WHERE c.nome_completo LIKE :p
             LIMIT :lim
         """),
-        {"p": pattern, "lim": limit},
+        {"p": name_pattern, "lim": per_cat},
     ).fetchall()
 
     for r in rows:
-        nome = r.nome_completo or r.giid_cliente
+        nome = r.nome_completo or r.id_cliente
         sublabel = r.email or r.telefone or None
         tipo = "lead" if (r.total_pedidos == 0) else "contact"
         results.append(MentionResult(
-            id=r.giid_cliente,
+            id=r.id_cliente,
             type=tipo,
             display=nome,
             label=nome,
@@ -65,10 +70,10 @@ def search_mentions(
         text("""
             SELECT id_produto, nome_produto, categoria
             FROM dim_produtos
-            WHERE nome_produto LIKE :p OR id_produto LIKE :p
+            WHERE nome_produto LIKE :p
             LIMIT :lim
         """),
-        {"p": pattern, "lim": limit},
+        {"p": name_pattern, "lim": per_cat},
     ).fetchall()
 
     for r in rows:
@@ -80,16 +85,16 @@ def search_mentions(
             sublabel=r.categoria or None,
         ))
 
-    # ── Pedidos (ft_pedidos) ──────────────────────────────────────────────────
+    # ── Pedidos (ft_pedidos) — só busca se parece com um ID (≥8 chars) ─────────
     rows = db.execute(
         text("""
             SELECT id_pedido, id_cliente, status, valor_pedido, data_pedido
             FROM ft_pedidos
-            WHERE id_pedido LIKE :p OR id_cliente LIKE :p
+            WHERE id_pedido LIKE :p
             LIMIT :lim
         """),
-        {"p": pattern, "lim": limit},
-    ).fetchall()
+        {"p": id_pattern, "lim": per_cat},
+    ).fetchall() if len(q) >= 8 else []
 
     for r in rows:
         sublabel_parts = []
@@ -115,7 +120,7 @@ def search_mentions(
             WHERE agente_suporte LIKE :p
             LIMIT :lim
         """),
-        {"p": pattern, "lim": limit},
+        {"p": name_pattern, "lim": per_cat},
     ).fetchall()
 
     for r in rows:
@@ -128,4 +133,4 @@ def search_mentions(
             sublabel=nota,
         ))
 
-    return MentionSearchResponse(results=results)
+    return MentionSearchResponse(results=results[:limit])
