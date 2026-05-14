@@ -1,10 +1,11 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from sqlalchemy.orm import Session
 from database.database import get_db
 from app.schemas.productSchemas import (
     ProductSchema, ProductsPageOut, ProductCreate, ProductUpdate,
     ProductOrderOut, ProductTicketOut, ProductMonthlyRevenueOut,
+    ProductActivityOut, ProductResumoOut,
 )
 from app.services.productService import ProductService
 
@@ -75,8 +76,13 @@ def get_product(product_id: str, db: Session = Depends(get_db)):
 
 
 @router.patch("/{product_id}", response_model=ProductSchema)
-def update_product(product_id: str, body: ProductUpdate, db: Session = Depends(get_db)):
-    product = ProductService(db).update_product(product_id, body)
+def update_product(
+    product_id: str,
+    body: ProductUpdate,
+    x_user_name: str = Header(default="Sistema", alias="X-User-Name"),
+    db: Session = Depends(get_db),
+):
+    product = ProductService(db).update_product(product_id, body, user_name=x_user_name)
     if not product:
         raise HTTPException(status_code=404, detail="Produto não encontrado")
     return product
@@ -87,6 +93,23 @@ def delete_product(product_id: str, db: Session = Depends(get_db)):
     deleted = ProductService(db).delete_product(product_id)
     if not deleted:
         raise HTTPException(status_code=404, detail="Produto não encontrado")
+
+
+@router.get("/{product_id}/resumo", response_model=ProductResumoOut)
+def get_product_resumo(product_id: str, db: Session = Depends(get_db)):
+    result = ProductService(db).get_product_resumo(product_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+    return result
+
+
+@router.get("/{product_id}/activities", response_model=list[ProductActivityOut])
+def get_product_activities(
+    product_id: str,
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    return ProductService(db).get_product_activities(product_id, limit=limit)
 
 
 @router.get("/{product_id}/orders", response_model=list[ProductOrderOut])

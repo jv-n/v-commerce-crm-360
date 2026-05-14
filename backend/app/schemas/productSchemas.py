@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel
 
 
@@ -75,3 +77,23 @@ class ProductTicketOut(BaseModel):
 class ProductMonthlyRevenueOut(BaseModel):
     ano_mes: str
     receita: float
+
+
+class ProductResumoOut(BaseModel):
+    receita_total: float | None = None
+    melhor_mes: str | None = None
+    metodo_pagamento_favorito: str | None = None
+    problema_mais_frequente: str | None = None
+
+
+class ProductActivityOut(BaseModel):
+    id: int
+    id_produto: str
+    user_name: str
+    field_name: str
+    old_value: str | None = None
+    new_value: str | None = None
+    change_method: str
+    changed_at: datetime
+
+    model_config = {"from_attributes": True}

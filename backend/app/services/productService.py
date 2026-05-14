@@ -1,14 +1,17 @@
-from datetime import date
+from datetime import date, datetime, timezone, timedelta
+
+_BRT = timezone(timedelta(hours=-3))
 
 from sqlalchemy import asc, desc, select, func
 from sqlalchemy.orm import Session
 
-from app.models.productModel import DimProduto, GoldDesempenhoProduto
+from app.models.productModel import DimProduto, GoldDesempenhoProduto, ProductActivity
 from app.models.saleModel import GoldPedidoDetalhado
 from app.models.ticketModel import FtTicketSuporte
 from app.schemas.productSchemas import (
     ProductSchema, ProductCreate, ProductUpdate,
     ProductOrderOut, ProductTicketOut, ProductMonthlyRevenueOut,
+    ProductActivityOut, ProductResumoOut,
 )
 
 
@@ -58,6 +61,16 @@ class ProductService:
         "rating":     lambda: GoldDesempenhoProduto.nota_media_avaliacao,
         "totalSales": lambda: GoldDesempenhoProduto.qtd_vendida,
     }
+
+    # (payload_attr, gold_attr, label em PT)
+    _TRACKED_FIELDS: list[tuple[str, str, str]] = [
+        ("name",     "nome_produto", "Nome do produto"),
+        ("category", "categoria",   "Categoria"),
+        ("price",    "preco",       "Preço"),
+        ("supplier", "fornecedor",  "Fornecedor"),
+        ("stock",    "estoque_disponivel", "Estoque disponível"),
+        ("status",   "ativo",       "Status"),
+    ]
 
     def _build_dim_map(self, ids: list[str]) -> dict[str, DimProduto]:
         if not ids:
@@ -288,13 +301,74 @@ class ProductService:
 
         return _to_product_out(gold, peso_kg=dim.peso_kg, data_cadastro=dim.data_cadastro_produto)
 
-    def update_product(self, product_id: str, body: ProductUpdate) -> ProductSchema | None:
+    def update_product(
+        self,
+        product_id: str,
+        body: ProductUpdate,
+        user_name: str = "Sistema",
+    ) -> ProductSchema | None:
         gold = self.db.query(GoldDesempenhoProduto).filter(
             GoldDesempenhoProduto.id_produto == product_id
         ).first()
         if not gold:
             return None
 
+        dim = self.db.query(DimProduto).filter(DimProduto.id_produto == product_id).first()
+
+        # ── snapshot dos valores antigos antes de qualquer alteração ──
+        now = datetime.now(_BRT).replace(tzinfo=None)
+        activities: list[ProductActivity] = []
+
+        for payload_attr, gold_attr, label in self._TRACKED_FIELDS:
+            new_val = getattr(body, payload_attr)
+            if new_val is None:
+                continue
+
+            if payload_attr == "status":
+                old_display = "Ativo" if str(gold.ativo or "").lower() == "true" else "Inativo"
+                new_display = new_val
+                changed = old_display != new_display
+            elif payload_attr == "stock":
+                old_display = str(int(gold.estoque_disponivel or 0))
+                new_display = str(new_val)
+                changed = int(gold.estoque_disponivel or 0) != new_val
+            elif payload_attr == "price":
+                old_display = f"R$ {gold.preco:.2f}".replace(".", ",") if gold.preco is not None else "—"
+                new_display = f"R$ {new_val:.2f}".replace(".", ",")
+                changed = gold.preco != new_val
+            else:
+                old_raw = getattr(gold, gold_attr)
+                old_display = str(old_raw) if old_raw is not None else "—"
+                new_display = str(new_val)
+                changed = old_raw != new_val
+
+            if changed:
+                activities.append(ProductActivity(
+                    id_produto=product_id,
+                    user_name=user_name,
+                    field_name=label,
+                    old_value=old_display,
+                    new_value=new_display,
+                    change_method="Edição direta",
+                    changed_at=now,
+                ))
+
+        # weight_kg vem do DimProduto
+        if body.weight_kg is not None and dim:
+            old_w = f"{dim.peso_kg} kg" if dim.peso_kg is not None else "—"
+            new_w = f"{body.weight_kg} kg"
+            if dim.peso_kg != body.weight_kg:
+                activities.append(ProductActivity(
+                    id_produto=product_id,
+                    user_name=user_name,
+                    field_name="Peso (kg)",
+                    old_value=old_w,
+                    new_value=new_w,
+                    change_method="Edição direta",
+                    changed_at=now,
+                ))
+
+        # ── aplica as alterações ──
         if body.name     is not None: gold.nome_produto       = body.name
         if body.category is not None: gold.categoria          = body.category
         if body.price    is not None: gold.preco              = body.price
@@ -302,15 +376,14 @@ class ProductService:
         if body.stock    is not None: gold.estoque_disponivel = float(body.stock)
         if body.status   is not None: gold.ativo              = "True" if body.status == "Ativo" else "False"
 
-        dim = self.db.query(DimProduto).filter(DimProduto.id_produto == product_id).first()
         if dim:
-            if body.name     is not None: dim.nome_produto  = body.name
-            if body.category is not None: dim.categoria     = body.category
-            if body.price    is not None: dim.preco         = body.price
-            if body.supplier is not None: dim.fornecedor    = body.supplier
-            if body.stock    is not None: dim.estoque_disponivel = float(body.stock)
-            if body.status   is not None: dim.ativo         = "True" if body.status == "Ativo" else "False"
-            if body.weight_kg is not None: dim.peso_kg      = body.weight_kg
+            if body.name      is not None: dim.nome_produto       = body.name
+            if body.category  is not None: dim.categoria          = body.category
+            if body.price     is not None: dim.preco              = body.price
+            if body.supplier  is not None: dim.fornecedor         = body.supplier
+            if body.stock     is not None: dim.estoque_disponivel = float(body.stock)
+            if body.status    is not None: dim.ativo              = "True" if body.status == "Ativo" else "False"
+            if body.weight_kg is not None: dim.peso_kg            = body.weight_kg
         else:
             dim = DimProduto(
                 id_produto=product_id,
@@ -319,15 +392,70 @@ class ProductService:
             )
             self.db.add(dim)
 
+        for act in activities:
+            self.db.add(act)
+
         self.db.commit()
         self.db.refresh(gold)
-        if dim: self.db.refresh(dim)
+        if dim:
+            self.db.refresh(dim)
 
         return _to_product_out(
             gold,
             peso_kg=dim.peso_kg if dim else None,
             data_cadastro=dim.data_cadastro_produto if dim else None,
         )
+
+    def get_product_resumo(self, product_id: str) -> ProductResumoOut | None:
+        gold = self.db.query(GoldDesempenhoProduto).filter(
+            GoldDesempenhoProduto.id_produto == product_id
+        ).first()
+        if not gold:
+            return None
+
+        # ── Mês com maior receita ─────────────────────────────────────────────
+        melhor_mes_row = (
+            self.db.query(
+                GoldPedidoDetalhado.ano_mes,
+                func.sum(GoldPedidoDetalhado.receita_bruta).label("receita"),
+            )
+            .filter(GoldPedidoDetalhado.id_produto == product_id)
+            .group_by(GoldPedidoDetalhado.ano_mes)
+            .order_by(desc("receita"))
+            .first()
+        )
+
+        # ── Método de pagamento mais usado ────────────────────────────────────
+        metodo_row = (
+            self.db.query(
+                GoldPedidoDetalhado.metodo_pagamento,
+                func.count().label("total"),
+            )
+            .filter(
+                GoldPedidoDetalhado.id_produto == product_id,
+                GoldPedidoDetalhado.metodo_pagamento.isnot(None),
+            )
+            .group_by(GoldPedidoDetalhado.metodo_pagamento)
+            .order_by(desc("total"))
+            .first()
+        )
+
+        return ProductResumoOut(
+            receita_total=round(gold.receita_total, 2) if gold.receita_total else None,
+            melhor_mes=melhor_mes_row.ano_mes if melhor_mes_row else None,
+            metodo_pagamento_favorito=metodo_row.metodo_pagamento if metodo_row else None,
+            problema_mais_frequente=gold.tipo_problema_mais_frequente,
+        )
+
+    def get_product_activities(self, product_id: str, limit: int = 50) -> list[ProductActivityOut]:
+        rows = (
+            self.db.query(ProductActivity)
+            .filter(ProductActivity.id_produto == product_id)
+            .order_by(ProductActivity.changed_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [ProductActivityOut.model_validate(r) for r in rows]
 
     def delete_product(self, product_id: str) -> bool:
         gold = self.db.query(GoldDesempenhoProduto).filter(
