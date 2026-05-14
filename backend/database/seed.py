@@ -169,8 +169,9 @@ def create_indexes(conn: sqlite3.Connection) -> None:
 
 
 def seed_users(conn: sqlite3.Connection) -> None:
+    conn.execute("DROP TABLE IF EXISTS users")
     conn.execute("""
-        CREATE TABLE IF NOT EXISTS users (
+        CREATE TABLE users (
             id       TEXT PRIMARY KEY,
             name     TEXT NOT NULL,
             email    TEXT NOT NULL UNIQUE,
