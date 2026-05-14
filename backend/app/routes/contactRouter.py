@@ -40,7 +40,7 @@ def update_contact(contact_id: str, body: ContactUpdate, db: Session = Depends(g
 @router.get("/", response_model=ContactsPageOut)
 def get_contacts(
     page: int = Query(1, ge=1),
-    pageSize: int = Query(20, ge=1, le=100),
+    pageSize: int = Query(20, ge=1, le=500000),
     tab: str = Query("all"),
     search: str = Query(""),
     purchases_min: int | None = Query(None, ge=0),

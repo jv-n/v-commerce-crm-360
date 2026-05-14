@@ -277,27 +277,18 @@ class ContactService:
         sort_col = _SORT_COLS.get(sort_by, GoldCliente360.nome_completo)
         order_fn = desc if sort_dir == "desc" else asc
 
-        gold_rows: list[GoldCliente360] = (
+        rows = (
             count_q
+            .outerjoin(DimCliente, DimCliente.id_cliente == GoldCliente360.id_cliente)
+            .add_columns(DimCliente.telefone)
             .order_by(order_fn(sort_col))
             .offset((page - 1) * page_size)
             .limit(page_size)
             .all()
         )
 
-        # ── Telefones: um único IN para os IDs desta página ───────────────────
-        ids = [g.id_cliente for g in gold_rows]
-        phone_map: dict[str, str | None] = {}
-        if ids:
-            dim_rows = (
-                self.db.query(DimCliente)
-                .filter(DimCliente.id_cliente.in_(ids))
-                .all()
-            )
-            phone_map = {d.id_cliente: d.telefone for d in dim_rows}
-
         return ContactsPageOut(
-            data=[_to_contact_out(g, phone=phone_map.get(g.id_cliente)) for g in gold_rows],
+            data=[_to_contact_out(g, phone=phone) for g, phone in rows],
             total=total,
             page=page,
             pageSize=page_size,
