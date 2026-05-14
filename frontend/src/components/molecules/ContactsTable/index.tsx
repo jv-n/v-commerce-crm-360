@@ -252,8 +252,6 @@ export function ContactsTable({ onOpenAdd }: { onOpenAdd?: (fn: () => void) => v
         onFiltersChange={handleFiltersChange}
         onSortChange={handleSortChange}
         filterBarExtra={filterBarExtra}
-        headerClassName="bg-[#F0DDFD]"
-        dividersClassName="divide-[#9F83B2]"
         rowsPerPageOptions={[10, 25, 50]}
         expandedRowIds={expandedRowId ? new Set([expandedRowId]) : undefined}
         renderExpandedRow={(c) => <ContactExpandedRow contact={c} onEdit={() => openEdit(c)} />}
