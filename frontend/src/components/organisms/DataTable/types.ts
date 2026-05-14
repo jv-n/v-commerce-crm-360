@@ -138,4 +138,7 @@ export interface DataTableProps<T> {
    * Serve para limpar filtros externos criados fora da DataTable.
    */
   onClearExtraFilters?: () => void
+
+  /** Disparado sempre que o conjunto de linhas selecionadas muda. */
+  onSelectionChange?: (ids: Set<string>) => void
 }
