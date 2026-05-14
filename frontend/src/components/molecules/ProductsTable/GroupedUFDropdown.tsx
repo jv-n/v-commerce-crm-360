@@ -44,7 +44,7 @@ export function GroupedUFDropdown({
           <div key={region}>
             <button
               onClick={() => toggle(region)}
-              className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-500 hover:bg-gray-50 transition-colors"
+              className="w-full flex items-center justify-between px-3 py-2 text-xs font-semibold text-gray-900 hover:bg-gray-50 transition-colors"
             >
               {region}
               <KeyboardArrowDownIcon
@@ -61,7 +61,7 @@ export function GroupedUFDropdown({
                 key={uf}
                 onClick={() => onSelect(uf)}
                 className={cn(
-                  "w-full text-left pl-6 pr-3 py-1.5 text-sm text-gray-600 hover:bg-gray-50 transition-colors",
+                  "w-full text-left pl-6 pr-3 py-1.5 text-sm text-gray-900 hover:bg-gray-50 transition-colors",
                   selected === uf && "bg-purple-50 text-purple-700 font-medium"
                 )}
               >

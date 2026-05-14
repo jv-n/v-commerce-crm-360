@@ -61,12 +61,12 @@ export function ProductExpandedRow({ product }: { product: Product }) {
             </div>
 
             <div className="pb-6 flex items-center gap-1 flex-wrap text-sm">
-              <span className="font-semibold text-gray-800">{entry.user}</span>
+              <span className="font-semibold text-gray-900">{entry.user}</span>
 
               {entry.type === "edit" && prevPrice != null && (
                 <>
-                  <span className="text-gray-500">atualizou o valor:</span>
-                  <span className="font-semibold text-gray-800">{fmt(prevPrice)} - {fmt(product.price!)}</span>
+                  <span className="text-gray-900">atualizou o valor:</span>
+                  <span className="font-semibold text-gray-900">{fmt(prevPrice)} - {fmt(product.price!)}</span>
                 </>
               )}
               {entry.type === "edit" && prevPrice == null && (
@@ -77,35 +77,35 @@ export function ProductExpandedRow({ product }: { product: Product }) {
                 <>
                   <span className="text-gray-500">atualizou avaliação de</span>
                   <RatingBadge rating={entry.from} />
-                  <span className="text-gray-500">para</span>
+                  <span className="text-gray-900">para</span>
                   <RatingBadge rating={entry.to} />
                 </>
               )}
 
               {entry.type === "add" && (
                 <>
-                  <span className="text-gray-500">created</span>
+                  <span className="text-gray-900">created</span>
                   <span className="font-medium text-violet-600">produto</span>
                 </>
               )}
 
-              <span className="text-xs text-gray-400 ml-0.5">- {entry.time}</span>
+              <span className="text-xs text-gray-900 ml-0.5">- {entry.time}</span>
             </div>
           </div>
         ))}
       </div>
 
       <div className="w-72 shrink-0">
-        <h3 className="text-sm font-bold text-gray-800 mb-2 text-center">
+        <h3 className="text-sm font-bold text-gray-900 mb-2 text-center">
           Resumo da <span className="text-green-500">V.IA</span>
         </h3>
         <div className="p-px rounded-lg" style={{ background: "linear-gradient(135deg, #4ade80, #2dd4bf, #818cf8)" }}>
-          <div className="bg-white rounded-lg p-3 text-xs text-gray-600 space-y-2">
-            <p className="text-gray-500">Um breve resumo criado pelo agente, visando facilitar o entendimento dos dados:</p>
-            <p>Contato <span className="font-bold text-gray-800">Adicionado</span> no dia: {product.createdAt}</p>
-            <p>Ultima <span className="font-bold text-gray-800">Compra</span>: {product.name}</p>
+          <div className="bg-white rounded-lg p-3 text-xs text-gray-900 space-y-2">
+            <p className="text-gray-900">Um breve resumo criado pelo agente, visando facilitar o entendimento dos dados:</p>
+            <p>Contato <span className="font-bold text-gray-900">Adicionado</span> no dia: {product.createdAt}</p>
+            <p>Ultima <span className="font-bold text-gray-900">Compra</span>: {product.name}</p>
             <div className="pt-1 flex justify-end">
-              <button className="flex items-center gap-1.5 text-xs text-gray-500 hover:text-gray-700 transition-colors">
+              <button className="flex items-center gap-1.5 text-xs text-gray-900 hover:text-gray-900 transition-colors">
                 Faça uma pergunta
                 <AutoAwesomeIcon sx={{ color: "#818cf8", fontSize: 14 }} />
               </button>
