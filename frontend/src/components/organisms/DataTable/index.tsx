@@ -25,6 +25,7 @@ import { TogglePill } from "./atoms/TogglePill"
 import { SelectDropdown } from "./atoms/SelectDropdown"
 import { NumberRangeDropdown } from "./atoms/NumberRangeDropdown"
 import { MultiSelectDropdown } from "./atoms/MultiSelectDropdown"
+import { DateRangeDropdown } from "./atoms/DateRangeDropdown"
 
 function buildServerPageInfo(sp: ServerPagination, dataLength: number) {
   const totalPages = Math.max(1, Math.ceil(sp.total / sp.pageSize))
@@ -63,6 +64,7 @@ export function DataTable<T,>({
   tabsRightSlot,
   searchFn,
   searchPlaceholder,
+  searchPrefix,
   onSortChange,
   onRowClick,
   extraActiveFilterCount = 0,
@@ -250,6 +252,21 @@ export function DataTable<T,>({
           onClear={handleClear}
         />
       )
+    } else if (def.type === "date-range") {
+      content = (
+        <DateRangeDropdown
+          current={
+            active?.type === "date-range"
+              ? { from: active.from, to: active.to }
+              : null
+          }
+          onApply={(from, to) => {
+            filters.setFilter(colKey, { type: "date-range", from, to })
+            pagination.resetPage()
+          }}
+          onClear={handleClear}
+        />
+      )
     } else {
       content = (
         <NumberRangeDropdown
@@ -318,6 +335,7 @@ export function DataTable<T,>({
               handleSearchChange("")
             }}
             searchPlaceholder={searchPlaceholder}
+            searchPrefix={searchPrefix}
           />
         )}
 
