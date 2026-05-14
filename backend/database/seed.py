@@ -1,6 +1,6 @@
 """
 seed.py — Cria e popula o banco SQLite do V-Commerce CRM 360
-a partir dos CSVs exportados das camadas Gold e Silver do Databricks.
+a partir dos CSVs exportados das camadas Silver e Gold do Databricks.
 
 Uso:
     python backend/database/seed.py
@@ -53,18 +53,14 @@ USERS = [
     },
 ]
 
-# ── Tabelas Silver (dimensões e fatos usados diretamente pelo backend) ────────
+# ── Tabelas Silver ────────────────────────────────────────────────────────────
+# Necessárias para o mentionRouter (dim_clientes, dim_produtos, ft_pedidos,
+# dim_agentes_suporte) e para joins internos do agente de IA.
 SILVER_TABLES = [
-    ("dim_produtos",         "dim_produtos"),
-    ("dim_clientes",         "dim_clientes"),
-    ("dim_agentes_suporte",  "dim_agentes_suporte"),
-    ("dim_categorias_produto","dim_categorias_produto"),
-    ("dim_status_pedido",    "dim_status_pedido"),
-    ("dim_tipos_problema",   "dim_tipos_problema"),
-    ("ft_pedidos",           "ft_pedidos"),
-    ("ft_avaliacoes",        "ft_avaliacoes"),
-    ("ft_tickets_suporte",   "ft_tickets_suporte"),
-    ("ft_clickstream",       "ft_clickstream"),
+    ("dim_clientes",       "dim_clientes"),
+    ("dim_produtos",       "dim_produtos"),
+    ("dim_agentes_suporte","dim_agentes_suporte"),
+    ("ft_pedidos",         "ft_pedidos"),
 ]
 
 # ── Tabelas Gold ──────────────────────────────────────────────────────────────
@@ -115,8 +111,13 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_g360_nps_media        ON gold_cliente_360(nota_nps_media)",
     "CREATE INDEX IF NOT EXISTS idx_g360_receita          ON gold_cliente_360(receita_total)",
     "CREATE INDEX IF NOT EXISTS idx_g360_ticket_medio     ON gold_cliente_360(ticket_medio)",
-    # dim_clientes e ft_pedidos (busca de menções no chat IA)
+    # dim_clientes (busca de menções no chat IA)
     "CREATE INDEX IF NOT EXISTS idx_dimcli_nome_completo  ON dim_clientes(nome_completo)",
+    "CREATE INDEX IF NOT EXISTS idx_dimcli_id_cliente     ON dim_clientes(id_cliente)",
+    # dim_produtos (busca de menções no chat IA)
+    "CREATE INDEX IF NOT EXISTS idx_dimprod_nome_produto  ON dim_produtos(nome_produto)",
+    "CREATE INDEX IF NOT EXISTS idx_dimprod_categoria     ON dim_produtos(categoria)",
+    # ft_pedidos (busca de menções no chat IA)
     "CREATE INDEX IF NOT EXISTS idx_ftpedidos_id_pedido   ON ft_pedidos(id_pedido)",
     # gold_kpis_vendas_mensal
     "CREATE INDEX IF NOT EXISTS idx_gkpis_ano_mes         ON gold_kpis_vendas_mensal(ano_mes)",
