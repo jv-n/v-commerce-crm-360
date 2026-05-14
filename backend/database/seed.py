@@ -1,12 +1,13 @@
 """
 seed.py — Cria e popula o banco SQLite do V-Commerce CRM 360
-a partir dos CSVs exportados da camada Gold do Databricks.
+a partir dos CSVs exportados das camadas Gold e Silver do Databricks.
 
 Uso:
     python backend/database/seed.py
 
 O banco é criado em backend/database/vcommerce.db
 Os CSVs Gold devem estar em data-engineering/gold-data-csvs/
+Os CSVs Silver devem estar em data-engineering/silver-data-csvs/
 """
 
 import sqlite3
@@ -19,9 +20,10 @@ from pwdlib import PasswordHash
 _password_hasher = PasswordHash.recommended()
 
 # ── Caminhos ──────────────────────────────────────────────────────────────────
-ROOT     = Path(__file__).resolve().parents[2]
-GOLD_DIR = ROOT / "data-engineering" / "gold-data-csvs"
-DB_PATH  = Path(__file__).resolve().parent / "vcommerce.db"
+ROOT       = Path(__file__).resolve().parents[2]
+GOLD_DIR   = ROOT / "data-engineering" / "gold-data-csvs"
+SILVER_DIR = ROOT / "data-engineering" / "silver-data-csvs"
+DB_PATH    = Path(__file__).resolve().parent / "vcommerce.db"
 
 # ── Usuários ──────────────────────────────────────────────────────────────────
 USERS = [
@@ -49,6 +51,20 @@ USERS = [
         "password": "sales123",
         "role": "sales",
     },
+]
+
+# ── Tabelas Silver (dimensões e fatos usados diretamente pelo backend) ────────
+SILVER_TABLES = [
+    ("dim_produtos",         "dim_produtos"),
+    ("dim_clientes",         "dim_clientes"),
+    ("dim_agentes_suporte",  "dim_agentes_suporte"),
+    ("dim_categorias_produto","dim_categorias_produto"),
+    ("dim_status_pedido",    "dim_status_pedido"),
+    ("dim_tipos_problema",   "dim_tipos_problema"),
+    ("ft_pedidos",           "ft_pedidos"),
+    ("ft_avaliacoes",        "ft_avaliacoes"),
+    ("ft_tickets_suporte",   "ft_tickets_suporte"),
+    ("ft_clickstream",       "ft_clickstream"),
 ]
 
 # ── Tabelas Gold ──────────────────────────────────────────────────────────────
@@ -177,11 +193,16 @@ def seed() -> None:
     print(f"\n{'='*60}")
     print("  V-Commerce CRM 360 — Seed do banco SQLite")
     print(f"{'='*60}")
+    print(f"  Silver: {SILVER_DIR}")
     print(f"  Gold  : {GOLD_DIR}")
     print(f"  Banco : {DB_PATH}\n")
 
     if not GOLD_DIR.exists():
         print(f"ERRO: Pasta Gold não encontrada em {GOLD_DIR}")
+        raise SystemExit(1)
+
+    if not SILVER_DIR.exists():
+        print(f"ERRO: Pasta Silver não encontrada em {SILVER_DIR}")
         raise SystemExit(1)
 
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -194,7 +215,20 @@ def seed() -> None:
     total_rows = 0
     start_total = time.time()
 
+    # ── Camada Silver ─────────────────────────────────────────────────────────
+    print("  [ Silver ]")
+    for stem, table_name in SILVER_TABLES:
+        t0 = time.time()
+        df = load_csv(SILVER_DIR, stem)
+        if df is None:
+            continue
+        print(f"   {table_name:<35} {len(df):>8,} linhas", end="", flush=True)
+        insert_table(conn, df, table_name)
+        print(f"  [{time.time() - t0:.1f}s]")
+        total_rows += len(df)
+
     # ── Camada Gold ───────────────────────────────────────────────────────────
+    print()
     print("  [ Gold ]")
     for stem, table_name in GOLD_TABLES:
         t0 = time.time()

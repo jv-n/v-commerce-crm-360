@@ -34,6 +34,7 @@ export function makeProductColumns(
   onToggle: (id: string) => void,
   allIds: string[],
   onToggleAll: () => void,
+  onNavigate: (id: string) => void,
 ): Column<Product>[] {
   const allExpanded = allIds.length > 0 && allIds.every(id => expandedRowIds.has(id))
 
@@ -171,11 +172,14 @@ export function makeProductColumns(
     {
       key: "actions",
       header: "",
-      render: () => (
-        <button className={cn(
-          "flex items-center justify-center w-8 h-8 rounded-lg",
-          "border border-[#D1B1E5] bg-[#F7EBFF] hover:bg-purple-100 transition-colors"
-        )}>
+      render: (p) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); onNavigate(p.id) }}
+          className={cn(
+            "flex items-center justify-center w-8 h-8 rounded-lg",
+            "border border-[#D1B1E5] bg-[#F7EBFF] hover:bg-purple-100 transition-colors"
+          )}
+        >
           <ArrowForwardIcon sx={{ fontSize: 16, color: "#06121C" }} />
         </button>
       ),

@@ -32,6 +32,8 @@ interface RawProduct {
   id: string
   name: string
   price: number | null
+  supplier: string | null
+  weight_kg: number | null
   stock: number
   category: string | null
   status: string | null
@@ -56,6 +58,8 @@ function toProduct(raw: RawProduct): Product {
       ? (raw.category as ProductCategory)
       : "Indefinida",
     price: raw.price,
+    supplier: raw.supplier ?? null,
+    weightKg: raw.weight_kg ?? null,
     stock: raw.stock,
     rating: raw.rating ?? 0,
     totalSales: raw.total_sales ?? 0,
@@ -65,6 +69,153 @@ function toProduct(raw: RawProduct): Product {
     uf: raw.uf ?? "",
     createdAt: raw.created_at ?? "",
   }
+}
+
+export interface ProductCreatePayload {
+  name: string
+  category?: string
+  price?: number | null
+  supplier?: string | null
+  weight_kg?: number | null
+  stock?: number
+  status?: string
+}
+
+export interface ProductOrder {
+  id_pedido: string
+  id_cliente: string | null
+  nome_cliente: string | null
+  data_pedido: string | null
+  status: string | null
+  valor_pedido: number | null
+  metodo_pagamento: string | null
+  quantidade: number | null
+}
+
+export interface ProductTicket {
+  ticket_id: string
+  id_pedido: string | null
+  tipo_problema: string | null
+  data_abertura: string | null
+  data_resolucao: string | null
+  resolvido: boolean
+  agente_suporte: string | null
+  nota_avaliacao: number | null
+}
+
+export interface MonthlyRevenue {
+  ano_mes: string
+  receita: number
+}
+
+export async function fetchProductById(id: string): Promise<Product> {
+  const res = await fetch(`/api/products/${id}`)
+  if (!res.ok) throw new Error(`Produto não encontrado: ${res.status}`)
+  return toProduct(await res.json() as RawProduct)
+}
+
+export async function fetchProductOrders(id: string): Promise<ProductOrder[]> {
+  const res = await fetch(`/api/products/${id}/orders`)
+  if (!res.ok) throw new Error(`Erro ao buscar pedidos: ${res.status}`)
+  return res.json()
+}
+
+export async function fetchProductTickets(id: string): Promise<ProductTicket[]> {
+  const res = await fetch(`/api/products/${id}/tickets`)
+  if (!res.ok) throw new Error(`Erro ao buscar tickets: ${res.status}`)
+  return res.json()
+}
+
+export async function fetchProductMonthlyRevenue(id: string): Promise<MonthlyRevenue[]> {
+  const res = await fetch(`/api/products/${id}/monthly-revenue`)
+  if (!res.ok) throw new Error(`Erro ao buscar receita: ${res.status}`)
+  return res.json()
+}
+
+export async function fetchSuppliers(): Promise<string[]> {
+  const res = await fetch("/api/products/suppliers")
+  if (!res.ok) throw new Error(`Erro ao buscar fornecedores: ${res.status}`)
+  return res.json()
+}
+
+export async function createProduct(payload: ProductCreatePayload): Promise<Product> {
+  const res = await fetch("/api/products/", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      name: payload.name,
+      category: payload.category ?? null,
+      price: payload.price ?? null,
+      supplier: payload.supplier ?? null,
+      weight_kg: payload.weight_kg ?? null,
+      stock: payload.stock ?? 0,
+      status: payload.status ?? "Ativo",
+    }),
+  })
+  if (!res.ok) throw new Error(`Erro ao criar produto: ${res.status}`)
+  return toProduct(await res.json() as RawProduct)
+}
+
+export interface ProductUpdatePayload {
+  name?: string
+  category?: string | null
+  price?: number | null
+  supplier?: string | null
+  weight_kg?: number | null
+  stock?: number
+  status?: string
+}
+
+export interface ProductResumo {
+  receita_total: number | null
+  melhor_mes: string | null
+  metodo_pagamento_favorito: string | null
+  problema_mais_frequente: string | null
+}
+
+export async function fetchProductResumo(id: string): Promise<ProductResumo> {
+  const res = await fetch(`/api/products/${id}/resumo`)
+  if (!res.ok) throw new Error(`Erro ao buscar resumo: ${res.status}`)
+  return res.json()
+}
+
+export interface ProductActivity {
+  id: number
+  id_produto: string
+  user_name: string
+  field_name: string
+  old_value: string | null
+  new_value: string | null
+  change_method: string
+  changed_at: string
+}
+
+export async function updateProduct(
+  id: string,
+  payload: ProductUpdatePayload,
+  userName = "Sistema",
+): Promise<Product> {
+  const res = await fetch(`/api/products/${id}`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      "X-User-Name": userName,
+    },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) throw new Error(`Erro ao atualizar produto: ${res.status}`)
+  return toProduct(await res.json() as RawProduct)
+}
+
+export async function fetchProductActivities(id: string, limit = 50): Promise<ProductActivity[]> {
+  const res = await fetch(`/api/products/${id}/activities?limit=${limit}`)
+  if (!res.ok) throw new Error(`Erro ao buscar atividades: ${res.status}`)
+  return res.json()
+}
+
+export async function deleteProduct(id: string): Promise<void> {
+  const res = await fetch(`/api/products/${id}`, { method: "DELETE" })
+  if (!res.ok) throw new Error(`Erro ao remover produto: ${res.status}`)
 }
 
 export async function fetchProducts(params: ProductsParams = {}): Promise<ProductsPage> {
