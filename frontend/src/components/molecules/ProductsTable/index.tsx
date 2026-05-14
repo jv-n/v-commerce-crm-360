@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react"
+import { useNavigate } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { makeProductColumns } from "./columns"
 import { cn } from "@/lib/utils"
@@ -126,6 +127,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
   const [error,          setError]          = useState<string | null>(null)
   const [sort,           setSort]           = useState<{ key: string; direction: "asc" | "desc" } | null>(null)
 
+  const navigate    = useNavigate()
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
   useEffect(() => {
@@ -228,7 +230,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
       onClick={() => setDrawerOpen(o => !o)}
       className={cn(
         "flex items-center gap-1.5 text-sm transition-colors px-2 py-1 rounded-md",
-        advCount > 0 ? "text-purple-700 font-medium hover:bg-[#F7EBFF]" : "text-gray-400 hover:text-gray-600 hover:bg-[#F7EBFF]"
+        advCount > 0 ? "text-purple-700 font-medium hover:bg-[#F7EBFF]" : "text-gray-900 hover:bg-[#F7EBFF]"
       )}
     >
       <MdFilterList size={15} />
@@ -257,7 +259,8 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
       <DataTable
         loading={loading}
         data={loading ? [] : products}
-        columns={makeProductColumns(expandedRowIds, onToggleExpand, products.map(p => p.id), onToggleAllExpand)}
+        columns={makeProductColumns(expandedRowIds, onToggleExpand, products.map(p => p.id), onToggleAllExpand, (id) => navigate(`/products/${id}`)
+        )}
         getRowId={(p) => p.id}
         tabs={TABS}
         activeTab={activeTab}

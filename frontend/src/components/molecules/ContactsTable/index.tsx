@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { makeContactColumns } from "./columns"
 import { fetchContacts } from "@/lib/api/contacts"
@@ -253,7 +254,8 @@ export function ContactsTable({
       <DataTable
         data={contacts}
         loading={loading}
-        columns={makeContactColumns(expandedRowId, onToggleExpand)}
+        columns={makeContactColumns(expandedRowId, onToggleExpand, (id) => navigate(`/contacts/${id}`))}
+
         getRowId={(c) => c.id}
         tabs={TABS}
         activeTab={activeTab}

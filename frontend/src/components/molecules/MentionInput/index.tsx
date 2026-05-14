@@ -32,6 +32,7 @@ export interface MentionInputHandle {
   focus: () => void;
   setValue: (text: string) => void;
   isEmpty: () => boolean;
+  insertChip: (item: MentionItem) => void;
 }
 
 interface Props {
@@ -173,6 +174,30 @@ const MentionInput = forwardRef<MentionInputHandle, Props>(
         }
       },
       isEmpty: () => isEmpty,
+      insertChip: (item: MentionItem) => {
+        const el = editorRef.current;
+        if (!el) return;
+        const chip = document.createElement("span");
+        chip.className = CHIP_CLASS[item.type];
+        chip.contentEditable = "false";
+        chip.dataset.mentionId = item.id;
+        chip.dataset.mentionType = item.type;
+        chip.dataset.mentionDisplay = item.display;
+        chip.dataset.mentionLabel = item.label;
+        if (item.sublabel) chip.dataset.mentionSublabel = item.sublabel;
+        chip.textContent = `@${TYPE_PREFIX[item.type]}: ${item.display}`;
+        el.appendChild(chip);
+        const space = document.createTextNode(" ");
+        el.appendChild(space);
+        setIsEmpty(false);
+        el.focus();
+        const range = document.createRange();
+        const sel = window.getSelection();
+        range.setStartAfter(space);
+        range.collapse(true);
+        sel?.removeAllRanges();
+        sel?.addRange(range);
+      },
     }));
 
     // Valor inicial (restaurado da navegação)
@@ -189,11 +214,11 @@ const MentionInput = forwardRef<MentionInputHandle, Props>(
     const triggerSearch = (q: string) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(async () => {
-        const items = await searchMentions(q, 8);
+        const items = await searchMentions(q, 5);
         setResults(items);
         setShowDropdown(items.length > 0);
         setActiveIdx(0);
-      }, 300);
+      }, 150);
     };
 
     // ── Inserção do chip ────────────────────────────────────────────────────
