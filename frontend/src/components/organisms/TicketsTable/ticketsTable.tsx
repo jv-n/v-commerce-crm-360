@@ -6,13 +6,14 @@ import {
   useRef,
   useState,
 } from "react"
+import type { Ticket } from "@/types/ticket"
 
 import CloseIcon from "@mui/icons-material/Close"
 
 import { DataTable } from "@/components/organisms/DataTable"
 import { getTicketColumns } from "./columns"
 import { fetchTicketResponsibles, fetchTickets } from "@/lib/api/tickets"
-import type { Ticket } from "@/types/ticket"
+import { ExportPopover, type ExportPill } from "@/components/molecules/ExportPopover"
 import type { ActiveFilters, Tab } from "@/components/organisms/DataTable/types"
 import { useAuth } from "@/contexts/auth/useAuth"
 import { TicketExpandedRow } from "./TicketExpandedRow"
@@ -57,8 +58,9 @@ type FilterSnapshot = {
 }
 
 export type TicketsTableHandle = {
-  undo: () => void
-  reset: () => void
+  undo:       () => void
+  reset:      () => void
+  openExport: () => void
 }
 
 type TicketsTableProps = {
@@ -186,6 +188,66 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
       onCanUndoChange?.(filterHistory.length > 0)
     }, [filterHistory.length, onCanUndoChange])
 
+    const [exportOpen,    setExportOpen]    = useState(false)
+    const [exportLoading, setExportLoading] = useState(false)
+
+    // ── Seleção acumulativa por cache ──────────────────────────────────────────
+    const ticketsRef      = useRef<Ticket[]>([])
+    const selectedCache   = useRef<Map<string, Ticket>>(new Map())
+    const [selectedIds,   setSelectedIds]   = useState<Set<string>>(new Set())
+    useEffect(() => { ticketsRef.current = tickets }, [tickets])
+
+    const handleSelectionChange = useCallback((ids: Set<string>) => {
+      const cache = selectedCache.current
+      for (const id of cache.keys()) { if (!ids.has(id)) cache.delete(id) }
+      for (const t of ticketsRef.current) { if (ids.has(t.id)) cache.set(t.id, t) }
+      setSelectedIds(new Set(ids))
+    }, [])
+
+    const buildCSV = (rows: Ticket[]) => {
+      const headers = ["ID", "Cliente", "ID Cliente", "ID Pedido", "Aberto em", "Responsável", "Problema", "Status", "Nota"]
+      const lines = rows.map(t => [t.id, t.client, t.clientId, t.orderId, t.openedAt, t.responsible.name, t.problem, t.status, t.score ?? ""])
+      return [headers, ...lines].map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n")
+    }
+
+    const downloadCSV = (csv: string, filename: string) => {
+      const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" })
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement("a")
+      a.href = url; a.download = filename; a.click()
+      URL.revokeObjectURL(url)
+    }
+
+    const handleExportCSV = async () => {
+      setExportLoading(true)
+      try {
+        const reqResponsible = activeTab === "my-attending" ? (loggedUserName ? [loggedUserName] : ["__none__"]) : serverFilters.responsible
+        const reqStatus      = activeTab === "my-attending" ? ["Em atendimento"] : activeTab === "waiting" ? ["Aguardando"] : serverFilters.status
+        const res = await fetchTickets({ page: 1, pageSize: 99999, responsible: reqResponsible, status: reqStatus, problem: serverFilters.problem, score: serverFilters.score, openedFrom: openedFromIso, openedTo: openedToIso })
+        downloadCSV(buildCSV(res.data), `tickets_${new Date().toISOString().slice(0, 10)}.csv`)
+        setExportOpen(false)
+      } finally { setExportLoading(false) }
+    }
+
+    const handleExportSelected = async () => {
+      setExportLoading(true)
+      try {
+        downloadCSV(buildCSV(Array.from(selectedCache.current.values())), `tickets_selecionados_${new Date().toISOString().slice(0, 10)}.csv`)
+        setExportOpen(false)
+      } finally { setExportLoading(false) }
+    }
+
+    const exportPills: ExportPill[] = [
+      ...(activeTab === "my-attending" ? [{ label: "Aba", value: "Meus tickets" }] : []),
+      ...(activeTab === "waiting"       ? [{ label: "Aba", value: "Aguardando"   }] : []),
+      ...(serverFilters.responsible.length ? [{ label: "Responsável", value: serverFilters.responsible.join(", ") }] : []),
+      ...(serverFilters.status.length      ? [{ label: "Status",      value: serverFilters.status.join(", ")      }] : []),
+      ...(serverFilters.problem.length     ? [{ label: "Problema",    value: serverFilters.problem.join(", ")     }] : []),
+      ...(serverFilters.score.length       ? [{ label: "Nota",        value: serverFilters.score.join(", ")       }] : []),
+      ...(dateFilters.openedFrom           ? [{ label: "Abertura de", value: dateFilters.openedFrom               }] : []),
+      ...(dateFilters.openedTo             ? [{ label: "Abertura até",value: dateFilters.openedTo                 }] : []),
+    ]
+
     useImperativeHandle(
       ref,
       () => ({
@@ -214,6 +276,7 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
           setServerFilters(EMPTY_FILTERS)
           setDateFilters(EMPTY_DATE_FILTERS)
         },
+        openExport: () => setExportOpen(true),
       }),
       [pushHistory]
     )
@@ -371,6 +434,17 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
 
     return (
       <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-visible">
+        <ExportPopover
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          total={total}
+          entityLabel="Tickets"
+          pills={exportPills}
+          exportLoading={exportLoading}
+          onExport={handleExportCSV}
+          selectedCount={selectedIds.size}
+          onExportSelected={handleExportSelected}
+        />
         <DataTable
           data={tickets}
           loading={loading}
@@ -380,6 +454,7 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
           activeTab={activeTab}
           onTabChange={handleTabChange}
           onFiltersChange={handleFiltersChange}
+          onSelectionChange={handleSelectionChange}
           headerClassName="bg-[#F0DDFD]"
           rowClassName="hover:bg-[#F7EBFF]"
           expandedRowClassName="bg-[#F7EBFF]"

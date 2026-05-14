@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from "react"
+import { useState, useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from "react"
 import { useNavigate } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { makeProductColumns } from "./columns"
 import { cn } from "@/lib/utils"
 import { ProductExpandedRow } from "./ProductExpandedRow"
 import { AdvancedFiltersDrawer, EMPTY_ADVANCED, advancedActiveCount } from "./AdvancedFiltersDrawer"
+import { ProductExportPopover } from "./ProductExportPopover"
 import { fetchProducts } from "@/lib/api/products"
 import type { AdvancedFilters } from "./AdvancedFiltersDrawer"
 import type { ProductsParams } from "@/lib/api/products"
@@ -106,8 +107,9 @@ function buildParams(
 }
 
 export type ProductsTableHandle = {
-  undo:  () => void
-  reset: () => void
+  undo:        () => void
+  reset:       () => void
+  openExport:  () => void
 }
 
 export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?: (can: boolean) => void }>(
@@ -167,6 +169,58 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
 
   const advCount = advancedActiveCount(advanced)
 
+  const [exportOpen,    setExportOpen]    = useState(false)
+  const [exportLoading, setExportLoading] = useState(false)
+
+  // ── Seleção acumulativa por cache ────────────────────────────────────────────
+  const productsRef    = useRef<Product[]>([])
+  const selectedCache  = useRef<Map<string, Product>>(new Map())
+  const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set())
+  useEffect(() => { productsRef.current = products }, [products])
+
+  const handleSelectionChange = useCallback((ids: Set<string>) => {
+    const cache = selectedCache.current
+    for (const id of cache.keys()) { if (!ids.has(id)) cache.delete(id) }
+    for (const p of productsRef.current) { if (ids.has(p.id)) cache.set(p.id, p) }
+    setSelectedIds(new Set(ids))
+  }, [])
+
+  const buildCSV = (rows: Product[]) => {
+    const headers = ["ID", "Nome", "Categoria", "Preço", "Fornecedor", "Peso (kg)", "Estoque", "Avaliação", "Total Vendas", "Status", "UF", "Cadastrado em"]
+    const lines = rows.map(p => [p.id, p.name, p.category, p.price ?? "", p.supplier ?? "", p.weightKg ?? "", p.stock, p.rating, p.totalSales, p.state, p.uf, p.createdAt])
+    return [headers, ...lines].map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n")
+  }
+
+  const downloadCSV = (csv: string, filename: string) => {
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement("a")
+    a.href = url; a.download = filename; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleExportCSV = async () => {
+    setExportLoading(true)
+    try {
+      const params = buildParams(1, 99999, activeTab, advanced, colFilters, searchQuery, sort)
+      const res = await fetchProducts(params)
+      downloadCSV(buildCSV(res.data), `catalogo_${new Date().toISOString().slice(0, 10)}.csv`)
+      setExportOpen(false)
+    } finally {
+      setExportLoading(false)
+    }
+  }
+
+  const handleExportSelected = async () => {
+    setExportLoading(true)
+    try {
+      downloadCSV(buildCSV(Array.from(selectedCache.current.values())), `catalogo_selecionados_${new Date().toISOString().slice(0, 10)}.csv`)
+      setExportOpen(false)
+    } finally {
+      setExportLoading(false)
+    }
+  }
+
   const resetPage = () => setPage(1)
 
   const handleTabChange = (tab: string) => {
@@ -222,6 +276,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
       setPageSize(DEFAULT_PAGE_SIZE)
       onCanUndoChange?.(false)
     },
+    openExport: () => setExportOpen(true),
   }))
 
 
@@ -248,6 +303,20 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
 
   return (
     <>
+      <ProductExportPopover
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        total={total}
+        advanced={advanced}
+        colFilters={colFilters}
+        searchQuery={searchQuery}
+        activeTab={activeTab}
+        exportLoading={exportLoading}
+        onExport={handleExportCSV}
+        selectedCount={selectedIds.size}
+        onExportSelected={handleExportSelected}
+      />
+
       <AdvancedFiltersDrawer
         open={drawerOpen}
         filters={advanced}
@@ -268,6 +337,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
         searchFn={(p, q) => p.name.toLowerCase().includes(q.toLowerCase())}
         onSearchChange={handleSearchChange}
         onFiltersChange={handleFiltersChange}
+        onSelectionChange={handleSelectionChange}
         searchPlaceholder="Buscar produto..."
         noBorder
         rowsPerPageOptions={[10, 25, 50]}
