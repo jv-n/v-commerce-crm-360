@@ -1,7 +1,9 @@
-from sqlalchemy import bindparam, func, or_, text
-from sqlalchemy.orm import Session
-from fastapi import HTTPException
+from datetime import date
 from uuid import uuid4
+
+from fastapi import HTTPException
+from sqlalchemy import and_, bindparam, func, or_, text
+from sqlalchemy.orm import Session
 
 from app.models.ticketModel import FtTicketSuporte
 from app.schemas.ticketSchemas import (
@@ -34,6 +36,21 @@ class TicketService:
         }
 
     @staticmethod
+    def _validate_iso_date(value: str, field_name: str) -> str:
+        if not value:
+            return ""
+
+        try:
+            date.fromisoformat(value)
+        except ValueError:
+            raise HTTPException(
+                status_code=400,
+                detail=f"Data inválida para {field_name}. Use o formato yyyy-mm-dd.",
+            )
+
+        return value
+
+    @staticmethod
     def _build_ticket_out(
         ticket: FtTicketSuporte,
         client_names: dict[str, str] | None = None,
@@ -63,12 +80,22 @@ class TicketService:
         page: int = 1,
         page_size: int = 20,
         search: str = "",
-        responsible: str = "",
-        problem: str = "",
+        responsible: list[str] | None = None,
+        problem: list[str] | None = None,
         resolved: str = "",
-        status: str = "",
-        score: str = "",
+        status: list[str] | None = None,
+        score: list[str] | None = None,
+        opened_from: str = "",
+        opened_to: str = "",
     ) -> TicketsPageOut:
+        responsible = responsible or []
+        problem = problem or []
+        status = status or []
+        score = score or []
+
+        opened_from = TicketService._validate_iso_date(opened_from, "openedFrom")
+        opened_to = TicketService._validate_iso_date(opened_to, "openedTo")
+
         query = db.query(FtTicketSuporte)
 
         if search:
@@ -84,38 +111,57 @@ class TicketService:
                 )
             )
 
+        if opened_from:
+            query = query.filter(
+                func.date(FtTicketSuporte.data_abertura) >= opened_from
+            )
+
+        if opened_to:
+            query = query.filter(
+                func.date(FtTicketSuporte.data_abertura) <= opened_to
+            )
+
         if responsible:
-            query = query.filter(FtTicketSuporte.agente_suporte == responsible)
+            query = query.filter(FtTicketSuporte.agente_suporte.in_(responsible))
 
         if problem:
-            query = query.filter(FtTicketSuporte.tipo_problema == problem)
+            query = query.filter(FtTicketSuporte.tipo_problema.in_(problem))
 
         if status:
-            normalized_status = status.strip().lower()
+            status_filters = []
 
-            if normalized_status == "finalizado":
-                query = query.filter(
-                    func.lower(FtTicketSuporte.resolvido) == "true"
-                )
+            for item in status:
+                normalized_status = item.strip().lower()
 
-            elif normalized_status == "em atendimento":
-                query = query.filter(
-                    func.lower(FtTicketSuporte.resolvido) == "false",
-                    FtTicketSuporte.agente_suporte.is_not(None),
-                    func.trim(FtTicketSuporte.agente_suporte) != "",
-                )
+                if normalized_status == "finalizado":
+                    status_filters.append(
+                        func.lower(FtTicketSuporte.resolvido) == "true"
+                    )
 
-            elif normalized_status == "aguardando":
-                query = query.filter(
-                    func.lower(FtTicketSuporte.resolvido) == "false",
-                    or_(
-                        FtTicketSuporte.agente_suporte.is_(None),
-                        func.trim(FtTicketSuporte.agente_suporte) == "",
-                    ),
-                )
+                elif normalized_status == "em atendimento":
+                    status_filters.append(
+                        and_(
+                            func.lower(FtTicketSuporte.resolvido) == "false",
+                            FtTicketSuporte.agente_suporte.is_not(None),
+                            func.trim(FtTicketSuporte.agente_suporte) != "",
+                        )
+                    )
 
-            else:
-                raise HTTPException(status_code=400, detail="Status inválido")
+                elif normalized_status == "aguardando":
+                    status_filters.append(
+                        and_(
+                            func.lower(FtTicketSuporte.resolvido) == "false",
+                            or_(
+                                FtTicketSuporte.agente_suporte.is_(None),
+                                func.trim(FtTicketSuporte.agente_suporte) == "",
+                            ),
+                        )
+                    )
+
+                else:
+                    raise HTTPException(status_code=400, detail="Status inválido")
+
+            query = query.filter(or_(*status_filters))
 
         elif resolved:
             query = query.filter(
@@ -123,17 +169,27 @@ class TicketService:
             )
 
         if score:
-            normalized_score = score.strip().lower()
+            score_filters = []
 
-            if normalized_score in {"sem avaliação", "sem_avaliacao", "sem avaliacao"}:
-                query = query.filter(FtTicketSuporte.nota_avaliacao.is_(None))
-            else:
-                try:
-                    score_value = float(normalized_score)
-                except ValueError:
-                    raise HTTPException(status_code=400, detail="Nota inválida")
+            for item in score:
+                normalized_score = item.strip().lower()
 
-                query = query.filter(FtTicketSuporte.nota_avaliacao == score_value)
+                if normalized_score in {
+                    "sem avaliação",
+                    "sem_avaliação",
+                    "sem_avaliacao",
+                    "sem avaliacao",
+                }:
+                    score_filters.append(FtTicketSuporte.nota_avaliacao.is_(None))
+                else:
+                    try:
+                        score_value = float(normalized_score)
+                    except ValueError:
+                        raise HTTPException(status_code=400, detail="Nota inválida")
+
+                    score_filters.append(FtTicketSuporte.nota_avaliacao == score_value)
+
+            query = query.filter(or_(*score_filters))
 
         total = query.with_entities(func.count(FtTicketSuporte.ticket_id)).scalar() or 0
 

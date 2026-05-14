@@ -34,12 +34,13 @@ export interface TicketsPage {
 interface TicketsParams {
   page: number
   pageSize: number
-  tab?: string
   search?: string
-  responsible?: string
-  status?: string
-  problem?: string
-  score?: string
+  responsible?: string[]
+  status?: string[]
+  problem?: string[]
+  score?: string[]
+  openedFrom?: string
+  openedTo?: string
 }
 
 const API_BASE_URL = "http://127.0.0.1:8000"
@@ -90,6 +91,18 @@ function mapTicketFromApi(ticket: TicketApi): Ticket {
   }
 }
 
+function appendArrayParam(
+  queryParams: URLSearchParams,
+  key: string,
+  values?: string[]
+) {
+  values?.forEach(value => {
+    if (value) {
+      queryParams.append(key, value)
+    }
+  })
+}
+
 export async function fetchTickets(params: TicketsParams): Promise<TicketsPage> {
   const queryParams = new URLSearchParams()
 
@@ -100,21 +113,18 @@ export async function fetchTickets(params: TicketsParams): Promise<TicketsPage> 
     queryParams.set("search", params.search)
   }
 
-  if (params.responsible) {
-    queryParams.set("responsible", params.responsible)
+  if (params.openedFrom) {
+    queryParams.set("openedFrom", params.openedFrom)
   }
 
-  if (params.problem) {
-    queryParams.set("problem", params.problem)
+  if (params.openedTo) {
+    queryParams.set("openedTo", params.openedTo)
   }
 
-  if (params.status) {
-    queryParams.set("status", params.status)
-  }
-
-  if (params.score) {
-    queryParams.set("score", params.score)
-  }
+  appendArrayParam(queryParams, "responsible", params.responsible)
+  appendArrayParam(queryParams, "problem", params.problem)
+  appendArrayParam(queryParams, "status", params.status)
+  appendArrayParam(queryParams, "score", params.score)
 
   const response = await fetch(
     `${API_BASE_URL}/tickets/?${queryParams.toString()}`

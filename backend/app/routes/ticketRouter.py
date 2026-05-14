@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
@@ -18,11 +20,13 @@ def get_tickets(
     page: int = Query(1, ge=1),
     pageSize: int = Query(20, ge=1, le=100),
     search: str = Query(""),
-    responsible: str = Query(""),
-    problem: str = Query(""),
+    responsible: Annotated[list[str] | None, Query()] = None,
+    problem: Annotated[list[str] | None, Query()] = None,
     resolved: str = Query(""),
-    status: str = Query(""),
-    score: str = Query(""),
+    status: Annotated[list[str] | None, Query()] = None,
+    score: Annotated[list[str] | None, Query()] = None,
+    openedFrom: str = Query(""),
+    openedTo: str = Query(""),
     db: Session = Depends(get_db),
 ):
     return TicketService.get_tickets(
@@ -35,11 +39,15 @@ def get_tickets(
         resolved=resolved,
         status=status,
         score=score,
+        opened_from=openedFrom,
+        opened_to=openedTo,
     )
+
 
 @router.get("/responsibles", response_model=list[str])
 def get_ticket_responsibles(db: Session = Depends(get_db)):
     return TicketService.get_responsibles(db)
+
 
 @router.get("/{ticket_id}", response_model=TicketOut)
 def get_ticket(ticket_id: str, db: Session = Depends(get_db)):

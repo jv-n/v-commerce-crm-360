@@ -86,14 +86,37 @@ function formatTicketDate(value?: string) {
 }
 
 export function getTicketColumns(
-  responsibleOptions: string[]
+  responsibleOptions: string[],
+  expandedRowIds: Set<string>,
+  onToggleExpand: (id: string) => void
 ): Column<Ticket>[] {
   return [
     {
       key: "open",
       header: "",
       minWidth: "30px",
-      render: () => <OpenCircleButton title="Abrir ticket" />,
+      render: ticket => {
+        const isExpanded = expandedRowIds.has(ticket.id)
+
+        return (
+          <div
+            className={
+              isExpanded
+                ? "inline-flex rotate-90 transition-transform duration-200"
+                : "inline-flex transition-transform duration-200"
+            }
+          >
+            <OpenCircleButton
+              title={
+                isExpanded
+                  ? "Fechar histórico do ticket"
+                  : "Abrir histórico do ticket"
+              }
+              onClick={() => onToggleExpand(ticket.id)}
+            />
+          </div>
+        )
+      },
     },
     {
       key: "id",
@@ -158,10 +181,10 @@ export function getTicketColumns(
       header: "Responsavel Ticket",
       minWidth: "140px",
       filter: {
-        type: "select",
+        type: "multi-select",
         label: "Responsavel",
         options: responsibleOptions,
-        filterFn: (ticket, value) => ticket.responsible.name === value,
+        filterFn: (ticket, values) => values.includes(ticket.responsible.name),
       },
       render: ticket => (
         <button
@@ -184,10 +207,10 @@ export function getTicketColumns(
       header: "Problema",
       minWidth: "105px",
       filter: {
-        type: "select",
+        type: "multi-select",
         label: "Problema",
         options: ALL_PROBLEMS,
-        filterFn: (ticket, value) => ticket.problem === value,
+        filterFn: (ticket, values) => values.includes(ticket.problem),
       },
       render: ticket => (
         <div className="flex items-center gap-1.5">
@@ -203,10 +226,10 @@ export function getTicketColumns(
       header: "Status",
       minWidth: "110px",
       filter: {
-        type: "select",
+        type: "multi-select",
         label: "Status",
         options: ALL_STATUSES,
-        filterFn: (ticket, value) => ticket.status === value,
+        filterFn: (ticket, values) => values.includes(ticket.status),
       },
       render: ticket => <TicketStatusBadge status={ticket.status} />,
     },
@@ -215,15 +238,14 @@ export function getTicketColumns(
       header: "Nota",
       minWidth: "70px",
       filter: {
-        type: "select",
+        type: "multi-select",
         label: "Nota",
         options: ALL_SCORES,
-        filterFn: (ticket, value) => {
-          if (value === "Sem avaliação") {
-            return ticket.score === null
-          }
+        filterFn: (ticket, values) => {
+          const scoreValue =
+            ticket.score === null ? "Sem avaliação" : String(ticket.score)
 
-          return ticket.score === Number(value)
+          return values.includes(scoreValue)
         },
       },
       render: ticket => (

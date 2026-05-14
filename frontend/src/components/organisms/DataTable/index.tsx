@@ -1,8 +1,18 @@
 import type { ReactNode } from "react"
 import { useMemo, useState } from "react"
 import { cn } from "@/lib/utils"
-import type { DataTableProps, SelectFilterDef, NumberRangeFilterDef, MultiSelectFilterDef, ServerPagination } from "./types"
-import { useFilterState, isFilterActive, formatActiveFilter } from "./hooks/useFilterState"
+import type {
+  DataTableProps,
+  SelectFilterDef,
+  NumberRangeFilterDef,
+  MultiSelectFilterDef,
+  ServerPagination,
+} from "./types"
+import {
+  useFilterState,
+  isFilterActive,
+  formatActiveFilter,
+} from "./hooks/useFilterState"
 import { useRowSelection } from "./hooks/useRowSelection"
 import { usePagination } from "./hooks/usePagination"
 
@@ -55,6 +65,8 @@ export function DataTable<T,>({
   searchPlaceholder,
   onSortChange,
   onRowClick,
+  extraActiveFilterCount = 0,
+  onClearExtraFilters,
 }: DataTableProps<T>) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -78,6 +90,9 @@ export function DataTable<T,>({
   )
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
+
+  const totalActiveFilterCount =
+    filters.activeFilterCount + extraActiveFilterCount
 
   const handleSort = (key: string) => {
     const newDir = sortKey === key && sortDir === "asc" ? "desc" : "asc"
@@ -136,6 +151,13 @@ export function DataTable<T,>({
     setShownOptionalKeys(prev => new Set([...prev, key]))
   }
 
+  const clearAllFilters = () => {
+    filters.clearAllFilters()
+    pagination.resetPage()
+    setShownOptionalKeys(new Set())
+    onClearExtraFilters?.()
+  }
+
   const handleTabChange = (tabId: string) => {
     onTabChange?.(tabId)
     filters.clearAllFilters()
@@ -144,6 +166,7 @@ export function DataTable<T,>({
     setShownOptionalKeys(new Set())
     setSortKey(null)
     setSortDir("asc")
+    onClearExtraFilters?.()
   }
 
   const renderPill = (
@@ -190,6 +213,7 @@ export function DataTable<T,>({
     }
 
     let content: ReactNode
+
     if (def.type === "select") {
       content = (
         <SelectDropdown
@@ -216,7 +240,11 @@ export function DataTable<T,>({
               ? activeVals.filter(v => v !== val)
               : [...activeVals, val]
 
-            filters.setFilter(colKey, { type: "multi-select", values: next }, true)
+            filters.setFilter(
+              colKey,
+              { type: "multi-select", values: next },
+              true
+            )
             pagination.resetPage()
           }}
           onClear={handleClear}
@@ -261,7 +289,9 @@ export function DataTable<T,>({
   }
 
   const showFilterBar =
-    filterPillCols.length > 0 || availableOptionalFilters.length > 0
+    filterPillCols.length > 0 ||
+    availableOptionalFilters.length > 0 ||
+    !!filterBarExtra
 
   return (
     <>
@@ -279,7 +309,7 @@ export function DataTable<T,>({
             activeTab={activeTab}
             onTabChange={handleTabChange}
             rightSlot={tabsRightSlot}
-            searchOpen={searchOpen}              
+            searchOpen={searchOpen}
             searchQuery={searchQuery}
             onSearchOpen={() => setSearchOpen(true)}
             onSearchChange={handleSearchChange}
@@ -293,12 +323,8 @@ export function DataTable<T,>({
 
         {showFilterBar && (
           <DataTableFilterBar
-            activeFilterCount={filters.activeFilterCount}
-            onClearAll={() => {
-              filters.clearAllFilters()
-              pagination.resetPage()
-              setShownOptionalKeys(new Set())
-            }}
+            activeFilterCount={totalActiveFilterCount}
+            onClearAll={clearAllFilters}
             availableOptionalFilters={availableOptionalFilters}
             onAddFilter={addOptionalFilter}
             extra={filterBarExtra}
@@ -329,17 +355,18 @@ export function DataTable<T,>({
           onSort={handleSort}
           onRowClick={onRowClick}
         />
-
       </div>
 
-        <DataTablePagination
-          {...pageInfo}
-          currentPage={safePage}
-          rowsPerPage={serverPagination?.pageSize ?? pagination.rowsPerPage}
-          rowsPerPageOptions={rowsPerPageOptions}
-          onPageChange={serverPagination?.onPageChange ?? pagination.setCurrentPage}
-          onRowsPerPageChange={serverPagination?.onPageSizeChange ?? pagination.changeRowsPerPage}
-        />
+      <DataTablePagination
+        {...pageInfo}
+        currentPage={safePage}
+        rowsPerPage={serverPagination?.pageSize ?? pagination.rowsPerPage}
+        rowsPerPageOptions={rowsPerPageOptions}
+        onPageChange={serverPagination?.onPageChange ?? pagination.setCurrentPage}
+        onRowsPerPageChange={
+          serverPagination?.onPageSizeChange ?? pagination.changeRowsPerPage
+        }
+      />
     </>
   )
 }
