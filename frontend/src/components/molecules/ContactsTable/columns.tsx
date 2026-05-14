@@ -3,7 +3,8 @@ import { RowExpandButton } from "@/components/organisms/DataTable/atoms/RowExpan
 import { CellText }        from "@/components/organisms/DataTable/atoms/CellText"
 import { CellDouble }      from "@/components/organisms/DataTable/atoms/CellDouble"
 import { CellTag }         from "@/components/organisms/DataTable/atoms/CellTag"
-import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined"
+import AccessTimeOutlinedIcon  from "@mui/icons-material/AccessTimeOutlined"
+import ArrowForwardIosIcon     from "@mui/icons-material/ArrowForwardIos"
 import { ClientStatusBadge, ALL_CLIENT_STATUSES } from "./ClientStatusBadge"
 import type { Contact, EngagementType, ClientStatusType } from "@/types/contact"
 
@@ -17,6 +18,7 @@ const ENGAGEMENT_COLORS: Record<EngagementType, string> = {
 export function makeContactColumns(
   expandedRowId: string | null,
   onToggle: (id: string) => void,
+  onNavigate: (id: string) => void,
 ): Column<Contact>[] {
   return [
   // ── Expand ─────────────────────────────────────────────────────────────────
@@ -150,6 +152,21 @@ export function makeContactColumns(
         label={c.engagement}
         colorClasses={ENGAGEMENT_COLORS[c.engagement]}
       />
+    ),
+  },
+
+  // ── Navegar para detalhe ───────────────────────────────────────────────────
+  {
+    key: "navigate",
+    header: "",
+    render: (c) => (
+      <button
+        onClick={(e) => { e.stopPropagation(); onNavigate(c.id) }}
+        className="p-1.5 rounded-md hover:bg-purple-50 text-gray-400 hover:text-purple-600 transition-colors"
+        title="Ver detalhe do contato"
+      >
+        <ArrowForwardIosIcon sx={{ fontSize: 13 }} />
+      </button>
     ),
   },
   ]

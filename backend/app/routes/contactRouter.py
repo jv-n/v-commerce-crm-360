@@ -1,11 +1,27 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.schemas.contactSchemas import ContactsPageOut, ContactOut, ContactCreate, ContactUpdate
+from app.schemas.contactSchemas import ContactsPageOut, ContactOut, ContactCreate, ContactUpdate, ContactResumoOut
 from app.services.contactService import ContactService
 from database.database import get_db
 
 router = APIRouter(prefix="/contacts", tags=["contacts"])
+
+
+@router.get("/{contact_id}/resumo", response_model=ContactResumoOut)
+def get_contact_resumo(contact_id: str, db: Session = Depends(get_db)):
+    result = ContactService(db).get_contact_resumo(contact_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return result
+
+
+@router.get("/{contact_id}", response_model=ContactOut)
+def get_contact_by_id(contact_id: str, db: Session = Depends(get_db)):
+    result = ContactService(db).get_contact_by_id(contact_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return result
 
 
 @router.post("/", response_model=ContactOut, status_code=201)
