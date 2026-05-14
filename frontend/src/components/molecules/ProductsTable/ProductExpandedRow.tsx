@@ -1,115 +1,84 @@
+import { useEffect, useState } from "react"
 import { cn } from "@/lib/utils"
 import type { Product } from "@/types/product"
 import { FaPen } from "react-icons/fa6"
 import AddIcon from "@mui/icons-material/Add"
-import AutoAwesomeIcon from "@mui/icons-material/AutoAwesome"
+import { fetchProductActivities, type ProductActivity } from "@/lib/api/products"
+import { ProductResumoCard } from "@/Pages/Products/ProductResumoCard"
 
-function RatingBadge({ rating }: { rating: number }) {
-  const dot = rating >= 7 ? "bg-green-500" : rating >= 5 ? "bg-yellow-400" : "bg-red-500"
-  const bg  = rating >= 7 ? "bg-green-50 text-green-700" : rating >= 5 ? "bg-yellow-50 text-yellow-700" : "bg-red-50 text-red-600"
-  return (
-    <span className={cn("inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold", bg)}>
-      <span className={cn("w-1.5 h-1.5 rounded-full", dot)} />
-      {rating.toFixed(1)}
-    </span>
-  )
+function fmtActivityDate(iso: string): string {
+  const [datePart, timePart = ""] = iso.includes("T") ? iso.split("T") : iso.split(" ")
+  const [y, m, d] = datePart.split("-")
+  return `${d}/${m} ${y} ${timePart.slice(0, 5)}`
 }
 
 export function ProductExpandedRow({ product }: { product: Product }) {
-  const prevRating = Math.max(1, +(product.rating - 1.8).toFixed(1))
-  const prevPrice  = product.price != null ? product.price - 4 : null
-  const fmt = (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`
+  const [activities, setActivities] = useState<ProductActivity[]>([])
+  const [loading,    setLoading]    = useState(true)
 
-  const history = [
-    {
-      type: "edit" as const,
-      user: "Luana Ferragut",
-      time: "18/04 2026 16:20",
-    },
-    {
-      type: "rating" as const,
-      user: "Thiago Botelho",
-      from: prevRating,
-      to: product.rating,
-      time: "05/04 2026 19:15",
-    },
-    {
-      type: "add" as const,
-      user: "Ana Gomes",
-      time: product.createdAt,
-    },
-  ]
+  useEffect(() => {
+    fetchProductActivities(product.id, 3)
+      .then(setActivities)
+      .catch(() => {})
+      .finally(() => setLoading(false))
+  }, [product.id])
 
   return (
     <div className="bg-white px-8 py-5 flex gap-8 border-t border-violet-100">
+      {/* Timeline */}
       <div className="flex-1 flex flex-col">
-        {history.map((entry, i) => (
-          <div key={i} className="flex gap-3">
+        {loading && (
+          <p className="text-xs text-gray-400 animate-pulse py-2">Carregando atividades...</p>
+        )}
+
+        {!loading && activities.map((act, i) => (
+          <div key={act.id} className="flex gap-3">
             <div className="flex flex-col items-center">
-              <div className={cn(
-                "w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
-                entry.type === "add"
-                  ? "border-2 border-dashed border-violet-200 bg-transparent"
-                  : "bg-[#F0DDFD]"
-              )}>
-                {entry.type === "add"
-                  ? <AddIcon sx={{ fontSize: 13, color: "#9F83B2" }} />
-                  : <FaPen size={10} color="#9F83B2" />
-                }
+              <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 bg-[#F0DDFD]">
+                <FaPen size={10} color="#9F83B2" />
               </div>
-              {i < history.length - 1 && <div className="w-px flex-1 bg-[#9F83B2] my-1" />}
+              {/* linha conectora até o próximo item (sempre tem o item de criação abaixo) */}
+              <div className="w-px flex-1 bg-[#9F83B2] my-1" />
             </div>
 
-            <div className="pb-6 flex items-center gap-1 flex-wrap text-sm">
-              <span className="font-semibold text-gray-900">{entry.user}</span>
-
-              {entry.type === "edit" && prevPrice != null && (
-                <>
-                  <span className="text-gray-900">atualizou o valor:</span>
-                  <span className="font-semibold text-gray-900">{fmt(prevPrice)} - {fmt(product.price!)}</span>
-                </>
-              )}
-              {entry.type === "edit" && prevPrice == null && (
-                <span className="text-gray-500">atualizou as informações do produto</span>
-              )}
-
-              {entry.type === "rating" && (
-                <>
-                  <span className="text-gray-500">atualizou avaliação de</span>
-                  <RatingBadge rating={entry.from} />
-                  <span className="text-gray-900">para</span>
-                  <RatingBadge rating={entry.to} />
-                </>
-              )}
-
-              {entry.type === "add" && (
-                <>
-                  <span className="text-gray-900">created</span>
-                  <span className="font-medium text-violet-600">produto</span>
-                </>
-              )}
-
-              <span className="text-xs text-gray-900 ml-0.5">- {entry.time}</span>
+            <div className="pb-5 flex items-center gap-1 flex-wrap text-sm">
+              <span className="font-semibold text-gray-900">{act.user_name}</span>
+              <span className="text-gray-500">atualizou</span>
+              <span className="font-medium text-gray-900">{act.field_name}:</span>
+              <span className="text-gray-500">{act.old_value ?? "—"}</span>
+              <span className="text-gray-500">→</span>
+              <span className="font-semibold text-gray-900">{act.new_value ?? "—"}</span>
+              <span className="text-xs text-gray-400 ml-0.5">- {fmtActivityDate(act.changed_at)}</span>
             </div>
           </div>
         ))}
+
+        {/* Entrada de criação — sempre no final da linha do tempo */}
+        {!loading && (
+          <div className="flex gap-3">
+            <div className="flex flex-col items-center">
+              <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5 border-2 border-dashed border-violet-200 bg-transparent">
+                <AddIcon sx={{ fontSize: 13, color: "#9F83B2" }} />
+              </div>
+            </div>
+            <div className="flex items-center gap-1 flex-wrap text-sm">
+              <span className="text-gray-900">Produto cadastrado</span>
+              {product.createdAt && (
+                <span className="text-xs text-gray-400 ml-0.5">- {product.createdAt}</span>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
+      {/* Resumo V.IA */}
       <div className="w-72 shrink-0">
         <h3 className="text-sm font-bold text-gray-900 mb-2 text-center">
           Resumo da <span className="text-green-500">V.IA</span>
         </h3>
         <div className="p-px rounded-lg" style={{ background: "linear-gradient(135deg, #4ade80, #2dd4bf, #818cf8)" }}>
           <div className="bg-white rounded-lg p-3 text-xs text-gray-900 space-y-2">
-            <p className="text-gray-900">Um breve resumo criado pelo agente, visando facilitar o entendimento dos dados:</p>
-            <p>Contato <span className="font-bold text-gray-900">Adicionado</span> no dia: {product.createdAt}</p>
-            <p>Ultima <span className="font-bold text-gray-900">Compra</span>: {product.name}</p>
-            <div className="pt-1 flex justify-end">
-              <button className="flex items-center gap-1.5 text-xs text-gray-900 hover:text-gray-900 transition-colors">
-                Faça uma pergunta
-                <AutoAwesomeIcon sx={{ color: "#818cf8", fontSize: 14 }} />
-              </button>
-            </div>
+            <ProductResumoCard productId={product.id} />
           </div>
         </div>
       </div>

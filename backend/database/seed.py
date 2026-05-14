@@ -82,7 +82,6 @@ GOLD_TABLES = [
 # ── Tipos explícitos por tabela ───────────────────────────────────────────────
 # Evita inferência errada do pandas em colunas booleanas/numéricas ambíguas
 DTYPE_OVERRIDES: dict[str, dict] = {
-    # Gold
     "gold_desempenho_produto": {
         "ativo": str,
     },
@@ -90,16 +89,6 @@ DTYPE_OVERRIDES: dict[str, dict] = {
         "total_pedidos": "float64",
         "receita_total": "float64",
         "ticket_medio":  "float64",
-    },
-    # Silver
-    "dim_produtos": {
-        "ativo": str,
-    },
-    "ft_pedidos": {
-        "flag_data_pedido_ambigua":            str,
-        "flag_valor_pedido_negativo":          str,
-        "flag_quantidade_menor_igual_a_zero":  str,
-        "flag_pedido_com_inconsistencia":      str,
     },
 }
 
@@ -130,8 +119,6 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_dimprod_categoria     ON dim_produtos(categoria)",
     # ft_pedidos (busca de menções no chat IA)
     "CREATE INDEX IF NOT EXISTS idx_ftpedidos_id_pedido   ON ft_pedidos(id_pedido)",
-    "CREATE INDEX IF NOT EXISTS idx_ftpedidos_id_cliente  ON ft_pedidos(id_cliente)",
-    "CREATE INDEX IF NOT EXISTS idx_ftpedidos_status      ON ft_pedidos(status)",
     # gold_kpis_vendas_mensal
     "CREATE INDEX IF NOT EXISTS idx_gkpis_ano_mes         ON gold_kpis_vendas_mensal(ano_mes)",
     # gold_vendas_por_dimensao
