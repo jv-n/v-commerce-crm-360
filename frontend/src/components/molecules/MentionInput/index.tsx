@@ -189,11 +189,11 @@ const MentionInput = forwardRef<MentionInputHandle, Props>(
     const triggerSearch = (q: string) => {
       if (debounceRef.current) clearTimeout(debounceRef.current);
       debounceRef.current = setTimeout(async () => {
-        const items = await searchMentions(q, 8);
+        const items = await searchMentions(q, 5);
         setResults(items);
         setShowDropdown(items.length > 0);
         setActiveIdx(0);
-      }, 300);
+      }, 150);
     };
 
     // ── Inserção do chip ────────────────────────────────────────────────────
