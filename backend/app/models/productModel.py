@@ -11,6 +11,8 @@ class DimProduto(Base):
     nome_produto: Mapped[str] = mapped_column(String)
     categoria: Mapped[str | None] = mapped_column(String, nullable=True)
     preco: Mapped[float | None] = mapped_column(Float, nullable=True)
+    fornecedor: Mapped[str | None] = mapped_column(String, nullable=True)
+    peso_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
     estoque_disponivel: Mapped[float | None] = mapped_column(Float, nullable=True)
     ativo: Mapped[str | None] = mapped_column(String, nullable=True)
     data_cadastro_produto: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -20,6 +22,12 @@ class GoldDesempenhoProduto(Base):
     __tablename__ = "gold_desempenho_produto"
 
     id_produto: Mapped[str] = mapped_column(String, primary_key=True)
+    nome_produto: Mapped[str | None] = mapped_column(String, nullable=True)
+    categoria: Mapped[str | None] = mapped_column(String, nullable=True)
+    preco: Mapped[float | None] = mapped_column(Float, nullable=True)
+    fornecedor: Mapped[str | None] = mapped_column(String, nullable=True)
+    estoque_disponivel: Mapped[float | None] = mapped_column(Float, nullable=True)
+    ativo: Mapped[str | None] = mapped_column(String, nullable=True)
     nota_media_avaliacao: Mapped[float | None] = mapped_column(Float, nullable=True)
     qtd_vendida: Mapped[float | None] = mapped_column(Float, nullable=True)
     receita_total: Mapped[float | None] = mapped_column(Float, nullable=True)

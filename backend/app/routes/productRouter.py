@@ -2,7 +2,10 @@ from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 from database.database import get_db
-from app.schemas.productSchemas import ProductSchema, ProductsPageOut
+from app.schemas.productSchemas import (
+    ProductSchema, ProductsPageOut, ProductCreate, ProductUpdate,
+    ProductOrderOut, ProductTicketOut, ProductMonthlyRevenueOut,
+)
 from app.services.productService import ProductService
 
 router = APIRouter(prefix="/products", tags=["products"])
@@ -53,9 +56,49 @@ def get_products(
     return {"data": data, "total": total, "page": page, "pageSize": pageSize}
 
 
+@router.get("/suppliers", response_model=list[str])
+def get_suppliers(db: Session = Depends(get_db)):
+    return ProductService(db).get_suppliers()
+
+
+@router.post("/", response_model=ProductSchema, status_code=201)
+def create_product(body: ProductCreate, db: Session = Depends(get_db)):
+    return ProductService(db).create_product(body)
+
+
 @router.get("/{product_id}", response_model=ProductSchema)
 def get_product(product_id: str, db: Session = Depends(get_db)):
     product = ProductService(db).get_product_by_id(product_id)
     if not product:
         raise HTTPException(status_code=404, detail="Produto não encontrado")
     return product
+
+
+@router.patch("/{product_id}", response_model=ProductSchema)
+def update_product(product_id: str, body: ProductUpdate, db: Session = Depends(get_db)):
+    product = ProductService(db).update_product(product_id, body)
+    if not product:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+    return product
+
+
+@router.delete("/{product_id}", status_code=204)
+def delete_product(product_id: str, db: Session = Depends(get_db)):
+    deleted = ProductService(db).delete_product(product_id)
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Produto não encontrado")
+
+
+@router.get("/{product_id}/orders", response_model=list[ProductOrderOut])
+def get_product_orders(product_id: str, db: Session = Depends(get_db)):
+    return ProductService(db).get_product_orders(product_id)
+
+
+@router.get("/{product_id}/tickets", response_model=list[ProductTicketOut])
+def get_product_tickets(product_id: str, db: Session = Depends(get_db)):
+    return ProductService(db).get_product_tickets(product_id)
+
+
+@router.get("/{product_id}/monthly-revenue", response_model=list[ProductMonthlyRevenueOut])
+def get_product_monthly_revenue(product_id: str, db: Session = Depends(get_db)):
+    return ProductService(db).get_product_monthly_revenue(product_id)
