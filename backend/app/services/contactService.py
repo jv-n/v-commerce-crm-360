@@ -2,10 +2,11 @@ import uuid
 from datetime import date
 
 from sqlalchemy.orm import Session
-from sqlalchemy import asc, desc, select
+from sqlalchemy import asc, desc, select, func
 
 from app.models.contactModel import GoldCliente360, DimCliente
-from app.schemas.contactSchemas import ContactOut, ContactsPageOut, ContactCreate, ContactUpdate
+from app.models.saleModel import GoldPedidoDetalhado
+from app.schemas.contactSchemas import ContactOut, ContactsPageOut, ContactCreate, ContactUpdate, ContactResumoOut
 
 _VALID_STATUSES = {"Ativo", "Inativo", "VIP", "Lead", "Em risco"}
 
@@ -301,4 +302,72 @@ class ContactService:
             total=total,
             page=page,
             pageSize=page_size,
+        )
+
+    def get_contact_by_id(self, contact_id: str) -> ContactOut | None:
+        gold = self.db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()
+        if not gold:
+            return None
+        dim = self.db.query(DimCliente).filter(DimCliente.id_cliente == contact_id).first()
+        return _to_contact_out(gold, phone=dim.telefone if dim else None)
+
+    def get_contact_resumo(self, contact_id: str) -> ContactResumoOut | None:
+        gold = self.db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()
+        if not gold:
+            return None
+
+        # ── Categoria mais comprada ───────────────────────────────────────────
+        cat_row = (
+            self.db.query(
+                GoldPedidoDetalhado.categoria,
+                func.count().label("total"),
+            )
+            .filter(
+                GoldPedidoDetalhado.id_cliente == contact_id,
+                GoldPedidoDetalhado.status != "Reembolso",
+                GoldPedidoDetalhado.categoria.isnot(None),
+            )
+            .group_by(GoldPedidoDetalhado.categoria)
+            .order_by(desc("total"))
+            .first()
+        )
+
+        # ── Produto mais caro comprado ────────────────────────────────────────
+        caro_row = (
+            self.db.query(
+                GoldPedidoDetalhado.nome_produto,
+                GoldPedidoDetalhado.valor_pedido,
+            )
+            .filter(
+                GoldPedidoDetalhado.id_cliente == contact_id,
+                GoldPedidoDetalhado.status != "Reembolso",
+                GoldPedidoDetalhado.nome_produto.isnot(None),
+            )
+            .order_by(desc(GoldPedidoDetalhado.valor_pedido))
+            .first()
+        )
+
+        # ── Produto mais comprado (por quantidade) ────────────────────────────
+        qty_row = (
+            self.db.query(
+                GoldPedidoDetalhado.nome_produto,
+                func.sum(GoldPedidoDetalhado.quantidade).label("total_qty"),
+            )
+            .filter(
+                GoldPedidoDetalhado.id_cliente == contact_id,
+                GoldPedidoDetalhado.status != "Reembolso",
+                GoldPedidoDetalhado.nome_produto.isnot(None),
+            )
+            .group_by(GoldPedidoDetalhado.nome_produto)
+            .order_by(desc("total_qty"))
+            .first()
+        )
+
+        return ContactResumoOut(
+            categoria_mais_comprada=cat_row.categoria if cat_row else None,
+            produto_mais_caro=caro_row.nome_produto if caro_row else None,
+            produto_mais_caro_valor=round(caro_row.valor_pedido, 2) if caro_row and caro_row.valor_pedido else None,
+            metodo_pagamento_favorito=gold.metodo_pagamento_favorito,
+            produto_mais_comprado=qty_row.nome_produto if qty_row else None,
+            produto_mais_comprado_qty=round(qty_row.total_qty, 0) if qty_row and qty_row.total_qty else None,
         )
