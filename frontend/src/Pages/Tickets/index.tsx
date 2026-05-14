@@ -15,7 +15,7 @@ export default function Tickets() {
   const [canUndo, setCanUndo] = useState(false)
 
   return (
-    <div className="relative flex h-full max-h-full min-h-0 flex-col gap-5 overflow-hidden rounded-xl bg-white p-6 pb-20">
+    <div className="relative flex h-full max-h-full min-h-0 flex-col gap-5 overflow-visible rounded-xl bg-white p-6 pb-20">
       <div className="flex shrink-0 items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Tickets</h1>
 
@@ -25,7 +25,7 @@ export default function Tickets() {
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <div className="min-h-0 flex-1 overflow-visible">
         <TicketsTable
           ref={tableRef}
           onCanUndoChange={setCanUndo}
