@@ -80,6 +80,8 @@ export interface Column<T> {
   sortValue?: (row: T) => string | number | null | undefined
   render: (row: T) => ReactNode
   filter?: FilterDef<T>
+  /** When provided, shows a copy-to-clipboard icon next to the cell content with this ID value */
+  copyId?: (row: T) => string
 }
 
 export interface Tab {
@@ -111,6 +113,8 @@ export interface DataTableProps<T> {
   onFiltersChange?: (filters: ActiveFilters) => void
   onSearchChange?: (query: string) => void
   onSortChange?: (sort: { key: string; direction: "asc" | "desc" } | null) => void
+  /** Quando fornecido, clicar em qualquer ponto da linha chama este callback (ex: toggle expand) */
+  onRowClick?: (row: T) => void
   noBorder?: boolean
   headerClassName?: string
   rowClassName?: string

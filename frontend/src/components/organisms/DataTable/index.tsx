@@ -64,6 +64,7 @@ export function DataTable<T,>({
   searchFn,
   searchPlaceholder,
   onSortChange,
+  onRowClick,
   extraActiveFilterCount = 0,
   onClearExtraFilters,
 }: DataTableProps<T>) {
@@ -352,6 +353,7 @@ export function DataTable<T,>({
           sortKey={sortKey}
           sortDir={sortDir}
           onSort={handleSort}
+          onRowClick={onRowClick}
         />
       </div>
 
