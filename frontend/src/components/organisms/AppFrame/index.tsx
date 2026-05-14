@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation, useOutletContext } from "react-router-dom";
 import AppNavbar from "@/components/molecules/AppNavbar";
 import AIChatSidebar from "@/components/molecules/AIChatSidebar";
+import type { MentionItem } from "@/lib/api/mentions";
 import {
     Sidebar,
     SidebarContent,
@@ -29,6 +30,7 @@ export default function AppFrame() {
     const isOnChat = pathname === "/chat";
     const isOnHome = pathname === "/";
     const [isAIOpen, setIsAIOpen] = useState(false);
+    const [pendingMention, setPendingMention] = useState<MentionItem | null>(null);
 
     // Fecha a sidebar ao entrar em /chat; reabre ao minimizar de volta
     useEffect(() => {
@@ -38,6 +40,17 @@ export default function AppFrame() {
             setIsAIOpen(true);
         }
     }, [isOnChat, locationState]);
+
+    // Escuta evento global para abrir o chat com menção pré-inserida
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const item = (e as CustomEvent<MentionItem>).detail;
+            setIsAIOpen(true);
+            setPendingMention(item);
+        };
+        window.addEventListener("open-ai-chat", handler);
+        return () => window.removeEventListener("open-ai-chat", handler);
+    }, []);
 
     const itemActive = (path: string) => pathname === path ? "bg-primary" : "bg-background";
 
@@ -173,11 +186,14 @@ export default function AppFrame() {
                             <Outlet context={{ onOpenAI: () => { if (!isOnChat) setIsAIOpen((prev) => !prev); } }} />
                         </div>
                         <AIChatSidebar
-                            open={isAIOpen}
-                            onClose={() => setIsAIOpen(false)}
-                            userName="Joao Victor"
+                        open={isAIOpen}
+                        onClose={() => setIsAIOpen(false)}
+                        userName="Joao Victor"
+                        pendingMention={pendingMention}
+                        onMentionInserted={() => setPendingMention(null)}
                         />
                     </div>
+                
                 </SidebarInset>
         </SidebarProvider>
     );

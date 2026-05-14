@@ -19,7 +19,8 @@ import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
 import TuneIcon from "@mui/icons-material/Tune"
 
 const TABS: Tab[] = [
-  { id: "all", label: "Todos os contatos" },
+  { id: "all",   label: "Todos os contatos" },
+  { id: "leads", label: "Leads" },
 ]
 
 const DEFAULT_PAGE_SIZE = 10
@@ -91,8 +92,13 @@ export interface ContactsTableHandle {
   openAdd: () => void
 }
 
-export function ContactsTable({ onOpenAdd }: { onOpenAdd?: (fn: () => void) => void }) {
-  const navigate = useNavigate()
+export function ContactsTable({
+  onOpenAdd,
+  onSwitchToLeads,
+}: {
+  onOpenAdd?: (fn: () => void) => void
+  onSwitchToLeads?: (fn: () => void) => void
+}) {
   const [activeTab, setActiveTab]         = useState("all")
   const [page, setPage]                   = useState(1)
   const [pageSize, setPageSize]           = useState(DEFAULT_PAGE_SIZE)
@@ -174,10 +180,12 @@ export function ContactsTable({ onOpenAdd }: { onOpenAdd?: (fn: () => void) => v
     advanced,
   ])
 
-  const openAdd  = () => { setEditingContact(null); setFormOpen(true) }
-  const openEdit = (c: Contact) => { setEditingContact(c); setFormOpen(true) }
+  const openAdd      = () => { setEditingContact(null); setFormOpen(true) }
+  const openEdit     = (c: Contact) => { setEditingContact(c); setFormOpen(true) }
+  const switchLeads  = () => { setActiveTab("leads"); setPage(1) }
 
   useEffect(() => { onOpenAdd?.(openAdd) }, [])
+  useEffect(() => { onSwitchToLeads?.(switchLeads) }, [])
 
   const onToggleExpand = (id: string) =>
     setExpandedRowId(prev => prev === id ? null : id)
@@ -255,8 +263,6 @@ export function ContactsTable({ onOpenAdd }: { onOpenAdd?: (fn: () => void) => v
         onFiltersChange={handleFiltersChange}
         onSortChange={handleSortChange}
         filterBarExtra={filterBarExtra}
-        headerClassName="bg-[#F0DDFD]"
-        dividersClassName="divide-[#9F83B2]"
         rowsPerPageOptions={[10, 25, 50]}
         expandedRowIds={expandedRowId ? new Set([expandedRowId]) : undefined}
         renderExpandedRow={(c) => <ContactExpandedRow contact={c} onEdit={() => openEdit(c)} />}

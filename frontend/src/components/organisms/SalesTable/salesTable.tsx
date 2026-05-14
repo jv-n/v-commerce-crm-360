@@ -137,8 +137,6 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
         activeTab={activeTab}
         onTabChange={handleTabChange}
         onFiltersChange={handleFiltersChange}
-        headerClassName="bg-[#F0DDFD]"
-        dividersClassName="divide-[#9F83B2]"
         rowsPerPageOptions={[10, 25, 50]}
         serverPagination={{
           total,
