@@ -228,7 +228,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
       onClick={() => setDrawerOpen(o => !o)}
       className={cn(
         "flex items-center gap-1.5 text-sm transition-colors px-2 py-1 rounded-md",
-        advCount > 0 ? "text-purple-700 font-medium hover:bg-[#F7EBFF]" : "text-gray-400 hover:text-gray-600 hover:bg-[#F7EBFF]"
+        advCount > 0 ? "text-purple-700 font-medium hover:bg-[#F7EBFF]" : "text-gray-900 hover:bg-[#F7EBFF]"
       )}
     >
       <MdFilterList size={15} />
@@ -274,7 +274,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
         rowsPerPageOptions={[10, 25, 50]}
         expandedRowIds={expandedRowIds}
         renderExpandedRow={(p) => <ProductExpandedRow product={p} />}
-
+        onRowClick={(p) => onToggleExpand(p.id)}
         onSortChange={handleSortChange}
         filterBarExtra={filterBarExtra}
         serverPagination={{

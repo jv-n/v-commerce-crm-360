@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react"
+import { useNavigate } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { makeContactColumns } from "./columns"
 import { fetchContacts } from "@/lib/api/contacts"
@@ -91,6 +92,7 @@ export interface ContactsTableHandle {
 }
 
 export function ContactsTable({ onOpenAdd }: { onOpenAdd?: (fn: () => void) => void }) {
+  const navigate = useNavigate()
   const [activeTab, setActiveTab]         = useState("all")
   const [page, setPage]                   = useState(1)
   const [pageSize, setPageSize]           = useState(DEFAULT_PAGE_SIZE)
@@ -244,7 +246,8 @@ export function ContactsTable({ onOpenAdd }: { onOpenAdd?: (fn: () => void) => v
       <DataTable
         data={contacts}
         loading={loading}
-        columns={makeContactColumns(expandedRowId, onToggleExpand)}
+        columns={makeContactColumns(expandedRowId, onToggleExpand, (id) => navigate(`/contacts/${id}`))}
+
         getRowId={(c) => c.id}
         tabs={TABS}
         activeTab={activeTab}
@@ -257,6 +260,7 @@ export function ContactsTable({ onOpenAdd }: { onOpenAdd?: (fn: () => void) => v
         rowsPerPageOptions={[10, 25, 50]}
         expandedRowIds={expandedRowId ? new Set([expandedRowId]) : undefined}
         renderExpandedRow={(c) => <ContactExpandedRow contact={c} onEdit={() => openEdit(c)} />}
+        onRowClick={(c) => onToggleExpand(c.id)}
         serverPagination={{
           total,
           page,

@@ -12,7 +12,6 @@ DEFAULT_DB_PATH = Path(__file__).resolve().parents[1] / "backend" / "database" /
 
 # Descrições das tabelas usadas no list_tables
 TABLE_DESCRIPTIONS: dict[str, str] = {
-    
     "gold_cliente_360": "Visão 360 de cada cliente: pedidos, receita, tickets, NPS e segmento.",
     "gold_kpis_vendas_mensal": "KPIs de vendas agregados por mês: receita, pedidos, ticket médio.",
     "gold_vendas_por_dimensao": "Vendas detalhadas por mês, região e categoria de produto.",
@@ -20,17 +19,10 @@ TABLE_DESCRIPTIONS: dict[str, str] = {
     "gold_analise_suporte_por_tipo": "Análise de tickets de suporte agrupados por tipo de problema.",
     "gold_analise_suporte_por_agente": "Desempenho dos agentes de suporte: tickets, resolução, nota.",
     "gold_satisfacao_nps": "Satisfação e NPS por mês e categoria de produto.",
-    
-    "dim_clientes": "Cadastro completo dos clientes (dados demográficos e de origem).",
-    "dim_produtos": "Catálogo de produtos com preço, categoria e estoque.",
-    "dim_categorias_produto": "Tabela de referência de categorias de produto.",
-    "dim_status_pedido": "Tabela de referência dos possíveis status de pedido.",
-    "dim_tipos_problema": "Tabela de referência dos tipos de problema no suporte.",
-    "dim_agentes_suporte": "Cadastro dos agentes do time de suporte.",
-    "ft_pedidos": "Fato de pedidos: histórico completo de compras.",
-    "ft_avaliacoes": "Fato de avaliações pós-compra: nota do produto e NPS.",
-    "ft_tickets_suporte": "Fato de tickets de suporte abertos pelos clientes.",
-    "ft_clickstream": "Eventos de navegação e comportamento digital dos clientes.",
+    "gold_analise_suporte_cliente": "Análise de suporte consolidada por cliente.",
+    "gold_pedidos_detalhado": "Pedidos enriquecidos com nome do cliente, produto e categoria.",
+    "gold_pedidos_por_status": "Contagem e receita de pedidos agrupados por status.",
+    "gold_vendas_mensais": "Resumo de vendas agregado por mês.",
 }
 
 
@@ -108,7 +100,8 @@ class DatabaseTools:
             cursor = conn.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
             )
-            tables = [row[0] for row in cursor.fetchall()]
+            # Expõe apenas tabelas da camada Gold ao agente de IA
+            tables = [row[0] for row in cursor.fetchall() if row[0].startswith("gold_")]
             conn.close()
         except FileNotFoundError as e:
             return f"ERRO: {e}"
@@ -130,9 +123,16 @@ class DatabaseTools:
         Usar esta ferramenta para entender a estrutura de uma tabela antes de consultar ela.
 
         """
-        # Sanitiza o nome da tabela 
+        # Sanitiza o nome da tabela
         if not re.match(r"^\w+$", table_name):
             return f"ERRO: Nome de tabela inválido: '{table_name}'"
+
+        # Restringe o acesso do agente às tabelas Gold
+        if not table_name.startswith("gold_"):
+            return (
+                f"ERRO: Tabela '{table_name}' não está disponível para o agente de IA. "
+                "Use list_tables() para ver as tabelas Gold disponíveis."
+            )
 
         try:
             conn = self._connect()
@@ -186,12 +186,23 @@ class DatabaseTools:
         Só é permitido SELECT e é retornado no máximo de 100 linhas
 
         """
-        # Validação de segurança
+        # Validação de segurança — apenas SELECT
         if not self._is_select_only(query):
             return (
                 "ERRO DE SEGURANÇA: Apenas queries SELECT são permitidas. "
                 "Reformule a consulta usando somente SELECT."
             )
+
+        # Restringe o acesso às tabelas Gold
+        referenced_tables = re.findall(r"\bFROM\s+(\w+)|\bJOIN\s+(\w+)", query, re.IGNORECASE)
+        for match in referenced_tables:
+            table = match[0] or match[1]
+            if table and not table.lower().startswith("gold_"):
+                return (
+                    f"ERRO: A tabela '{table}' não está disponível para o agente de IA. "
+                    "Use apenas tabelas Gold (prefixo 'gold_'). "
+                    "Consulte list_tables() para ver as opções disponíveis."
+                )
 
         # Adiciona LIMIT se não houver
         query_normalized = query.strip().rstrip(";")

@@ -124,6 +124,27 @@ export async function updateContact(id: string, data: Partial<ContactFormData & 
   return toContact(await res.json() as RawContact)
 }
 
+export interface ContactResumo {
+  categoria_mais_comprada: string | null
+  produto_mais_caro: string | null
+  produto_mais_caro_valor: number | null
+  metodo_pagamento_favorito: string | null
+  produto_mais_comprado: string | null
+  produto_mais_comprado_qty: number | null
+}
+
+export async function fetchContactById(id: string): Promise<Contact> {
+  const res = await fetch(`/api/contacts/${id}`)
+  if (!res.ok) throw new Error(`Erro ao buscar contato: ${res.status}`)
+  return toContact(await res.json() as RawContact)
+}
+
+export async function fetchContactResumo(id: string): Promise<ContactResumo> {
+  const res = await fetch(`/api/contacts/${id}/resumo`)
+  if (!res.ok) throw new Error(`Erro ao buscar resumo: ${res.status}`)
+  return res.json() as Promise<ContactResumo>
+}
+
 export async function fetchContacts(params: ContactsParams): Promise<ContactsPage> {
   const query = new URLSearchParams({
     page:     String(params.page),

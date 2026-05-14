@@ -54,3 +54,12 @@ class ContactsPageOut(BaseModel):
     total: int
     page: int
     pageSize: int
+
+
+class ContactResumoOut(BaseModel):
+    categoria_mais_comprada: str | None
+    produto_mais_caro: str | None
+    produto_mais_caro_valor: float | None
+    metodo_pagamento_favorito: str | None
+    produto_mais_comprado: str | None
+    produto_mais_comprado_qty: float | None

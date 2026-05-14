@@ -65,7 +65,7 @@ export function NumberRangeDropdown({ current, onApply, onClear, minBound, maxBo
         <div className="flex gap-1.5">
           <button
             onClick={() => onApply(minVal, maxVal)}
-            className="flex-1 bg-purple-600 text-white rounded-md py-1.5 text-xs font-medium hover:bg-purple-700 transition-colors"
+            className="flex-1 bg-[#F7EBFF] border border-[#D1B1E5] text-white rounded-md py-1.5 text-xs font-medium hover:bg-purple-600 transition-colors"
           >
             Aplicar
           </button>
@@ -84,7 +84,7 @@ export function NumberRangeDropdown({ current, onApply, onClear, minBound, maxBo
 
   return (
     <div className="p-3 space-y-3 min-w-[190px]">
-      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Intervalo</p>
+      <p className="text-xs font-medium text-black uppercase tracking-wide">Intervalo</p>
       <div className="flex items-center gap-2">
         <input
           type="number"

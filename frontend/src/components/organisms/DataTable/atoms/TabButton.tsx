@@ -16,7 +16,7 @@ export function TabButton({ label, isActive, onClick, count }: TabButtonProps) {
         "flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 -mb-px transition-colors",
         isActive
           ? "border-gray-800 text-gray-900"
-          : "border-transparent text-gray-400 hover:text-gray-600 hover:bg-[#F7EBFF]"
+          : "border-transparent text-gray-900 hover:bg-[#F7EBFF]"
       )}
     >
       <MdOutlineTableChart size={15} />
@@ -24,7 +24,7 @@ export function TabButton({ label, isActive, onClick, count }: TabButtonProps) {
       {count !== undefined && (
         <span className={cn(
           "text-xs px-1.5 py-0.5 rounded-full font-normal",
-          isActive ? "bg-gray-100 text-gray-600" : "bg-gray-100 text-gray-400"
+          isActive ? "bg-gray-100 text-gray-600" : "bg-gray-100 text-gray-900"
         )}>
           {count}
         </span>
