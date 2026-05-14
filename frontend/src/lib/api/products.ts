@@ -166,14 +166,51 @@ export interface ProductUpdatePayload {
   status?: string
 }
 
-export async function updateProduct(id: string, payload: ProductUpdatePayload): Promise<Product> {
+export interface ProductResumo {
+  receita_total: number | null
+  melhor_mes: string | null
+  metodo_pagamento_favorito: string | null
+  problema_mais_frequente: string | null
+}
+
+export async function fetchProductResumo(id: string): Promise<ProductResumo> {
+  const res = await fetch(`/api/products/${id}/resumo`)
+  if (!res.ok) throw new Error(`Erro ao buscar resumo: ${res.status}`)
+  return res.json()
+}
+
+export interface ProductActivity {
+  id: number
+  id_produto: string
+  user_name: string
+  field_name: string
+  old_value: string | null
+  new_value: string | null
+  change_method: string
+  changed_at: string
+}
+
+export async function updateProduct(
+  id: string,
+  payload: ProductUpdatePayload,
+  userName = "Sistema",
+): Promise<Product> {
   const res = await fetch(`/api/products/${id}`, {
     method: "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-User-Name": userName,
+    },
     body: JSON.stringify(payload),
   })
   if (!res.ok) throw new Error(`Erro ao atualizar produto: ${res.status}`)
   return toProduct(await res.json() as RawProduct)
+}
+
+export async function fetchProductActivities(id: string, limit = 50): Promise<ProductActivity[]> {
+  const res = await fetch(`/api/products/${id}/activities?limit=${limit}`)
+  if (!res.ok) throw new Error(`Erro ao buscar atividades: ${res.status}`)
+  return res.json()
 }
 
 export async function deleteProduct(id: string): Promise<void> {

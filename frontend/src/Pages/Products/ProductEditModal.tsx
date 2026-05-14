@@ -4,6 +4,7 @@ import { Dialog } from "radix-ui"
 import { X, ChevronUp, ChevronDown, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { updateProduct, deleteProduct, fetchSuppliers } from "@/lib/api/products"
+import { useAuth } from "@/contexts/auth/useAuth"
 import type { Product } from "@/types/product"
 
 const CATEGORIES = [
@@ -40,6 +41,7 @@ export function ProductEditModal({ open, product, onClose, onSuccess, onDeleted 
     stock: "",
     status: "Ativo",
   })
+  const { user } = useAuth()
   const [loading,         setLoading]         = useState(false)
   const [deleting,        setDeleting]        = useState(false)
   const [error,           setError]           = useState("")
@@ -84,15 +86,19 @@ export function ProductEditModal({ open, product, onClose, onSuccess, onDeleted 
     setLoading(true)
     setError("")
     try {
-      const updated = await updateProduct(product.id, {
-        name:      form.name.trim(),
-        category:  form.category || null,
-        price:     form.price ? parseFloat(form.price.replace(",", ".")) : null,
-        supplier:  form.supplier.trim() || null,
-        weight_kg: form.weight ? toKg(parseFloat(form.weight.replace(",", ".")), form.weightUnit) : null,
-        stock:     form.stock ? parseInt(form.stock, 10) : 0,
-        status:    form.status,
-      })
+      const updated = await updateProduct(
+        product.id,
+        {
+          name:      form.name.trim(),
+          category:  form.category || null,
+          price:     form.price ? parseFloat(form.price.replace(",", ".")) : null,
+          supplier:  form.supplier.trim() || null,
+          weight_kg: form.weight ? toKg(parseFloat(form.weight.replace(",", ".")), form.weightUnit) : null,
+          stock:     form.stock ? parseInt(form.stock, 10) : 0,
+          status:    form.status,
+        },
+        user?.name ?? "Sistema",
+      )
       onSuccess(updated)
       onClose()
     } catch {

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useNavigate } from "react-router-dom"
 import { ProductEditModal } from "./ProductEditModal"
+import { ProductResumoCard } from "./ProductResumoCard"
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew"
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined"
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined"
@@ -12,9 +13,10 @@ import {
   fetchProductOrders,
   fetchProductTickets,
   fetchProductMonthlyRevenue,
+  fetchProductActivities,
 } from "@/lib/api/products"
 import type { Product, ProductCategory } from "@/types/product"
-import type { ProductOrder, ProductTicket, MonthlyRevenue } from "@/lib/api/products"
+import type { ProductOrder, ProductTicket, MonthlyRevenue, ProductActivity } from "@/lib/api/products"
 import { cn } from "@/lib/utils"
 
 // ── helpers ──────────────────────────────────────────────────────────────────
@@ -153,8 +155,9 @@ export default function ProductDetail() {
   const [product,  setProduct]  = useState<Product | null>(null)
   const [orders,   setOrders]   = useState<ProductOrder[]>([])
   const [tickets,  setTickets]  = useState<ProductTicket[]>([])
-  const [revenue,  setRevenue]  = useState<MonthlyRevenue[]>([])
-  const [loading,  setLoading]  = useState(true)
+  const [revenue,     setRevenue]     = useState<MonthlyRevenue[]>([])
+  const [activities,  setActivities]  = useState<ProductActivity[]>([])
+  const [loading,     setLoading]     = useState(true)
   const [error,    setError]    = useState(false)
   const [tab,      setTab]      = useState<"informacoes" | "atividades">("informacoes")
   const [editOpen, setEditOpen] = useState(false)
@@ -168,12 +171,14 @@ export default function ProductDetail() {
       fetchProductOrders(id),
       fetchProductTickets(id),
       fetchProductMonthlyRevenue(id),
+      fetchProductActivities(id),
     ])
-      .then(([p, o, t, r]) => {
+      .then(([p, o, t, r, a]) => {
         setProduct(p)
         setOrders(o)
         setTickets(t)
         setRevenue(r)
+        setActivities(a)
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
@@ -200,6 +205,28 @@ export default function ProductDetail() {
 
   const catColor = CATEGORY_COLORS[product.category] ?? "bg-gray-100 text-gray-600"
 
+  // Resumo derivado dos dados já carregados
+  const receitaTotal = revenue.reduce((acc, r) => acc + r.receita, 0)
+  const melhorMes = revenue.reduce<typeof revenue[0] | null>(
+    (best, r) => (!best || r.receita > best.receita ? r : best), null
+  )?.ano_mes ?? null
+  const metodoCounts = orders.reduce<Record<string, number>>((acc, o) => {
+    if (o.metodo_pagamento) acc[o.metodo_pagamento] = (acc[o.metodo_pagamento] ?? 0) + 1
+    return acc
+  }, {})
+  const metodoFavorito = Object.entries(metodoCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
+  const problemaCounts = tickets.reduce<Record<string, number>>((acc, t) => {
+    if (t.tipo_problema) acc[t.tipo_problema] = (acc[t.tipo_problema] ?? 0) + 1
+    return acc
+  }, {})
+  const problemaFrequente = Object.entries(problemaCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null
+  const resumoData = {
+    receita_total: receitaTotal,
+    melhor_mes: melhorMes,
+    metodo_pagamento_favorito: metodoFavorito,
+    problema_mais_frequente: problemaFrequente,
+  }
+
   return (
     <>
     {editOpen && (
@@ -207,7 +234,11 @@ export default function ProductDetail() {
         open={editOpen}
         product={product}
         onClose={() => setEditOpen(false)}
-        onSuccess={(updated) => { setProduct(updated); setEditOpen(false) }}
+        onSuccess={(updated) => {
+          setProduct(updated)
+          setEditOpen(false)
+          if (id) fetchProductActivities(id).then(setActivities).catch(() => {})
+        }}
         onDeleted={() => navigate("/products")}
       />
     )}
@@ -332,17 +363,25 @@ export default function ProductDetail() {
                 <hr className="border-[#9F83B2]" />
                 <div className="p-4">
                   <div
-                    className="rounded-xl p-4 flex flex-col gap-3 min-h-[150px]"
+                    className="rounded-xl p-4 flex flex-col gap-3"
                     style={{
                       background: "linear-gradient(white, white) padding-box, linear-gradient(135deg, #a855f7 0%, #22c55e 100%) border-box",
                       border: "2px solid transparent",
                     }}
                   >
-                    <p className="text-sm text-gray-600">
-                      Um breve resumo criado pelo agente, visando facilitar o entendimento dos dados:
-                    </p>
-                    <div className="flex-1" />
-                    <div className="flex items-center justify-end gap-1.5 mt-4">
+                    <ProductResumoCard productId={product.id} data={resumoData} />
+                    <button
+                      onClick={() => window.dispatchEvent(new CustomEvent("open-ai-chat", {
+                        detail: {
+                          id: product.id,
+                          type: "product",
+                          display: product.id,
+                          label: product.name,
+                          sublabel: product.category,
+                        }
+                      }))}
+                      className="flex items-center justify-end gap-1.5 mt-2 w-full hover:opacity-70 transition-opacity"
+                    >
                       <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
                         <defs>
                           <linearGradient id="sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -356,7 +395,7 @@ export default function ProductDetail() {
                         />
                       </svg>
                       <span className="text-sm text-gray-600">Faça uma pergunta</span>
-                    </div>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -390,7 +429,41 @@ export default function ProductDetail() {
               </div>
               <hr className="border-[#9F83B2] shrink-0" />
               <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
-                <p className="text-xs text-gray-400 text-center py-4">Sem atividades registradas.</p>
+                {activities.length === 0 ? (
+                  <p className="text-xs text-gray-400 text-center py-4">Sem atividades registradas.</p>
+                ) : activities.map(act => {
+                  const dtPart = act.changed_at.includes("T") ? act.changed_at.split("T") : act.changed_at.split(" ")
+                  const [y, m, d] = dtPart[0].split("-")
+                  const actDate = `${d}/${m}/${y}`
+                  const actTime = (dtPart[1] ?? "").slice(0, 5)
+                  return (
+                    <div key={act.id} className="rounded-xl border border-gray-200 p-4 flex flex-col gap-1.5 bg-white">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 text-purple-700 text-xs font-bold shrink-0">
+                          {initials(act.user_name)}
+                        </span>
+                        <span className="text-sm font-semibold text-gray-800">{act.user_name}</span>
+                      </div>
+                      <span className="text-sm text-gray-600">
+                        {"• "}Data da Alteração:{" "}
+                        <span className="text-purple-600 font-medium">{actDate}</span>
+                        {actTime && <> - {actTime}</>}
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {"• "}Campo alterado:{" "}
+                        <span className="text-purple-600 font-medium">{act.field_name}</span>
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {"• "}Alteração: {act.old_value ?? "—"} para{" "}
+                        <span className="text-purple-600 font-medium">{act.new_value ?? "—"}</span>
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {"• "}Forma de alteração:{" "}
+                        <span className="text-purple-600 font-medium">{act.change_method}</span>
+                      </span>
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
