@@ -1,12 +1,13 @@
 """
 seed.py — Cria e popula o banco SQLite do V-Commerce CRM 360
-a partir dos CSVs exportados da camada Gold do Databricks.
+a partir dos CSVs exportados das camadas Silver e Gold do Databricks.
 
 Uso:
     python backend/database/seed.py
 
 O banco é criado em backend/database/vcommerce.db
 Os CSVs Gold devem estar em data-engineering/gold-data-csvs/
+Os CSVs Silver devem estar em data-engineering/silver-data-csvs/
 """
 
 import sqlite3
@@ -19,9 +20,10 @@ from pwdlib import PasswordHash
 _password_hasher = PasswordHash.recommended()
 
 # ── Caminhos ──────────────────────────────────────────────────────────────────
-ROOT     = Path(__file__).resolve().parents[2]
-GOLD_DIR = ROOT / "data-engineering" / "gold-data-csvs"
-DB_PATH  = Path(__file__).resolve().parent / "vcommerce.db"
+ROOT       = Path(__file__).resolve().parents[2]
+GOLD_DIR   = ROOT / "data-engineering" / "gold-data-csvs"
+SILVER_DIR = ROOT / "data-engineering" / "silver-data-csvs"
+DB_PATH    = Path(__file__).resolve().parent / "vcommerce.db"
 
 # ── Usuários ──────────────────────────────────────────────────────────────────
 USERS = [
@@ -51,6 +53,16 @@ USERS = [
     },
 ]
 
+# ── Tabelas Silver ────────────────────────────────────────────────────────────
+# Necessárias para o mentionRouter (dim_clientes, dim_produtos, ft_pedidos,
+# dim_agentes_suporte) e para joins internos do agente de IA.
+SILVER_TABLES = [
+    ("dim_clientes",       "dim_clientes"),
+    ("dim_produtos",       "dim_produtos"),
+    ("dim_agentes_suporte","dim_agentes_suporte"),
+    ("ft_pedidos",         "ft_pedidos"),
+]
+
 # ── Tabelas Gold ──────────────────────────────────────────────────────────────
 # (nome_do_arquivo_sem_extensao, nome_da_tabela_no_banco)
 GOLD_TABLES = [
@@ -70,6 +82,7 @@ GOLD_TABLES = [
 # ── Tipos explícitos por tabela ───────────────────────────────────────────────
 # Evita inferência errada do pandas em colunas booleanas/numéricas ambíguas
 DTYPE_OVERRIDES: dict[str, dict] = {
+    # Gold
     "gold_desempenho_produto": {
         "ativo": str,
     },
@@ -77,6 +90,16 @@ DTYPE_OVERRIDES: dict[str, dict] = {
         "total_pedidos": "float64",
         "receita_total": "float64",
         "ticket_medio":  "float64",
+    },
+    # Silver
+    "dim_produtos": {
+        "ativo": str,
+    },
+    "ft_pedidos": {
+        "flag_data_pedido_ambigua":            str,
+        "flag_valor_pedido_negativo":          str,
+        "flag_quantidade_menor_igual_a_zero":  str,
+        "flag_pedido_com_inconsistencia":      str,
     },
 }
 
@@ -99,9 +122,16 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_g360_nps_media        ON gold_cliente_360(nota_nps_media)",
     "CREATE INDEX IF NOT EXISTS idx_g360_receita          ON gold_cliente_360(receita_total)",
     "CREATE INDEX IF NOT EXISTS idx_g360_ticket_medio     ON gold_cliente_360(ticket_medio)",
-    # dim_clientes e ft_pedidos (busca de menções no chat IA)
+    # dim_clientes (busca de menções no chat IA)
     "CREATE INDEX IF NOT EXISTS idx_dimcli_nome_completo  ON dim_clientes(nome_completo)",
+    "CREATE INDEX IF NOT EXISTS idx_dimcli_id_cliente     ON dim_clientes(id_cliente)",
+    # dim_produtos (busca de menções no chat IA)
+    "CREATE INDEX IF NOT EXISTS idx_dimprod_nome_produto  ON dim_produtos(nome_produto)",
+    "CREATE INDEX IF NOT EXISTS idx_dimprod_categoria     ON dim_produtos(categoria)",
+    # ft_pedidos (busca de menções no chat IA)
     "CREATE INDEX IF NOT EXISTS idx_ftpedidos_id_pedido   ON ft_pedidos(id_pedido)",
+    "CREATE INDEX IF NOT EXISTS idx_ftpedidos_id_cliente  ON ft_pedidos(id_cliente)",
+    "CREATE INDEX IF NOT EXISTS idx_ftpedidos_status      ON ft_pedidos(status)",
     # gold_kpis_vendas_mensal
     "CREATE INDEX IF NOT EXISTS idx_gkpis_ano_mes         ON gold_kpis_vendas_mensal(ano_mes)",
     # gold_vendas_por_dimensao
@@ -177,11 +207,16 @@ def seed() -> None:
     print(f"\n{'='*60}")
     print("  V-Commerce CRM 360 — Seed do banco SQLite")
     print(f"{'='*60}")
+    print(f"  Silver: {SILVER_DIR}")
     print(f"  Gold  : {GOLD_DIR}")
     print(f"  Banco : {DB_PATH}\n")
 
     if not GOLD_DIR.exists():
         print(f"ERRO: Pasta Gold não encontrada em {GOLD_DIR}")
+        raise SystemExit(1)
+
+    if not SILVER_DIR.exists():
+        print(f"ERRO: Pasta Silver não encontrada em {SILVER_DIR}")
         raise SystemExit(1)
 
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -194,7 +229,20 @@ def seed() -> None:
     total_rows = 0
     start_total = time.time()
 
+    # ── Camada Silver ─────────────────────────────────────────────────────────
+    print("  [ Silver ]")
+    for stem, table_name in SILVER_TABLES:
+        t0 = time.time()
+        df = load_csv(SILVER_DIR, stem)
+        if df is None:
+            continue
+        print(f"   {table_name:<35} {len(df):>8,} linhas", end="", flush=True)
+        insert_table(conn, df, table_name)
+        print(f"  [{time.time() - t0:.1f}s]")
+        total_rows += len(df)
+
     # ── Camada Gold ───────────────────────────────────────────────────────────
+    print()
     print("  [ Gold ]")
     for stem, table_name in GOLD_TABLES:
         t0 = time.time()
@@ -232,4 +280,3 @@ def seed() -> None:
 
 if __name__ == "__main__":
     seed()
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              
