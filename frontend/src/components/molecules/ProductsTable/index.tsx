@@ -270,10 +270,6 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
         onFiltersChange={handleFiltersChange}
         searchPlaceholder="Buscar produto..."
         noBorder
-        headerClassName="bg-[#F0DDFD]"
-        rowClassName="hover:bg-[#F7EBFF]"
-        expandedRowClassName="bg-[#F7EBFF]"
-        dividersClassName="divide-[#9F83B2]"
         rowsPerPageOptions={[10, 25, 50]}
         expandedRowIds={expandedRowIds}
         renderExpandedRow={(p) => <ProductExpandedRow product={p} />}
