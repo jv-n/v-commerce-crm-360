@@ -19,8 +19,9 @@ import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
 import TuneIcon from "@mui/icons-material/Tune"
 
 const TABS: Tab[] = [
-  { id: "all",   label: "Todos os contatos" },
-  { id: "leads", label: "Leads" },
+  { id: "all",     label: "Todos os contatos" },
+  { id: "clients", label: "Todos os clientes" },
+  { id: "leads",   label: "Leads" },
 ]
 
 const DEFAULT_PAGE_SIZE = 10
@@ -31,13 +32,11 @@ interface ServerFilters {
   createdYear:    string
   engagement:     string
   clientStatuses: string[]
-  hasPhone:       boolean
 }
 
 const EMPTY_FILTERS: ServerFilters = {
   purchasesMin: null, purchasesMax: null,
   createdYear: "", engagement: "", clientStatuses: [],
-  hasPhone: false,
 }
 
 function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEdit: () => void }) {
@@ -118,7 +117,7 @@ export function ContactsTable({
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone } = serverFilters
+  const { purchasesMin, purchasesMax, createdYear, engagement, clientStatuses } = serverFilters
 
   useEffect(() => {
     const hasText =
@@ -127,7 +126,11 @@ export function ContactsTable({
       advanced.ticketsSuporteMin !== "" || advanced.ticketsSuporteMax !== "" ||
       advanced.notaAtendMin !== "" || advanced.notaAtendMax !== "" ||
       advanced.npsMin !== "" || advanced.npsMax !== "" ||
-      advanced.notaProdMin !== "" || advanced.notaProdMax !== ""
+      advanced.notaProdMin !== "" || advanced.notaProdMax !== "" ||
+      advanced.taxaConversaoMin !== "" || advanced.taxaConversaoMax !== "" ||
+      advanced.totalSessoesMin !== "" || advanced.totalSessoesMax !== "" ||
+      advanced.abandonoCarrinhoMin !== "" || advanced.abandonoCarrinhoMax !== "" ||
+      advanced.npsRecenteMin !== "" || advanced.npsRecenteMax !== ""
 
     const delay = hasText ? 300 : 0
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -138,7 +141,7 @@ export function ContactsTable({
       setFetchError(false)
       fetchContacts({
         page, pageSize, tab: activeTab,
-        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone,
+        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
         sortBy, sortDir,
         regioes:            advanced.regioes,
         origens:            advanced.origens,
@@ -159,6 +162,23 @@ export function ContactsTable({
         npsMax:             advanced.npsMax !== "" ? Number(advanced.npsMax) : undefined,
         notaProdMin:        advanced.notaProdMin !== "" ? Number(advanced.notaProdMin) : undefined,
         notaProdMax:        advanced.notaProdMax !== "" ? Number(advanced.notaProdMax) : undefined,
+        generos:            advanced.generos,
+        faixasEtarias:      advanced.faixasEtarias,
+        estados:            advanced.estados,
+        canaisPreferidos:   advanced.canaisPreferidos,
+        dispositivos:       advanced.dispositivos,
+        origensSessao:      advanced.origensSessao,
+        periodosDia:        advanced.periodosDia,
+        diasSemana:         advanced.diasSemana,
+        categoriasVisualizadas: advanced.categoriasVisualizadas,
+        taxaConversaoMin:   advanced.taxaConversaoMin !== "" ? Number(advanced.taxaConversaoMin) : undefined,
+        taxaConversaoMax:   advanced.taxaConversaoMax !== "" ? Number(advanced.taxaConversaoMax) : undefined,
+        totalSessoesMin:    advanced.totalSessoesMin !== "" ? Number(advanced.totalSessoesMin) : undefined,
+        totalSessoesMax:    advanced.totalSessoesMax !== "" ? Number(advanced.totalSessoesMax) : undefined,
+        abandonoCarrinhoMin: advanced.abandonoCarrinhoMin !== "" ? Number(advanced.abandonoCarrinhoMin) : undefined,
+        abandonoCarrinhoMax: advanced.abandonoCarrinhoMax !== "" ? Number(advanced.abandonoCarrinhoMax) : undefined,
+        npsRecenteMin:      advanced.npsRecenteMin !== "" ? Number(advanced.npsRecenteMin) : undefined,
+        npsRecenteMax:      advanced.npsRecenteMax !== "" ? Number(advanced.npsRecenteMax) : undefined,
       })
         .then((res) => {
           if (cancelled) return
@@ -175,7 +195,7 @@ export function ContactsTable({
     }
   }, [
     page, pageSize, activeTab,
-    purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone,
+    purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
     sortBy, sortDir, refetchKey,
     advanced,
   ])
@@ -204,14 +224,12 @@ export function ContactsTable({
     const cf = active["createdAt"]
     const ef = active["engagement"]
     const sf = active["clientStatus"]
-    const hf = active["phone"]
     setServerFilters({
       purchasesMin:   pf?.type === "number-range"                      ? pf.min    : null,
       purchasesMax:   pf?.type === "number-range"                      ? pf.max    : null,
       createdYear:    cf?.type === "select"         && cf.value !== "" ? cf.value  : "",
       engagement:     ef?.type === "select"         && ef.value !== "" ? ef.value  : "",
       clientStatuses: sf?.type === "multi-select"                      ? sf.values : [],
-      hasPhone:       hf?.type === "toggle"                            ? hf.active : false,
     })
     setPage(1)
   }
