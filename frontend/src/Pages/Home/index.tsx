@@ -16,6 +16,7 @@ import {
   Inventory2Outlined as Inventory2OutlinedIcon,
   MenuBook as MenuBookIcon,
   MenuBookOutlined as MenuBookOutlinedIcon,
+
   FlagOutlined,
 } from "@mui/icons-material"
 
@@ -57,16 +58,17 @@ function ShortcutCard({
       onClick={onClick}
       className="
         flex flex-col items-center justify-center gap-3
-        border-[3px] border-[#74FF60] rounded-xl
+        border-[3px] border-[#3FFF24] rounded-xl
         py-8 px-4
+        shadow-md
         hover:bg-[#f0fdf4] active:scale-95
         transition-all duration-150
       "
     >
       {IconComponent && (
-        <IconComponent sx={{ fontSize: 40, color: "#74FF60" }} />
+        <IconComponent sx={{ fontSize: 60, color: "#3FFF24" }} />
       )}
-      <span className="text-[14px] font-semibold text-[#74FF60]">
+      <span className="text-[24px] font-semibold text-[#3FFF24]">
         {shortcut.label}
       </span>
     </button>
@@ -89,19 +91,19 @@ export default function Home() {
       {/* ── Header ── */}
       <div>
         <p className="text-[12px] text-gray-500">{formatDate(today)}</p>
-        <h1 className="text-[24px] font-bold text-gray-900 mt-0.5 leading-tight">
+        <h1 className="text-[40px] font-bold text-gray-900 mt-0.5 leading-tight">
           Bem-vindo ao V-Commerce CRM 360, Sérgio.
         </h1>
       </div>
 
-      <div className="p-4">
+      <div className="w-full py-4">
         <div className="flex items-center gap-2 mb-1">
           <img src="/v_ai.svg" alt="Assistente de IA" className="w-6 h-6" />
-          <span className="text-[24px] font-bold text-gray-900">
+          <span className="text-[36px] font-bold text-gray-900">
             Assistente de IA
           </span>
         </div>
-        <p className="text-[15px] text-gray-400 mb-3 leading-relaxed">
+        <p className="text-[12px] text-gray-400 mb-3 leading-relaxed">
           Agente para assistência e informações sobre dados com o sistema.
           Realize a interação através de textos no campo abaixo ou acesse o
           botão no menu lateral para expandir o assistente.
@@ -117,8 +119,8 @@ export default function Home() {
         />
       </div>
       <div className="flex items-center gap-2 mb-1">
-        <FlagOutlined sx={{ fontSize: 16, color: "#374151" }} />
-        <h2 className="text-[14px] font-bold text-gray-900">Funções do sistema</h2>
+        <FlagOutlined sx={{ width: 22.5, height: 25.5, color: "#374151" }} />
+        <h2 className="text-[24px] font-bold text-gray-900">Funções do sistema</h2>
       </div>
       <div className="grid grid-cols-3 gap-4">
         {MOCKED_SHORTCUTS.map((shortcut) => (
