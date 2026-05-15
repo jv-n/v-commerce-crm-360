@@ -1,12 +1,17 @@
+import csv
+import io
 import uuid
 from datetime import date
+from typing import Generator
+
+from fastapi import Depends
 
 from fastapi import Depends
 
 from sqlalchemy.orm import Session
-from sqlalchemy import asc, desc, select, func
+from sqlalchemy import asc, desc, func
 
-from app.models.contactModel import GoldCliente360, DimCliente
+from app.models.contactModel import GoldCliente360
 from app.models.saleModel import GoldPedidoDetalhado
 from app.schemas.contactSchemas import ContactOut, ContactsPageOut, ContactCreate, ContactUpdate, ContactResumoOut
 from database.database import get_db
@@ -22,16 +27,6 @@ _SORT_COLS = {
     "avgTicket":    GoldCliente360.ticket_medio,
 }
 
-
-def _fmt_phone(raw: str | None) -> str | None:
-    if not raw:
-        return None
-    digits = "".join(c for c in str(raw).split(".")[0] if c.isdigit())
-    if len(digits) == 11:
-        return f"({digits[:2]}){digits[2:7]}-{digits[7:]}"
-    if len(digits) == 10:
-        return f"({digits[:2]}){digits[2:6]}-{digits[6:]}"
-    return digits or None
 
 
 def _fmt_date(raw: str | None) -> str | None:
@@ -57,13 +52,13 @@ def _normalize_score(nota_nps: float | None) -> float:
     return round(nota_nps * 10, 1)
 
 
-def _to_contact_out(g: GoldCliente360, phone: str | None = None) -> ContactOut:
+def _to_contact_out(g: GoldCliente360) -> ContactOut:
     first = _fmt_date(g.data_primeiro_pedido)
     return ContactOut(
         id=g.id_cliente,
         name=g.nome_completo,
         email=g.email,
-        phone=_fmt_phone(phone),
+        phone=None,
         clientStatus=g.segmento_cliente,
         region=g.regiao,
         origin=g.origem,
@@ -104,7 +99,7 @@ class ContactService:
                        total_sessoes_min, total_sessoes_max,
                        abandono_carrinho_min, abandono_carrinho_max,
                        nps_recente_min, nps_recente_max):
-        """Aplica todos os filtros em GoldCliente360. Join com DimCliente não incluído."""
+        """Aplica todos os filtros em GoldCliente360."""
         if tab == "clients":
             query = query.filter(GoldCliente360.segmento_cliente.in_(["Ativo", "Inativo", "VIP"]))
         elif tab == "leads":
@@ -263,8 +258,7 @@ class ContactService:
 
         self.db.commit()
         self.db.refresh(gold)
-        dim = self.db.query(DimCliente).filter(DimCliente.id_cliente == contact_id).first()
-        return _to_contact_out(gold, phone=dim.telefone if dim else None)
+        return _to_contact_out(gold)
 
     def get_contacts(
         self,
@@ -342,8 +336,6 @@ class ContactService:
 
         rows = (
             count_q
-            .outerjoin(DimCliente, DimCliente.id_cliente == GoldCliente360.id_cliente)
-            .add_columns(DimCliente.telefone)
             .order_by(order_fn(sort_col))
             .offset((page - 1) * page_size)
             .limit(page_size)
@@ -352,18 +344,104 @@ class ContactService:
 
         # .add_columns() faz com que cada row seja (GoldCliente360, telefone)
         return ContactsPageOut(
-            data=[_to_contact_out(g, phone=phone) for g, phone in rows],
+            data=[_to_contact_out(g) for g in rows],
             total=total,
             page=page,
             pageSize=page_size,
         )
 
+    def export_contacts_csv(
+        self,
+        tab: str = "all", search: str = "",
+        purchases_min: int | None = None, purchases_max: int | None = None,
+        created_year: str = "", engagement: str = "",
+        client_status: list[str] | None = None,
+        regioes: list[str] | None = None, origens: list[str] | None = None,
+        pagamentos: list[str] | None = None,
+        receita_min: float | None = None, receita_max: float | None = None,
+        ticket_medio_min: float | None = None, ticket_medio_max: float | None = None,
+        primeira_compra_from: str = "", primeira_compra_to: str = "",
+        ultima_compra_from: str = "", ultima_compra_to: str = "",
+        tickets_suporte_min: int | None = None, tickets_suporte_max: int | None = None,
+        nota_atend_min: float | None = None, nota_atend_max: float | None = None,
+        nps_min: float | None = None, nps_max: float | None = None,
+        nota_prod_min: float | None = None, nota_prod_max: float | None = None,
+        generos: list[str] | None = None, faixas_etarias: list[str] | None = None,
+        estados: list[str] | None = None,
+        canais_preferidos: list[str] | None = None, dispositivos: list[str] | None = None,
+        origens_sessao: list[str] | None = None, periodos_dia: list[str] | None = None,
+        dias_semana: list[str] | None = None, categorias_visualizadas: list[str] | None = None,
+        taxa_conversao_min: float | None = None, taxa_conversao_max: float | None = None,
+        total_sessoes_min: int | None = None, total_sessoes_max: int | None = None,
+        abandono_carrinho_min: int | None = None, abandono_carrinho_max: int | None = None,
+        nps_recente_min: float | None = None, nps_recente_max: float | None = None,
+    ) -> Generator[str, None, None]:
+        _HEADERS = [
+            "id_cliente", "nome_completo", "email",
+            "genero", "faixa_etaria", "regiao", "cidade", "estado", "origem",
+            "segmento_cliente",
+            "total_pedidos", "total_produtos_distintos",
+            "receita_total", "ticket_medio",
+            "data_primeiro_pedido", "data_ultimo_pedido", "metodo_pagamento_favorito",
+            "total_tickets", "taxa_resolucao", "nota_media_atendimento",
+            "nota_nps_media", "nota_nps_recente", "nota_produto_media", "categoria_nps_recente",
+            "taxa_conversao_pct", "total_sessoes", "total_eventos",
+            "total_visualizacoes", "total_carrinho", "total_checkouts",
+            "total_compras_cs", "total_abandono_carrinho", "tempo_medio_pagina_seg",
+            "data_primeiro_evento", "data_ultimo_evento",
+            "canal_preferido", "dispositivo_preferido", "origem_sessao_preferida",
+            "periodo_dia_preferido", "dia_semana_mais_ativo",
+            "produto_mais_visualizado", "categoria_mais_visualizada",
+        ]
+
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(_HEADERS)
+        yield buf.getvalue()
+
+        query = self._apply_filters(
+            self.db.query(GoldCliente360),
+            tab, search, purchases_min, purchases_max, created_year, engagement,
+            client_status, regioes, origens, pagamentos,
+            receita_min, receita_max, ticket_medio_min, ticket_medio_max,
+            primeira_compra_from, primeira_compra_to, ultima_compra_from, ultima_compra_to,
+            tickets_suporte_min, tickets_suporte_max, nota_atend_min, nota_atend_max,
+            nps_min, nps_max, nota_prod_min, nota_prod_max,
+            generos, faixas_etarias, estados,
+            canais_preferidos, dispositivos, origens_sessao,
+            periodos_dia, dias_semana, categorias_visualizadas,
+            taxa_conversao_min, taxa_conversao_max,
+            total_sessoes_min, total_sessoes_max,
+            abandono_carrinho_min, abandono_carrinho_max,
+            nps_recente_min, nps_recente_max,
+        )
+
+        for g in query.yield_per(500):
+            buf.seek(0); buf.truncate(0)
+            writer.writerow([
+                g.id_cliente, g.nome_completo, g.email,
+                g.genero, g.faixa_etaria, g.regiao, g.cidade, g.estado, g.origem,
+                g.segmento_cliente,
+                g.total_pedidos, g.total_produtos_distintos,
+                g.receita_total, g.ticket_medio,
+                g.data_primeiro_pedido, g.data_ultimo_pedido, g.metodo_pagamento_favorito,
+                g.total_tickets, g.taxa_resolucao, g.nota_media_atendimento,
+                g.nota_nps_media, g.nota_nps_recente, g.nota_produto_media, g.categoria_nps_recente,
+                g.taxa_conversao_pct, g.total_sessoes, g.total_eventos,
+                g.total_visualizacoes, g.total_carrinho, g.total_checkouts,
+                g.total_compras_cs, g.total_abandono_carrinho, g.tempo_medio_pagina_seg,
+                g.data_primeiro_evento, g.data_ultimo_evento,
+                g.canal_preferido, g.dispositivo_preferido, g.origem_sessao_preferida,
+                g.periodo_dia_preferido, g.dia_semana_mais_ativo,
+                g.produto_mais_visualizado, g.categoria_mais_visualizada,
+            ])
+            yield buf.getvalue()
+
     def get_contact_by_id(self, contact_id: str) -> ContactOut | None:
         gold = self.db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()
         if not gold:
             return None
-        dim = self.db.query(DimCliente).filter(DimCliente.id_cliente == contact_id).first()
-        return _to_contact_out(gold, phone=dim.telefone if dim else None)
+        return _to_contact_out(gold)
 
     def get_contact_resumo(self, contact_id: str) -> ContactResumoOut | None:
         gold = self.db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()
