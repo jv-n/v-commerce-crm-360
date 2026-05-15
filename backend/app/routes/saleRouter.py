@@ -17,6 +17,10 @@ def get_sales(
     metodo_pagamento: str = Query(""),
     categoria: str = Query(""),
     ano_mes: str = Query("", description="Format: YYYY-MM"),
+    data_from: str = Query("", description="Format: YYYY-MM-DD"),
+    data_to: str = Query("", description="Format: YYYY-MM-DD"),
+    search: str = Query(""),
+    search_field: str = Query("all"),
     db: Session = Depends(get_db),
 ):
     return SaleService(db).get_sales(
@@ -27,6 +31,10 @@ def get_sales(
         metodo_pagamento=metodo_pagamento,
         categoria=categoria,
         ano_mes=ano_mes,
+        data_from=data_from,
+        data_to=data_to,
+        search=search,
+        search_field=search_field,
     )
 
 

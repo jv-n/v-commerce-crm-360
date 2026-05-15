@@ -34,11 +34,18 @@ export interface MultiSelectFilterDef<T> {
   filterFn?: (row: T, values: string[]) => boolean
 }
 
+export interface DateRangeFilterDef<T> {
+  type: "date-range"
+  label: string
+  filterFn: (row: T, from: string | null, to: string | null) => boolean
+}
+
 export type FilterDef<T> =
   | SelectFilterDef<T>
   | NumberRangeFilterDef<T>
   | ToggleFilterDef<T>
   | MultiSelectFilterDef<T>
+  | DateRangeFilterDef<T>
 
 // ─── Active filter state ──────────────────────────────────────────────────────
 
@@ -60,11 +67,18 @@ export type MultiSelectActiveFilter = {
   values: string[]
 }
 
+export type DateRangeActiveFilter = {
+  type: "date-range"
+  from: string | null
+  to:   string | null
+}
+
 export type ActiveFilter =
   | SelectActiveFilter
   | NumberRangeActiveFilter
   | ToggleActiveFilter
   | MultiSelectActiveFilter
+  | DateRangeActiveFilter
 
 export type ActiveFilters = Record<string, ActiveFilter>
 
@@ -123,6 +137,7 @@ export interface DataTableProps<T> {
   expandedRowIds?: Set<string>
   renderExpandedRow?: (row: T) => React.ReactNode
   filterBarExtra?: React.ReactNode
+  searchPrefix?: React.ReactNode
   tabsRightSlot?: React.ReactNode
   searchFn?: (row: T, query: string) => boolean
   searchPlaceholder?: string
