@@ -3,25 +3,29 @@ import {
   useCallback,
   useEffect,
   useImperativeHandle,
+  useMemo,
   useRef,
   useState,
 } from "react"
 
 import { DataTable } from "@/components/organisms/DataTable"
+import { ExportPopover, type ExportPill } from "@/components/molecules/ExportPopover"
 import { getTicketColumns } from "./columns"
 import { fetchTicketResponsibles, fetchTickets } from "@/lib/api/tickets"
 import type { Ticket } from "@/types/ticket"
 import type { ActiveFilters, Tab } from "@/components/organisms/DataTable/types"
 import { useAuth } from "@/contexts/auth/useAuth"
 import { TicketExpandedRow } from "./TicketExpandedRow"
+import { cn } from "@/lib/utils"
 
 const TABS: Tab[] = [
   { id: "all", label: "Todos os Tickets" },
   { id: "my-attending", label: "Meus Tickets em Atendimento" },
-  { id: "waiting", label: "Tickets Aguardando" },
+  { id: "waiting", label: "Tickets Aguardando..." },
 ]
 
 const DEFAULT_PAGE_SIZE = 10
+const EXPORT_PAGE_SIZE = 500000
 
 interface ServerFilters {
   responsible: string[]
@@ -63,10 +67,73 @@ type FilterSnapshot = {
 export type TicketsTableHandle = {
   undo: () => void
   reset: () => void
+  openExport: () => void
+  openAdd: () => void
 }
 
 type TicketsTableProps = {
   onCanUndoChange?: (can: boolean) => void
+}
+
+function escapeCsvValue(value: unknown) {
+  return `"${String(value ?? "").replace(/"/g, '""')}"`
+}
+
+function buildTicketsCsv(rows: Ticket[]) {
+  const headers = [
+    "ID Ticket",
+    "Cliente",
+    "ID Cliente",
+    "ID Pedido",
+    "Data de abertura",
+    "Responsável",
+    "Problema",
+    "Status",
+    "Nota",
+  ]
+
+  const lines = rows.map(ticket => [
+    ticket.id,
+    ticket.client,
+    ticket.clientId,
+    ticket.orderId,
+    ticket.openedAt,
+    ticket.responsible.name,
+    ticket.problem,
+    ticket.status,
+    ticket.score ?? "Sem avaliação",
+  ])
+
+  return [headers, ...lines]
+    .map(row => row.map(escapeCsvValue).join(","))
+    .join("\n")
+}
+
+function downloadCsv(csv: string, filename: string) {
+  const blob = new Blob([`\uFEFF${csv}`], {
+    type: "text/csv;charset=utf-8;",
+  })
+
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+
+  link.href = url
+  link.download = filename
+  link.click()
+
+  URL.revokeObjectURL(url)
+}
+
+function formatDateForPill(value: string) {
+  if (!value) return ""
+
+  const [year, month, day] = value.split("-")
+
+  if (!year || !month || !day) {
+    return value
+  }
+
+  return `${day}/${month}/${year}`
 }
 
 export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
@@ -88,6 +155,9 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
       useState<DateFilters>(EMPTY_DATE_FILTERS)
     const [sort, setSort] = useState<TicketSort>(null)
     const [filterHistory, setFilterHistory] = useState<FilterSnapshot[]>([])
+    const [exportOpen, setExportOpen] = useState(false)
+
+    const [exportLoading, setExportLoading] = useState(false)
 
     const openedFromIso = dateFilters.openedFrom
     const openedToIso = dateFilters.openedTo
@@ -168,6 +238,143 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
       onCanUndoChange?.(filterHistory.length > 0)
     }, [filterHistory.length, onCanUndoChange])
 
+    const getRequestFilters = useCallback(() => {
+      const requestResponsible =
+        activeTab === "my-attending"
+          ? loggedUserName
+            ? [loggedUserName]
+            : ["__usuario_nao_encontrado__"]
+          : serverFilters.responsible
+
+      const requestStatus =
+        activeTab === "my-attending"
+          ? ["Em atendimento"]
+          : activeTab === "waiting"
+            ? ["Aguardando"]
+            : serverFilters.status
+
+      return {
+        responsible: requestResponsible,
+        status: requestStatus,
+        problem: serverFilters.problem,
+        score: serverFilters.score,
+      }
+    }, [activeTab, loggedUserName, serverFilters])
+
+    const handleExportCsv = useCallback(async () => {
+      setExportLoading(true)
+
+      try {
+        const requestFilters = getRequestFilters()
+
+        const response = await fetchTickets({
+          page: 1,
+          pageSize: EXPORT_PAGE_SIZE,
+          responsible: requestFilters.responsible,
+          status: requestFilters.status,
+          problem: requestFilters.problem,
+          score: requestFilters.score,
+          openedFrom: dateFilters.openedFrom,
+          openedTo: dateFilters.openedTo,
+          sortKey: sort?.key,
+          sortDir: sort?.direction,
+        })
+
+        const csv = buildTicketsCsv(response.data)
+        const today = new Date().toISOString().slice(0, 10)
+
+        downloadCsv(csv, `tickets_${today}.csv`)
+        setExportOpen(false)
+      } catch (error) {
+        console.error(error)
+      } finally {
+        setExportLoading(false)
+      }
+    }, [dateFilters.openedFrom, dateFilters.openedTo, getRequestFilters, sort])
+
+    const handleExportSelected = useCallback(async () => {
+      setExportLoading(true)
+
+      try {
+        const today = new Date().toISOString().slice(0, 10)
+
+        downloadCsv(buildTicketsCsv([]), `tickets_selecionados_${today}.csv`)
+        setExportOpen(false)
+      } catch (error) {
+        console.error(error)
+      } finally {
+        setExportLoading(false)
+      }
+    }, [])
+
+    const exportPills: ExportPill[] = useMemo(
+      () => [
+        ...(activeTab === "my-attending"
+          ? [{ label: "Aba", value: "Meus Tickets" }]
+          : []),
+        ...(activeTab === "waiting"
+          ? [{ label: "Aba", value: "Aguardando" }]
+          : []),
+        ...(serverFilters.responsible.length
+          ? [
+              {
+                label: "Responsável",
+                value: serverFilters.responsible.join(", "),
+              },
+            ]
+          : []),
+        ...(serverFilters.status.length
+          ? [
+              {
+                label: "Status",
+                value: serverFilters.status.join(", "),
+              },
+            ]
+          : []),
+        ...(serverFilters.problem.length
+          ? [
+              {
+                label: "Problema",
+                value: serverFilters.problem.join(", "),
+              },
+            ]
+          : []),
+        ...(serverFilters.score.length
+          ? [
+              {
+                label: "Nota",
+                value: serverFilters.score.join(", "),
+              },
+            ]
+          : []),
+        ...(dateFilters.openedFrom
+          ? [
+              {
+                label: "Data início",
+                value: formatDateForPill(dateFilters.openedFrom),
+              },
+            ]
+          : []),
+        ...(dateFilters.openedTo
+          ? [
+              {
+                label: "Data fim",
+                value: formatDateForPill(dateFilters.openedTo),
+              },
+            ]
+          : []),
+      ],
+      [
+        activeTab,
+        serverFilters.responsible,
+        serverFilters.status,
+        serverFilters.problem,
+        serverFilters.score,
+        dateFilters.openedFrom,
+        dateFilters.openedTo,
+      ]
+    )
+
     useImperativeHandle(
       ref,
       () => ({
@@ -198,6 +405,13 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
           setDateFilters(EMPTY_DATE_FILTERS)
           setSort(null)
         },
+        openExport: () => setExportOpen(true),
+        openAdd: () => {
+          // Mantém o botão disponível sem interferir na exportação.
+          // Caso exista modal/fluxo de criação de ticket no projeto,
+          // conecte a abertura dele aqui.
+          console.info("Abrir fluxo de criação de ticket")
+        },
       }),
       [pushHistory]
     )
@@ -207,25 +421,13 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
     useEffect(() => {
       let cancelled = false
 
-      const requestResponsible =
-        activeTab === "my-attending"
-          ? loggedUserName
-            ? [loggedUserName]
-            : ["__usuario_nao_encontrado__"]
-          : responsible
-
-      const requestStatus =
-        activeTab === "my-attending"
-          ? ["Em atendimento"]
-          : activeTab === "waiting"
-            ? ["Aguardando"]
-            : status
+      const requestFilters = getRequestFilters()
 
       fetchTickets({
         page,
         pageSize,
-        responsible: requestResponsible,
-        status: requestStatus,
+        responsible: requestFilters.responsible,
+        status: requestFilters.status,
         problem,
         score,
         openedFrom: openedFromIso,
@@ -259,6 +461,7 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
       openedFromIso,
       openedToIso,
       sort,
+      getRequestFilters,
     ])
 
     const handleTabChange = (tabId: string) => {
@@ -309,10 +512,7 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
       setPage(1)
     }
 
-    const handleDateFilterChange = (
-      key: keyof DateFilters,
-      value: string
-    ) => {
+    const handleDateFilterChange = (key: keyof DateFilters, value: string) => {
       setExpandedRowIds(new Set())
       setLoading(true)
       setPage(1)
@@ -352,6 +552,18 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
 
     return (
       <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-visible">
+        <ExportPopover
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          total={total}
+          entityLabel="Tickets"
+          pills={exportPills}
+          exportLoading={exportLoading}
+          onExport={handleExportCsv}
+          selectedCount={0}
+          onExportSelected={handleExportSelected}
+        />
+
         <DataTable
           data={tickets}
           loading={loading}
@@ -364,8 +576,8 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
           onSortChange={handleSortChange}
           headerClassName="
             bg-[#F0DDFD]
-            [&_th:not(:first-child)_button_svg]:text-[#9F83B2]
-            [&_th:not(:first-child)_button:hover_svg]:text-[#6F2B90]
+            [&_th:not(:first-child)_button_svg]:!text-[#9F83B2]
+            [&_th:not(:first-child)_button:hover_svg]:!text-[#6F2B90]
           "
           rowClassName="hover:bg-[#F7EBFF]"
           expandedRowClassName="bg-[#F7EBFF]"
@@ -376,16 +588,25 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
           extraActiveFilterCount={dateFilterCount}
           onClearExtraFilters={handleClearDateFilters}
           filterBarExtra={
-            <div className="flex items-center gap-2 text-sm font-medium text-[#06121C]">
+            <div
+              className={cn(
+                "flex items-center gap-2 text-sm font-medium text-[#06121C] transition-opacity",
+                exportOpen && "pointer-events-none opacity-60"
+              )}
+            >
               <span className="whitespace-nowrap">Data abertura:</span>
 
               <input
                 type="date"
                 value={dateFilters.openedFrom}
+                disabled={exportOpen}
                 onChange={event =>
                   handleDateFilterChange("openedFrom", event.target.value)
                 }
-                className="h-9 w-[150px] rounded-xl border border-[#D1B1E5] bg-white px-2.5 text-sm font-medium text-[#06121C] outline-none transition-colors focus:border-[#9F83B2] [color-scheme:light] [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                className={cn(
+                  "h-9 w-[150px] rounded-xl border border-[#D1B1E5] bg-white px-2.5 text-sm font-medium text-[#06121C] outline-none transition-colors focus:border-[#9F83B2] disabled:cursor-not-allowed disabled:opacity-100 [color-scheme:light] [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer",
+                  exportOpen && "brightness-90"
+                )}
               />
 
               <span className="text-sm font-medium text-gray-400">até</span>
@@ -393,10 +614,14 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
               <input
                 type="date"
                 value={dateFilters.openedTo}
+                disabled={exportOpen}
                 onChange={event =>
                   handleDateFilterChange("openedTo", event.target.value)
                 }
-                className="h-9 w-[150px] rounded-xl border border-[#D1B1E5] bg-white px-2.5 text-sm font-medium text-[#06121C] outline-none transition-colors focus:border-[#9F83B2] [color-scheme:light] [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer"
+                className={cn(
+                  "h-9 w-[150px] rounded-xl border border-[#D1B1E5] bg-white px-2.5 text-sm font-medium text-[#06121C] outline-none transition-colors focus:border-[#9F83B2] disabled:cursor-not-allowed disabled:opacity-100 [color-scheme:light] [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer",
+                  exportOpen && "brightness-90"
+                )}
               />
             </div>
           }
