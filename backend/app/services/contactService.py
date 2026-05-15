@@ -350,18 +350,9 @@ class ContactService:
             .all()
         )
 
-        phones_map: dict[str, str | None] = {}
-        if rows:
-            ids = [g.id_cliente for g in rows]
-            phones_map = {
-                d.id_cliente: d.telefone
-                for d in self.db.query(DimCliente.id_cliente, DimCliente.telefone)
-                .filter(DimCliente.id_cliente.in_(ids))
-                .all()
-            }
-
+        # .add_columns() faz com que cada row seja (GoldCliente360, telefone)
         return ContactsPageOut(
-            data=[_to_contact_out(g, phone=phones_map.get(g.id_cliente)) for g in rows],
+            data=[_to_contact_out(g, phone=phone) for g, phone in rows],
             total=total,
             page=page,
             pageSize=page_size,

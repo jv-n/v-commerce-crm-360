@@ -147,6 +147,7 @@ export function ContactsTable({
       setFetchError(false)
       fetchContacts({
         page, pageSize, tab: activeTab,
+        search: nameSearch || undefined,
         purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
         sortBy, sortDir,
         regioes:            advanced.regioes,
@@ -201,6 +202,7 @@ export function ContactsTable({
     }
   }, [
     page, pageSize, activeTab,
+    nameSearch,
     purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
     sortBy, sortDir, refetchKey,
     advanced,
@@ -241,7 +243,7 @@ export function ContactsTable({
     try {
       const res = await fetchContacts({
         page: 1, pageSize: 500000, tab: activeTab,
-        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone,
+        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
         sortBy, sortDir,
         regioes: advanced.regioes, origens: advanced.origens, pagamentos: advanced.pagamentos,
         receitaMin:         advanced.receitaMin         !== "" ? Number(advanced.receitaMin)         : undefined,
@@ -280,7 +282,6 @@ export function ContactsTable({
     ...(serverFilters.purchasesMax != null   ? [{ label: "Compras máx", value: String(serverFilters.purchasesMax)      }] : []),
     ...(serverFilters.engagement             ? [{ label: "Engajamento", value: serverFilters.engagement                }] : []),
     ...(serverFilters.createdYear            ? [{ label: "Ano criação", value: serverFilters.createdYear               }] : []),
-    ...(serverFilters.hasPhone               ? [{ label: "Tem telefone",value: "Sim"                                   }] : []),
     ...(advanced.regioes.length              ? [{ label: "Regiões",     value: advanced.regioes.join(", ")             }] : []),
     ...(advanced.origens.length              ? [{ label: "Origens",     value: advanced.origens.join(", ")             }] : []),
     ...(advanced.pagamentos.length           ? [{ label: "Pagamentos",  value: advanced.pagamentos.join(", ")          }] : []),
@@ -306,6 +307,11 @@ export function ContactsTable({
     setSortDir(sort?.direction ?? "asc")
     setPage(1)
   }
+
+  const handleSearchChange = useCallback((value: string) => {
+    setNameSearch(value)
+    setPage(1)
+  }, [])
 
   const handlePageChange     = (newPage: number) => setPage(newPage)
   const handlePageSizeChange = (newSize: number) => { setPageSize(newSize); setPage(1) }
