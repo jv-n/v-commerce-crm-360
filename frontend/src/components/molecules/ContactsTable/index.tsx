@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { makeContactColumns } from "./columns"
-import { fetchContacts } from "@/lib/api/contacts"
+import { fetchContacts, exportContactsCSV } from "@/lib/api/contacts"
 import { ContactFormSheet } from "./ContactFormSheet"
 import {
   ContactAdvancedFiltersDrawer,
@@ -147,6 +147,7 @@ export function ContactsTable({
       setFetchError(false)
       fetchContacts({
         page, pageSize, tab: activeTab,
+        search: nameSearch,
         purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
         sortBy, sortDir,
         regioes:            advanced.regioes,
@@ -201,8 +202,9 @@ export function ContactsTable({
     }
   }, [
     page, pageSize, activeTab,
+    nameSearch,
     purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
-    sortBy, sortDir, refetchKey,
+    sortBy, sortDir, refetchKey, nameSearch,
     advanced,
   ])
 
@@ -222,46 +224,49 @@ export function ContactsTable({
     setSelectedIds(new Set(ids))
   }, [])
 
-  const buildCSV = (rows: Contact[]) => {
-    const headers = ["ID", "Nome", "Email", "Status", "Região", "Origem", "Compras", "Produtos distintos", "Receita total", "Ticket médio", "Primeira compra", "Última compra", "Pagamento favorito", "Tickets suporte", "Taxa resolução", "Nota atendimento", "Engajamento", "NPS", "Nota produto"]
-    const lines = rows.map(c => [c.id, c.name ?? "", c.email ?? "", c.clientStatus ?? "", c.region ?? "", c.origin ?? "", c.purchases, c.distinctProducts, c.totalRevenue, c.avgTicket, c.firstPurchase ?? "", c.lastPurchase ?? "", c.favPaymentMethod ?? "", c.totalTickets, c.resolutionRate, c.avgSupportRating ?? "", c.engagement, c.engagementScore, c.productRating ?? ""])
-    return [headers, ...lines].map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n")
-  }
-
-  const downloadCSV = (csv: string, filename: string) => {
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" })
-    const url  = URL.createObjectURL(blob)
-    const a    = document.createElement("a")
-    a.href = url; a.download = filename; a.click()
-    URL.revokeObjectURL(url)
-  }
-
   const handleExportCSV = async () => {
     setExportLoading(true)
     try {
-      const res = await fetchContacts({
-        page: 1, pageSize: 500000, tab: activeTab,
-        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone,
-        sortBy, sortDir,
-        regioes: advanced.regioes, origens: advanced.origens, pagamentos: advanced.pagamentos,
-        receitaMin:         advanced.receitaMin         !== "" ? Number(advanced.receitaMin)         : undefined,
-        receitaMax:         advanced.receitaMax         !== "" ? Number(advanced.receitaMax)         : undefined,
-        ticketMedioMin:     advanced.ticketMedioMin     !== "" ? Number(advanced.ticketMedioMin)     : undefined,
-        ticketMedioMax:     advanced.ticketMedioMax     !== "" ? Number(advanced.ticketMedioMax)     : undefined,
-        primeiraCompraFrom: advanced.primeiraCompraFrom || undefined,
-        primeiraCompraTo:   advanced.primeiraCompraTo   || undefined,
-        ultimaCompraFrom:   advanced.ultimaCompraFrom   || undefined,
-        ultimaCompraTo:     advanced.ultimaCompraTo     || undefined,
-        ticketsSuporteMin:  advanced.ticketsSuporteMin  !== "" ? Number(advanced.ticketsSuporteMin)  : undefined,
-        ticketsSuporteMax:  advanced.ticketsSuporteMax  !== "" ? Number(advanced.ticketsSuporteMax)  : undefined,
-        notaAtendMin:       advanced.notaAtendMin       !== "" ? Number(advanced.notaAtendMin)       : undefined,
-        notaAtendMax:       advanced.notaAtendMax       !== "" ? Number(advanced.notaAtendMax)       : undefined,
-        npsMin:             advanced.npsMin             !== "" ? Number(advanced.npsMin)             : undefined,
-        npsMax:             advanced.npsMax             !== "" ? Number(advanced.npsMax)             : undefined,
-        notaProdMin:        advanced.notaProdMin        !== "" ? Number(advanced.notaProdMin)        : undefined,
-        notaProdMax:        advanced.notaProdMax        !== "" ? Number(advanced.notaProdMax)        : undefined,
+      await exportContactsCSV({
+        tab: activeTab, search: nameSearch,
+        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
+        regioes:                advanced.regioes,
+        origens:                advanced.origens,
+        pagamentos:             advanced.pagamentos,
+        receitaMin:             advanced.receitaMin             !== "" ? Number(advanced.receitaMin)             : undefined,
+        receitaMax:             advanced.receitaMax             !== "" ? Number(advanced.receitaMax)             : undefined,
+        ticketMedioMin:         advanced.ticketMedioMin         !== "" ? Number(advanced.ticketMedioMin)         : undefined,
+        ticketMedioMax:         advanced.ticketMedioMax         !== "" ? Number(advanced.ticketMedioMax)         : undefined,
+        primeiraCompraFrom:     advanced.primeiraCompraFrom     || undefined,
+        primeiraCompraTo:       advanced.primeiraCompraTo       || undefined,
+        ultimaCompraFrom:       advanced.ultimaCompraFrom       || undefined,
+        ultimaCompraTo:         advanced.ultimaCompraTo         || undefined,
+        ticketsSuporteMin:      advanced.ticketsSuporteMin      !== "" ? Number(advanced.ticketsSuporteMin)      : undefined,
+        ticketsSuporteMax:      advanced.ticketsSuporteMax      !== "" ? Number(advanced.ticketsSuporteMax)      : undefined,
+        notaAtendMin:           advanced.notaAtendMin           !== "" ? Number(advanced.notaAtendMin)           : undefined,
+        notaAtendMax:           advanced.notaAtendMax           !== "" ? Number(advanced.notaAtendMax)           : undefined,
+        npsMin:                 advanced.npsMin                 !== "" ? Number(advanced.npsMin)                 : undefined,
+        npsMax:                 advanced.npsMax                 !== "" ? Number(advanced.npsMax)                 : undefined,
+        notaProdMin:            advanced.notaProdMin            !== "" ? Number(advanced.notaProdMin)            : undefined,
+        notaProdMax:            advanced.notaProdMax            !== "" ? Number(advanced.notaProdMax)            : undefined,
+        generos:                advanced.generos,
+        faixasEtarias:          advanced.faixasEtarias,
+        estados:                advanced.estados,
+        canaisPreferidos:       advanced.canaisPreferidos,
+        dispositivos:           advanced.dispositivos,
+        origensSessao:          advanced.origensSessao,
+        periodosDia:            advanced.periodosDia,
+        diasSemana:             advanced.diasSemana,
+        categoriasVisualizadas: advanced.categoriasVisualizadas,
+        taxaConversaoMin:       advanced.taxaConversaoMin       !== "" ? Number(advanced.taxaConversaoMin)       : undefined,
+        taxaConversaoMax:       advanced.taxaConversaoMax       !== "" ? Number(advanced.taxaConversaoMax)       : undefined,
+        totalSessoesMin:        advanced.totalSessoesMin        !== "" ? Number(advanced.totalSessoesMin)        : undefined,
+        totalSessoesMax:        advanced.totalSessoesMax        !== "" ? Number(advanced.totalSessoesMax)        : undefined,
+        abandonoCarrinhoMin:    advanced.abandonoCarrinhoMin    !== "" ? Number(advanced.abandonoCarrinhoMin)    : undefined,
+        abandonoCarrinhoMax:    advanced.abandonoCarrinhoMax    !== "" ? Number(advanced.abandonoCarrinhoMax)    : undefined,
+        npsRecenteMin:          advanced.npsRecenteMin          !== "" ? Number(advanced.npsRecenteMin)          : undefined,
+        npsRecenteMax:          advanced.npsRecenteMax          !== "" ? Number(advanced.npsRecenteMax)          : undefined,
       })
-      downloadCSV(buildCSV(res.data), `contatos_${new Date().toISOString().slice(0, 10)}.csv`)
       setExportOpen(false)
     } finally { setExportLoading(false) }
   }
@@ -269,7 +274,15 @@ export function ContactsTable({
   const handleExportSelected = async () => {
     setExportLoading(true)
     try {
-      downloadCSV(buildCSV(Array.from(selectedCache.current.values())), `contatos_selecionados_${new Date().toISOString().slice(0, 10)}.csv`)
+      const rows = Array.from(selectedCache.current.values())
+      const headers = ["ID", "Nome", "Email", "Status", "Compras", "Última compra", "Engajamento"]
+      const lines   = rows.map(c => [c.id, c.name ?? "", c.email ?? "", c.clientStatus ?? "", c.purchases, c.lastPurchase ?? "", c.engagement])
+      const csv     = [headers, ...lines].map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n")
+      const blob    = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" })
+      const url     = URL.createObjectURL(blob)
+      const a       = document.createElement("a")
+      a.href = url; a.download = `contatos_selecionados_${new Date().toISOString().slice(0, 10)}.csv`; a.click()
+      URL.revokeObjectURL(url)
       setExportOpen(false)
     } finally { setExportLoading(false) }
   }
@@ -280,7 +293,6 @@ export function ContactsTable({
     ...(serverFilters.purchasesMax != null   ? [{ label: "Compras máx", value: String(serverFilters.purchasesMax)      }] : []),
     ...(serverFilters.engagement             ? [{ label: "Engajamento", value: serverFilters.engagement                }] : []),
     ...(serverFilters.createdYear            ? [{ label: "Ano criação", value: serverFilters.createdYear               }] : []),
-    ...(serverFilters.hasPhone               ? [{ label: "Tem telefone",value: "Sim"                                   }] : []),
     ...(advanced.regioes.length              ? [{ label: "Regiões",     value: advanced.regioes.join(", ")             }] : []),
     ...(advanced.origens.length              ? [{ label: "Origens",     value: advanced.origens.join(", ")             }] : []),
     ...(advanced.pagamentos.length           ? [{ label: "Pagamentos",  value: advanced.pagamentos.join(", ")          }] : []),
@@ -306,6 +318,11 @@ export function ContactsTable({
     setSortDir(sort?.direction ?? "asc")
     setPage(1)
   }
+
+  const handleSearchChange = useCallback((value: string) => {
+    setNameSearch(value)
+    setPage(1)
+  }, [])
 
   const handlePageChange     = (newPage: number) => setPage(newPage)
   const handlePageSizeChange = (newSize: number) => { setPageSize(newSize); setPage(1) }

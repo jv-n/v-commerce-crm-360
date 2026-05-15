@@ -13,7 +13,7 @@ export default function Contacts() {
   const handleSwitchToLeads = useCallback((fn: () => void) => { setSwitchToLeads(() => fn) }, [])
 
   return (
-    <div className="relative p-6 h-full flex flex-col gap-5 bg-white min-h-full rounded-xl">
+    <div className="relative p-6 flex-1 flex flex-col gap-5 bg-white rounded-xl overflow-auto">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Contatos</h1>
         <div className="flex items-center gap-2">
