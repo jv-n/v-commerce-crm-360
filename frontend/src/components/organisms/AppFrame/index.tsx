@@ -71,8 +71,7 @@ export default function AppFrame() {
     );
 
     const allSidebarItems3 = [
-        { name: "Book", nav: true,  path: "/book", roles: [] },
-        { name: "Chat", nav: false, path: "",       roles: ["admin"] },
+        { name: "Chat", nav: false, path: "", roles: ["admin"] },
     ];
 
     const sidebarItems3 = allSidebarItems3.filter(
