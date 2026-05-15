@@ -87,7 +87,7 @@ class DashboardService:
             )
             .where(GoldCliente360.data_ultimo_pedido >= start)
             .where(GoldCliente360.data_ultimo_pedido <= end)
-            .where(GoldCliente360.categoria_nps_recente.isnot(None))
+            .where(GoldCliente360.categoria_nps_recente.notin_(["Não avaliou"]))
             .group_by(GoldCliente360.categoria_nps_recente)
         ).all()
 
