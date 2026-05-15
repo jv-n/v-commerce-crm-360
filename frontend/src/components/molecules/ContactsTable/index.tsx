@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { makeContactColumns } from "./columns"
-import { fetchContacts } from "@/lib/api/contacts"
+import { fetchContacts, exportContactsCSV } from "@/lib/api/contacts"
 import { ContactFormSheet } from "./ContactFormSheet"
 import {
   ContactAdvancedFiltersDrawer,
@@ -20,8 +20,9 @@ import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
 import TuneIcon from "@mui/icons-material/Tune"
 
 const TABS: Tab[] = [
-  { id: "all",   label: "Todos os contatos" },
-  { id: "leads", label: "Leads" },
+  { id: "all",     label: "Todos os contatos" },
+  { id: "clients", label: "Todos os clientes" },
+  { id: "leads",   label: "Leads" },
 ]
 
 const DEFAULT_PAGE_SIZE = 10
@@ -32,13 +33,11 @@ interface ServerFilters {
   createdYear:    string
   engagement:     string
   clientStatuses: string[]
-  hasPhone:       boolean
 }
 
 const EMPTY_FILTERS: ServerFilters = {
   purchasesMin: null, purchasesMax: null,
   createdYear: "", engagement: "", clientStatuses: [],
-  hasPhone: false,
 }
 
 function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEdit: () => void }) {
@@ -119,19 +118,25 @@ export function ContactsTable({
   const [formOpen, setFormOpen]             = useState(false)
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
   const [fetchError, setFetchError]         = useState(false)
+  const [nameSearch, setNameSearch]         = useState("")
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone } = serverFilters
+  const { purchasesMin, purchasesMax, createdYear, engagement, clientStatuses } = serverFilters
 
   useEffect(() => {
     const hasText =
+      nameSearch !== "" ||
       advanced.receitaMin !== "" || advanced.receitaMax !== "" ||
       advanced.ticketMedioMin !== "" || advanced.ticketMedioMax !== "" ||
       advanced.ticketsSuporteMin !== "" || advanced.ticketsSuporteMax !== "" ||
       advanced.notaAtendMin !== "" || advanced.notaAtendMax !== "" ||
       advanced.npsMin !== "" || advanced.npsMax !== "" ||
-      advanced.notaProdMin !== "" || advanced.notaProdMax !== ""
+      advanced.notaProdMin !== "" || advanced.notaProdMax !== "" ||
+      advanced.taxaConversaoMin !== "" || advanced.taxaConversaoMax !== "" ||
+      advanced.totalSessoesMin !== "" || advanced.totalSessoesMax !== "" ||
+      advanced.abandonoCarrinhoMin !== "" || advanced.abandonoCarrinhoMax !== "" ||
+      advanced.npsRecenteMin !== "" || advanced.npsRecenteMax !== ""
 
     const delay = hasText ? 300 : 0
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -142,7 +147,8 @@ export function ContactsTable({
       setFetchError(false)
       fetchContacts({
         page, pageSize, tab: activeTab,
-        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone,
+        search: nameSearch,
+        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
         sortBy, sortDir,
         regioes:            advanced.regioes,
         origens:            advanced.origens,
@@ -163,6 +169,23 @@ export function ContactsTable({
         npsMax:             advanced.npsMax !== "" ? Number(advanced.npsMax) : undefined,
         notaProdMin:        advanced.notaProdMin !== "" ? Number(advanced.notaProdMin) : undefined,
         notaProdMax:        advanced.notaProdMax !== "" ? Number(advanced.notaProdMax) : undefined,
+        generos:            advanced.generos,
+        faixasEtarias:      advanced.faixasEtarias,
+        estados:            advanced.estados,
+        canaisPreferidos:   advanced.canaisPreferidos,
+        dispositivos:       advanced.dispositivos,
+        origensSessao:      advanced.origensSessao,
+        periodosDia:        advanced.periodosDia,
+        diasSemana:         advanced.diasSemana,
+        categoriasVisualizadas: advanced.categoriasVisualizadas,
+        taxaConversaoMin:   advanced.taxaConversaoMin !== "" ? Number(advanced.taxaConversaoMin) : undefined,
+        taxaConversaoMax:   advanced.taxaConversaoMax !== "" ? Number(advanced.taxaConversaoMax) : undefined,
+        totalSessoesMin:    advanced.totalSessoesMin !== "" ? Number(advanced.totalSessoesMin) : undefined,
+        totalSessoesMax:    advanced.totalSessoesMax !== "" ? Number(advanced.totalSessoesMax) : undefined,
+        abandonoCarrinhoMin: advanced.abandonoCarrinhoMin !== "" ? Number(advanced.abandonoCarrinhoMin) : undefined,
+        abandonoCarrinhoMax: advanced.abandonoCarrinhoMax !== "" ? Number(advanced.abandonoCarrinhoMax) : undefined,
+        npsRecenteMin:      advanced.npsRecenteMin !== "" ? Number(advanced.npsRecenteMin) : undefined,
+        npsRecenteMax:      advanced.npsRecenteMax !== "" ? Number(advanced.npsRecenteMax) : undefined,
       })
         .then((res) => {
           if (cancelled) return
@@ -179,8 +202,9 @@ export function ContactsTable({
     }
   }, [
     page, pageSize, activeTab,
-    purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone,
-    sortBy, sortDir, refetchKey,
+    nameSearch,
+    purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
+    sortBy, sortDir, refetchKey, nameSearch,
     advanced,
   ])
 
@@ -200,46 +224,49 @@ export function ContactsTable({
     setSelectedIds(new Set(ids))
   }, [])
 
-  const buildCSV = (rows: Contact[]) => {
-    const headers = ["ID", "Nome", "Email", "Status", "Região", "Origem", "Compras", "Produtos distintos", "Receita total", "Ticket médio", "Primeira compra", "Última compra", "Pagamento favorito", "Tickets suporte", "Taxa resolução", "Nota atendimento", "Engajamento", "NPS", "Nota produto"]
-    const lines = rows.map(c => [c.id, c.name ?? "", c.email ?? "", c.clientStatus ?? "", c.region ?? "", c.origin ?? "", c.purchases, c.distinctProducts, c.totalRevenue, c.avgTicket, c.firstPurchase ?? "", c.lastPurchase ?? "", c.favPaymentMethod ?? "", c.totalTickets, c.resolutionRate, c.avgSupportRating ?? "", c.engagement, c.engagementScore, c.productRating ?? ""])
-    return [headers, ...lines].map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n")
-  }
-
-  const downloadCSV = (csv: string, filename: string) => {
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" })
-    const url  = URL.createObjectURL(blob)
-    const a    = document.createElement("a")
-    a.href = url; a.download = filename; a.click()
-    URL.revokeObjectURL(url)
-  }
-
   const handleExportCSV = async () => {
     setExportLoading(true)
     try {
-      const res = await fetchContacts({
-        page: 1, pageSize: 500000, tab: activeTab,
-        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone,
-        sortBy, sortDir,
-        regioes: advanced.regioes, origens: advanced.origens, pagamentos: advanced.pagamentos,
-        receitaMin:         advanced.receitaMin         !== "" ? Number(advanced.receitaMin)         : undefined,
-        receitaMax:         advanced.receitaMax         !== "" ? Number(advanced.receitaMax)         : undefined,
-        ticketMedioMin:     advanced.ticketMedioMin     !== "" ? Number(advanced.ticketMedioMin)     : undefined,
-        ticketMedioMax:     advanced.ticketMedioMax     !== "" ? Number(advanced.ticketMedioMax)     : undefined,
-        primeiraCompraFrom: advanced.primeiraCompraFrom || undefined,
-        primeiraCompraTo:   advanced.primeiraCompraTo   || undefined,
-        ultimaCompraFrom:   advanced.ultimaCompraFrom   || undefined,
-        ultimaCompraTo:     advanced.ultimaCompraTo     || undefined,
-        ticketsSuporteMin:  advanced.ticketsSuporteMin  !== "" ? Number(advanced.ticketsSuporteMin)  : undefined,
-        ticketsSuporteMax:  advanced.ticketsSuporteMax  !== "" ? Number(advanced.ticketsSuporteMax)  : undefined,
-        notaAtendMin:       advanced.notaAtendMin       !== "" ? Number(advanced.notaAtendMin)       : undefined,
-        notaAtendMax:       advanced.notaAtendMax       !== "" ? Number(advanced.notaAtendMax)       : undefined,
-        npsMin:             advanced.npsMin             !== "" ? Number(advanced.npsMin)             : undefined,
-        npsMax:             advanced.npsMax             !== "" ? Number(advanced.npsMax)             : undefined,
-        notaProdMin:        advanced.notaProdMin        !== "" ? Number(advanced.notaProdMin)        : undefined,
-        notaProdMax:        advanced.notaProdMax        !== "" ? Number(advanced.notaProdMax)        : undefined,
+      await exportContactsCSV({
+        tab: activeTab, search: nameSearch,
+        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
+        regioes:                advanced.regioes,
+        origens:                advanced.origens,
+        pagamentos:             advanced.pagamentos,
+        receitaMin:             advanced.receitaMin             !== "" ? Number(advanced.receitaMin)             : undefined,
+        receitaMax:             advanced.receitaMax             !== "" ? Number(advanced.receitaMax)             : undefined,
+        ticketMedioMin:         advanced.ticketMedioMin         !== "" ? Number(advanced.ticketMedioMin)         : undefined,
+        ticketMedioMax:         advanced.ticketMedioMax         !== "" ? Number(advanced.ticketMedioMax)         : undefined,
+        primeiraCompraFrom:     advanced.primeiraCompraFrom     || undefined,
+        primeiraCompraTo:       advanced.primeiraCompraTo       || undefined,
+        ultimaCompraFrom:       advanced.ultimaCompraFrom       || undefined,
+        ultimaCompraTo:         advanced.ultimaCompraTo         || undefined,
+        ticketsSuporteMin:      advanced.ticketsSuporteMin      !== "" ? Number(advanced.ticketsSuporteMin)      : undefined,
+        ticketsSuporteMax:      advanced.ticketsSuporteMax      !== "" ? Number(advanced.ticketsSuporteMax)      : undefined,
+        notaAtendMin:           advanced.notaAtendMin           !== "" ? Number(advanced.notaAtendMin)           : undefined,
+        notaAtendMax:           advanced.notaAtendMax           !== "" ? Number(advanced.notaAtendMax)           : undefined,
+        npsMin:                 advanced.npsMin                 !== "" ? Number(advanced.npsMin)                 : undefined,
+        npsMax:                 advanced.npsMax                 !== "" ? Number(advanced.npsMax)                 : undefined,
+        notaProdMin:            advanced.notaProdMin            !== "" ? Number(advanced.notaProdMin)            : undefined,
+        notaProdMax:            advanced.notaProdMax            !== "" ? Number(advanced.notaProdMax)            : undefined,
+        generos:                advanced.generos,
+        faixasEtarias:          advanced.faixasEtarias,
+        estados:                advanced.estados,
+        canaisPreferidos:       advanced.canaisPreferidos,
+        dispositivos:           advanced.dispositivos,
+        origensSessao:          advanced.origensSessao,
+        periodosDia:            advanced.periodosDia,
+        diasSemana:             advanced.diasSemana,
+        categoriasVisualizadas: advanced.categoriasVisualizadas,
+        taxaConversaoMin:       advanced.taxaConversaoMin       !== "" ? Number(advanced.taxaConversaoMin)       : undefined,
+        taxaConversaoMax:       advanced.taxaConversaoMax       !== "" ? Number(advanced.taxaConversaoMax)       : undefined,
+        totalSessoesMin:        advanced.totalSessoesMin        !== "" ? Number(advanced.totalSessoesMin)        : undefined,
+        totalSessoesMax:        advanced.totalSessoesMax        !== "" ? Number(advanced.totalSessoesMax)        : undefined,
+        abandonoCarrinhoMin:    advanced.abandonoCarrinhoMin    !== "" ? Number(advanced.abandonoCarrinhoMin)    : undefined,
+        abandonoCarrinhoMax:    advanced.abandonoCarrinhoMax    !== "" ? Number(advanced.abandonoCarrinhoMax)    : undefined,
+        npsRecenteMin:          advanced.npsRecenteMin          !== "" ? Number(advanced.npsRecenteMin)          : undefined,
+        npsRecenteMax:          advanced.npsRecenteMax          !== "" ? Number(advanced.npsRecenteMax)          : undefined,
       })
-      downloadCSV(buildCSV(res.data), `contatos_${new Date().toISOString().slice(0, 10)}.csv`)
       setExportOpen(false)
     } finally { setExportLoading(false) }
   }
@@ -247,7 +274,15 @@ export function ContactsTable({
   const handleExportSelected = async () => {
     setExportLoading(true)
     try {
-      downloadCSV(buildCSV(Array.from(selectedCache.current.values())), `contatos_selecionados_${new Date().toISOString().slice(0, 10)}.csv`)
+      const rows = Array.from(selectedCache.current.values())
+      const headers = ["ID", "Nome", "Email", "Status", "Compras", "Última compra", "Engajamento"]
+      const lines   = rows.map(c => [c.id, c.name ?? "", c.email ?? "", c.clientStatus ?? "", c.purchases, c.lastPurchase ?? "", c.engagement])
+      const csv     = [headers, ...lines].map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n")
+      const blob    = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" })
+      const url     = URL.createObjectURL(blob)
+      const a       = document.createElement("a")
+      a.href = url; a.download = `contatos_selecionados_${new Date().toISOString().slice(0, 10)}.csv`; a.click()
+      URL.revokeObjectURL(url)
       setExportOpen(false)
     } finally { setExportLoading(false) }
   }
@@ -258,7 +293,6 @@ export function ContactsTable({
     ...(serverFilters.purchasesMax != null   ? [{ label: "Compras máx", value: String(serverFilters.purchasesMax)      }] : []),
     ...(serverFilters.engagement             ? [{ label: "Engajamento", value: serverFilters.engagement                }] : []),
     ...(serverFilters.createdYear            ? [{ label: "Ano criação", value: serverFilters.createdYear               }] : []),
-    ...(serverFilters.hasPhone               ? [{ label: "Tem telefone",value: "Sim"                                   }] : []),
     ...(advanced.regioes.length              ? [{ label: "Regiões",     value: advanced.regioes.join(", ")             }] : []),
     ...(advanced.origens.length              ? [{ label: "Origens",     value: advanced.origens.join(", ")             }] : []),
     ...(advanced.pagamentos.length           ? [{ label: "Pagamentos",  value: advanced.pagamentos.join(", ")          }] : []),
@@ -285,6 +319,11 @@ export function ContactsTable({
     setPage(1)
   }
 
+  const handleSearchChange = useCallback((value: string) => {
+    setNameSearch(value)
+    setPage(1)
+  }, [])
+
   const handlePageChange     = (newPage: number) => setPage(newPage)
   const handlePageSizeChange = (newSize: number) => { setPageSize(newSize); setPage(1) }
 
@@ -293,14 +332,12 @@ export function ContactsTable({
     const cf = active["createdAt"]
     const ef = active["engagement"]
     const sf = active["clientStatus"]
-    const hf = active["phone"]
     setServerFilters({
       purchasesMin:   pf?.type === "number-range"                      ? pf.min    : null,
       purchasesMax:   pf?.type === "number-range"                      ? pf.max    : null,
       createdYear:    cf?.type === "select"         && cf.value !== "" ? cf.value  : "",
       engagement:     ef?.type === "select"         && ef.value !== "" ? ef.value  : "",
       clientStatuses: sf?.type === "multi-select"                      ? sf.values : [],
-      hasPhone:       hf?.type === "toggle"                            ? hf.active : false,
     })
     setPage(1)
   }
@@ -362,6 +399,8 @@ export function ContactsTable({
         activeTab={activeTab}
         onTabChange={(tabId) => { setActiveTab(tabId); setPage(1) }}
         onFiltersChange={handleFiltersChange}
+        onSearchChange={handleSearchChange}
+        searchPlaceholder="Pesquisar por nome..."
         onSortChange={handleSortChange}
         onSelectionChange={handleSelectionChange}
         filterBarExtra={filterBarExtra}
