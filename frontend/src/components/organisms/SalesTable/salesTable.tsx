@@ -35,6 +35,7 @@ type FilterSnapshot = {
 export type SalesTableHandle = {
   undo:       () => void
   reset:      () => void
+  openAdd:    () => void
   openExport: () => void
 }
 
