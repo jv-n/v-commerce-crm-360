@@ -1,12 +1,15 @@
 import uuid
 from datetime import date
 
+from fastapi import Depends
+
 from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc, select, func
 
 from app.models.contactModel import GoldCliente360, DimCliente
 from app.models.saleModel import GoldPedidoDetalhado
 from app.schemas.contactSchemas import ContactOut, ContactsPageOut, ContactCreate, ContactUpdate, ContactResumoOut
+from database.database import get_db
 
 _VALID_STATUSES = {"Ativo", "Inativo", "VIP", "Lead", "Em risco"}
 
@@ -82,7 +85,7 @@ def _to_contact_out(g: GoldCliente360, phone: str | None = None) -> ContactOut:
 
 
 class ContactService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session = Depends(get_db)):
         self.db = db
 
     def _apply_filters(self, query, tab, search, purchases_min, purchases_max,
@@ -287,8 +290,18 @@ class ContactService:
             .all()
         )
 
+        phones_map: dict[str, str | None] = {}
+        if rows:
+            ids = [g.id_cliente for g in rows]
+            phones_map = {
+                d.id_cliente: d.telefone
+                for d in self.db.query(DimCliente.id_cliente, DimCliente.telefone)
+                .filter(DimCliente.id_cliente.in_(ids))
+                .all()
+            }
+
         return ContactsPageOut(
-            data=[_to_contact_out(g, phone=phone) for g, phone in rows],
+            data=[_to_contact_out(g, phone=phones_map.get(g.id_cliente)) for g in rows],
             total=total,
             page=page,
             pageSize=page_size,

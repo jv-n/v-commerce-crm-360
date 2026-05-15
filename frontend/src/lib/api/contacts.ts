@@ -17,7 +17,6 @@ interface ContactsParams {
   createdYear?: string
   engagement?: string
   clientStatuses?: string[]
-  hasPhone?: boolean
   sortBy?: string | null
   sortDir?: "asc" | "desc"
   // advanced filters
@@ -157,7 +156,6 @@ export async function fetchContacts(params: ContactsParams): Promise<ContactsPag
     ...(params.engagement                ? { engagement: params.engagement } : {}),
     ...(params.sortBy                    ? { sort_by:    params.sortBy    } : {}),
     ...(params.sortBy && params.sortDir  ? { sort_dir:   params.sortDir   } : {}),
-    ...(params.hasPhone                      ? { has_phone:            "true"                         } : {}),
     ...(params.receitaMin != null            ? { receita_min:          String(params.receitaMin)       } : {}),
     ...(params.receitaMax != null            ? { receita_max:          String(params.receitaMax)       } : {}),
     ...(params.ticketMedioMin != null        ? { ticket_medio_min:     String(params.ticketMedioMin)   } : {}),

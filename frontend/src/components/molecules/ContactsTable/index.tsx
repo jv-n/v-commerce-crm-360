@@ -32,13 +32,11 @@ interface ServerFilters {
   createdYear:    string
   engagement:     string
   clientStatuses: string[]
-  hasPhone:       boolean
 }
 
 const EMPTY_FILTERS: ServerFilters = {
   purchasesMin: null, purchasesMax: null,
   createdYear: "", engagement: "", clientStatuses: [],
-  hasPhone: false,
 }
 
 function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEdit: () => void }) {
@@ -119,13 +117,20 @@ export function ContactsTable({
   const [formOpen, setFormOpen]             = useState(false)
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
   const [fetchError, setFetchError]         = useState(false)
+  const [nameSearch, setNameSearch]         = useState("")
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone } = serverFilters
+  const { purchasesMin, purchasesMax, createdYear, engagement, clientStatuses } = serverFilters
+
+  const handleSearchChange = (q: string) => {
+    setNameSearch(q)
+    setPage(1)
+  }
 
   useEffect(() => {
     const hasText =
+      nameSearch !== "" ||
       advanced.receitaMin !== "" || advanced.receitaMax !== "" ||
       advanced.ticketMedioMin !== "" || advanced.ticketMedioMax !== "" ||
       advanced.ticketsSuporteMin !== "" || advanced.ticketsSuporteMax !== "" ||
@@ -142,7 +147,8 @@ export function ContactsTable({
       setFetchError(false)
       fetchContacts({
         page, pageSize, tab: activeTab,
-        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone,
+        search: nameSearch || undefined,
+        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
         sortBy, sortDir,
         regioes:            advanced.regioes,
         origens:            advanced.origens,
@@ -178,8 +184,8 @@ export function ContactsTable({
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
   }, [
-    page, pageSize, activeTab,
-    purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone,
+    page, pageSize, activeTab, nameSearch,
+    purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
     sortBy, sortDir, refetchKey,
     advanced,
   ])
@@ -293,14 +299,12 @@ export function ContactsTable({
     const cf = active["createdAt"]
     const ef = active["engagement"]
     const sf = active["clientStatus"]
-    const hf = active["phone"]
     setServerFilters({
       purchasesMin:   pf?.type === "number-range"                      ? pf.min    : null,
       purchasesMax:   pf?.type === "number-range"                      ? pf.max    : null,
       createdYear:    cf?.type === "select"         && cf.value !== "" ? cf.value  : "",
       engagement:     ef?.type === "select"         && ef.value !== "" ? ef.value  : "",
       clientStatuses: sf?.type === "multi-select"                      ? sf.values : [],
-      hasPhone:       hf?.type === "toggle"                            ? hf.active : false,
     })
     setPage(1)
   }
@@ -362,6 +366,8 @@ export function ContactsTable({
         activeTab={activeTab}
         onTabChange={(tabId) => { setActiveTab(tabId); setPage(1) }}
         onFiltersChange={handleFiltersChange}
+        onSearchChange={handleSearchChange}
+        searchPlaceholder="Pesquisar por nome..."
         onSortChange={handleSortChange}
         onSelectionChange={handleSelectionChange}
         filterBarExtra={filterBarExtra}
