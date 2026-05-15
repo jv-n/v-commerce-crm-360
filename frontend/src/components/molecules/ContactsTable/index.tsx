@@ -1,91 +1,20 @@
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { makeContactColumns } from "./columns"
-import { fetchContacts } from "@/lib/api/contacts"
 import { ContactFormSheet } from "./ContactFormSheet"
-import {
-  ContactAdvancedFiltersDrawer,
-  EMPTY_CONTACT_ADVANCED,
-  contactAdvancedActiveCount,
-} from "./AdvancedFiltersDrawer"
-import { ExportPopover, type ExportPill } from "@/components/molecules/ExportPopover"
+import { ContactExpandedRow } from "./ContactExpandedRow"
+import { ContactAdvancedFiltersDrawer, EMPTY_CONTACT_ADVANCED, contactAdvancedActiveCount } from "./AdvancedFiltersDrawer"
+import { ExportPopover } from "@/components/molecules/ExportPopover"
+import { useContactsFetch } from "./useContactsFetch"
+import { useContactExport } from "./useContactExport"
+import { TABS, DEFAULT_PAGE_SIZE, EMPTY_FILTERS } from "./types"
+import type { ServerFilters } from "./types"
 import type { ContactAdvancedFilters } from "./AdvancedFiltersDrawer"
 import type { Contact } from "@/types/contact"
-import type { Tab, ActiveFilters } from "@/components/organisms/DataTable/types"
+import type { ActiveFilters } from "@/components/organisms/DataTable/types"
 import { cn } from "@/lib/utils"
-import AddIcon from "@mui/icons-material/Add"
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined"
-import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
 import TuneIcon from "@mui/icons-material/Tune"
-
-const TABS: Tab[] = [
-  { id: "all",   label: "Todos os contatos" },
-  { id: "leads", label: "Leads" },
-]
-
-const DEFAULT_PAGE_SIZE = 10
-
-interface ServerFilters {
-  purchasesMin:   number | null
-  purchasesMax:   number | null
-  createdYear:    string
-  engagement:     string
-  clientStatuses: string[]
-}
-
-const EMPTY_FILTERS: ServerFilters = {
-  purchasesMin: null, purchasesMax: null,
-  createdYear: "", engagement: "", clientStatuses: [],
-}
-
-function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEdit: () => void }) {
-  const history = [
-    ...(contact.lastPurchase
-      ? [{ type: "purchase" as const, text: "realizou uma compra", time: contact.lastPurchase }]
-      : []),
-    { type: "edit" as const, text: "teve o status atualizado", time: "01/01 2025 10:00" },
-    { type: "add" as const, text: "foi adicionado como contato", time: contact.createdAt ?? "—" },
-  ]
-
-  return (
-    <div className="bg-purple-50/40 px-8 py-5 flex gap-8 border-t border-purple-100">
-      <div className="flex-1 flex flex-col">
-        {history.map((entry, i) => (
-          <div key={i} className="flex gap-3">
-            <div className="flex flex-col items-center">
-              <div className={cn(
-                "w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
-                entry.type === "add"
-                  ? "border-2 border-dashed border-gray-300 bg-transparent"
-                  : "bg-white border border-gray-200 shadow-sm"
-              )}>
-                {entry.type === "add"      && <AddIcon                    sx={{ fontSize: 13, color: "#9CA3AF" }} />}
-                {entry.type === "edit"     && <EditOutlinedIcon           sx={{ fontSize: 12, color: "#7C3AED" }} />}
-                {entry.type === "purchase" && <ShoppingCartOutlinedIcon   sx={{ fontSize: 12, color: "#7C3AED" }} />}
-              </div>
-              {i < history.length - 1 && <div className="w-px flex-1 bg-gray-200 my-1" />}
-            </div>
-            <div className="pb-6 flex items-center gap-1 flex-wrap text-sm">
-              <span className="font-semibold text-gray-800">{contact.name}</span>
-              <span className="text-gray-500">{entry.text}</span>
-              <span className="text-xs text-gray-400 ml-0.5">- {entry.time}</span>
-            </div>
-          </div>
-        ))}
-      </div>
-      <div className="flex flex-col gap-2 justify-start pt-0.5">
-        <button
-          onClick={onEdit}
-          className="flex items-center gap-1.5 text-xs font-medium text-purple-700 hover:text-purple-900 bg-white border border-purple-200 px-3 py-1.5 rounded-md shadow-sm hover:bg-purple-50 transition-colors"
-        >
-          <EditOutlinedIcon sx={{ fontSize: 13 }} />
-          Editar contato
-        </button>
-      </div>
-    </div>
-  )
-}
 
 export interface ContactsTableHandle {
   openAdd: () => void
@@ -101,198 +30,38 @@ export function ContactsTable({
   onSwitchToLeads?: (fn: () => void) => void
 }) {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab]         = useState("all")
-  const [page, setPage]                   = useState(1)
-  const [pageSize, setPageSize]           = useState(DEFAULT_PAGE_SIZE)
-  const [contacts, setContacts]           = useState<Contact[]>([])
-  const [total, setTotal]                 = useState(0)
-  const [loading, setLoading]             = useState(true)
-  const [serverFilters, setServerFilters] = useState<ServerFilters>(EMPTY_FILTERS)
-  const [advanced, setAdvanced]           = useState<ContactAdvancedFilters>(EMPTY_CONTACT_ADVANCED)
-  const [drawerOpen, setDrawerOpen]       = useState(false)
-  const [expandedRowId, setExpandedRowId] = useState<string | null>(null)
-  const [sortBy,  setSortBy]  = useState<string | null>(null)
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
-  const [refetchKey, setRefetchKey]         = useState(0)
-  const [formOpen, setFormOpen]             = useState(false)
+
+  const [activeTab,      setActiveTab]      = useState("all")
+  const [page,           setPage]           = useState(1)
+  const [pageSize,       setPageSize]       = useState(DEFAULT_PAGE_SIZE)
+  const [serverFilters,  setServerFilters]  = useState<ServerFilters>(EMPTY_FILTERS)
+  const [advanced,       setAdvanced]       = useState<ContactAdvancedFilters>(EMPTY_CONTACT_ADVANCED)
+  const [sortBy,         setSortBy]         = useState<string | null>(null)
+  const [sortDir,        setSortDir]        = useState<"asc" | "desc">("asc")
+  const [refetchKey,     setRefetchKey]     = useState(0)
+  const [nameSearch,     setNameSearch]     = useState("")
+  const [expandedRowId,  setExpandedRowId]  = useState<string | null>(null)
+  const [drawerOpen,     setDrawerOpen]     = useState(false)
+  const [formOpen,       setFormOpen]       = useState(false)
   const [editingContact, setEditingContact] = useState<Contact | null>(null)
-  const [fetchError, setFetchError]         = useState(false)
-  const [nameSearch, setNameSearch]         = useState("")
 
-  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { contacts, total, loading, fetchError } = useContactsFetch({
+    page, pageSize, activeTab, nameSearch, serverFilters, sortBy, sortDir, refetchKey, advanced,
+  })
 
-  const { purchasesMin, purchasesMax, createdYear, engagement, clientStatuses } = serverFilters
-
-  const handleSearchChange = (q: string) => {
-    setNameSearch(q)
-    setPage(1)
-  }
-
-  useEffect(() => {
-    const hasText =
-      nameSearch !== "" ||
-      advanced.receitaMin !== "" || advanced.receitaMax !== "" ||
-      advanced.ticketMedioMin !== "" || advanced.ticketMedioMax !== "" ||
-      advanced.ticketsSuporteMin !== "" || advanced.ticketsSuporteMax !== "" ||
-      advanced.notaAtendMin !== "" || advanced.notaAtendMax !== "" ||
-      advanced.npsMin !== "" || advanced.npsMax !== "" ||
-      advanced.notaProdMin !== "" || advanced.notaProdMax !== ""
-
-    const delay = hasText ? 300 : 0
-    if (debounceRef.current) clearTimeout(debounceRef.current)
-
-    let cancelled = false
-    debounceRef.current = setTimeout(() => {
-      setLoading(true)
-      setFetchError(false)
-      fetchContacts({
-        page, pageSize, tab: activeTab,
-        search: nameSearch || undefined,
-        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
-        sortBy, sortDir,
-        regioes:            advanced.regioes,
-        origens:            advanced.origens,
-        pagamentos:         advanced.pagamentos,
-        receitaMin:         advanced.receitaMin   !== "" ? Number(advanced.receitaMin)   : undefined,
-        receitaMax:         advanced.receitaMax   !== "" ? Number(advanced.receitaMax)   : undefined,
-        ticketMedioMin:     advanced.ticketMedioMin !== "" ? Number(advanced.ticketMedioMin) : undefined,
-        ticketMedioMax:     advanced.ticketMedioMax !== "" ? Number(advanced.ticketMedioMax) : undefined,
-        primeiraCompraFrom: advanced.primeiraCompraFrom || undefined,
-        primeiraCompraTo:   advanced.primeiraCompraTo   || undefined,
-        ultimaCompraFrom:   advanced.ultimaCompraFrom   || undefined,
-        ultimaCompraTo:     advanced.ultimaCompraTo     || undefined,
-        ticketsSuporteMin:  advanced.ticketsSuporteMin !== "" ? Number(advanced.ticketsSuporteMin) : undefined,
-        ticketsSuporteMax:  advanced.ticketsSuporteMax !== "" ? Number(advanced.ticketsSuporteMax) : undefined,
-        notaAtendMin:       advanced.notaAtendMin !== "" ? Number(advanced.notaAtendMin) : undefined,
-        notaAtendMax:       advanced.notaAtendMax !== "" ? Number(advanced.notaAtendMax) : undefined,
-        npsMin:             advanced.npsMin !== "" ? Number(advanced.npsMin) : undefined,
-        npsMax:             advanced.npsMax !== "" ? Number(advanced.npsMax) : undefined,
-        notaProdMin:        advanced.notaProdMin !== "" ? Number(advanced.notaProdMin) : undefined,
-        notaProdMax:        advanced.notaProdMax !== "" ? Number(advanced.notaProdMax) : undefined,
-      })
-        .then((res) => {
-          if (cancelled) return
-          setContacts(res.data)
-          setTotal(res.total)
-        })
-        .catch(err => { console.error(err); if (!cancelled) setFetchError(true) })
-        .finally(() => { if (!cancelled) setLoading(false) })
-    }, delay)
-
-    return () => {
-      cancelled = true
-      if (debounceRef.current) clearTimeout(debounceRef.current)
-    }
-  }, [
-    page, pageSize, activeTab, nameSearch,
-    purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
-    sortBy, sortDir, refetchKey,
-    advanced,
-  ])
-
-  const [exportOpen,    setExportOpen]    = useState(false)
-  const [exportLoading, setExportLoading] = useState(false)
-
-  // ── Seleção acumulativa por cache ────────────────────────────────────────────
-  const contactsRef    = useRef<Contact[]>([])
-  const selectedCache  = useRef<Map<string, Contact>>(new Map())
-  const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set())
-  useEffect(() => { contactsRef.current = contacts }, [contacts])
-
-  const handleSelectionChange = useCallback((ids: Set<string>) => {
-    const cache = selectedCache.current
-    for (const id of cache.keys()) { if (!ids.has(id)) cache.delete(id) }
-    for (const c of contactsRef.current) { if (ids.has(c.id)) cache.set(c.id, c) }
-    setSelectedIds(new Set(ids))
-  }, [])
-
-  const buildCSV = (rows: Contact[]) => {
-    const headers = ["ID", "Nome", "Email", "Status", "Região", "Origem", "Compras", "Produtos distintos", "Receita total", "Ticket médio", "Primeira compra", "Última compra", "Pagamento favorito", "Tickets suporte", "Taxa resolução", "Nota atendimento", "Engajamento", "NPS", "Nota produto"]
-    const lines = rows.map(c => [c.id, c.name ?? "", c.email ?? "", c.clientStatus ?? "", c.region ?? "", c.origin ?? "", c.purchases, c.distinctProducts, c.totalRevenue, c.avgTicket, c.firstPurchase ?? "", c.lastPurchase ?? "", c.favPaymentMethod ?? "", c.totalTickets, c.resolutionRate, c.avgSupportRating ?? "", c.engagement, c.engagementScore, c.productRating ?? ""])
-    return [headers, ...lines].map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n")
-  }
-
-  const downloadCSV = (csv: string, filename: string) => {
-    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" })
-    const url  = URL.createObjectURL(blob)
-    const a    = document.createElement("a")
-    a.href = url; a.download = filename; a.click()
-    URL.revokeObjectURL(url)
-  }
-
-  const handleExportCSV = async () => {
-    setExportLoading(true)
-    try {
-      const res = await fetchContacts({
-        page: 1, pageSize: 500000, tab: activeTab,
-        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone,
-        sortBy, sortDir,
-        regioes: advanced.regioes, origens: advanced.origens, pagamentos: advanced.pagamentos,
-        receitaMin:         advanced.receitaMin         !== "" ? Number(advanced.receitaMin)         : undefined,
-        receitaMax:         advanced.receitaMax         !== "" ? Number(advanced.receitaMax)         : undefined,
-        ticketMedioMin:     advanced.ticketMedioMin     !== "" ? Number(advanced.ticketMedioMin)     : undefined,
-        ticketMedioMax:     advanced.ticketMedioMax     !== "" ? Number(advanced.ticketMedioMax)     : undefined,
-        primeiraCompraFrom: advanced.primeiraCompraFrom || undefined,
-        primeiraCompraTo:   advanced.primeiraCompraTo   || undefined,
-        ultimaCompraFrom:   advanced.ultimaCompraFrom   || undefined,
-        ultimaCompraTo:     advanced.ultimaCompraTo     || undefined,
-        ticketsSuporteMin:  advanced.ticketsSuporteMin  !== "" ? Number(advanced.ticketsSuporteMin)  : undefined,
-        ticketsSuporteMax:  advanced.ticketsSuporteMax  !== "" ? Number(advanced.ticketsSuporteMax)  : undefined,
-        notaAtendMin:       advanced.notaAtendMin       !== "" ? Number(advanced.notaAtendMin)       : undefined,
-        notaAtendMax:       advanced.notaAtendMax       !== "" ? Number(advanced.notaAtendMax)       : undefined,
-        npsMin:             advanced.npsMin             !== "" ? Number(advanced.npsMin)             : undefined,
-        npsMax:             advanced.npsMax             !== "" ? Number(advanced.npsMax)             : undefined,
-        notaProdMin:        advanced.notaProdMin        !== "" ? Number(advanced.notaProdMin)        : undefined,
-        notaProdMax:        advanced.notaProdMax        !== "" ? Number(advanced.notaProdMax)        : undefined,
-      })
-      downloadCSV(buildCSV(res.data), `contatos_${new Date().toISOString().slice(0, 10)}.csv`)
-      setExportOpen(false)
-    } finally { setExportLoading(false) }
-  }
-
-  const handleExportSelected = async () => {
-    setExportLoading(true)
-    try {
-      downloadCSV(buildCSV(Array.from(selectedCache.current.values())), `contatos_selecionados_${new Date().toISOString().slice(0, 10)}.csv`)
-      setExportOpen(false)
-    } finally { setExportLoading(false) }
-  }
-
-  const exportPills: ExportPill[] = [
-    ...(serverFilters.clientStatuses.length  ? [{ label: "Status",      value: serverFilters.clientStatuses.join(", ") }] : []),
-    ...(serverFilters.purchasesMin != null   ? [{ label: "Compras mín", value: String(serverFilters.purchasesMin)      }] : []),
-    ...(serverFilters.purchasesMax != null   ? [{ label: "Compras máx", value: String(serverFilters.purchasesMax)      }] : []),
-    ...(serverFilters.engagement             ? [{ label: "Engajamento", value: serverFilters.engagement                }] : []),
-    ...(serverFilters.createdYear            ? [{ label: "Ano criação", value: serverFilters.createdYear               }] : []),
-    ...(serverFilters.hasPhone               ? [{ label: "Tem telefone",value: "Sim"                                   }] : []),
-    ...(advanced.regioes.length              ? [{ label: "Regiões",     value: advanced.regioes.join(", ")             }] : []),
-    ...(advanced.origens.length              ? [{ label: "Origens",     value: advanced.origens.join(", ")             }] : []),
-    ...(advanced.pagamentos.length           ? [{ label: "Pagamentos",  value: advanced.pagamentos.join(", ")          }] : []),
-    ...(advanced.receitaMin !== "" || advanced.receitaMax !== ""
-      ? [{ label: "Receita", value: `${advanced.receitaMin || "—"} – ${advanced.receitaMax || "—"}` }] : []),
-    ...(advanced.primeiraCompraFrom || advanced.primeiraCompraTo
-      ? [{ label: "Primeira compra", value: `${advanced.primeiraCompraFrom || "—"} – ${advanced.primeiraCompraTo || "—"}` }] : []),
-  ]
+  const {
+    exportOpen, setExportOpen, exportLoading,
+    selectedIds, handleSelectionChange,
+    handleExportCSV, handleExportSelected, exportPills,
+  } = useContactExport({ activeTab, serverFilters, sortBy, sortDir, advanced, contacts })
 
   const openAdd     = () => { setEditingContact(null); setFormOpen(true) }
   const openEdit    = (c: Contact) => { setEditingContact(c); setFormOpen(true) }
   const switchLeads = () => { setActiveTab("leads"); setPage(1) }
 
-  useEffect(() => { onOpenAdd?.(openAdd) }, [])
+  useEffect(() => { onOpenAdd?.(openAdd) },         [])
   useEffect(() => { onOpenExport?.(() => setExportOpen(true)) }, [])
   useEffect(() => { onSwitchToLeads?.(switchLeads) }, [])
-
-  const onToggleExpand = (id: string) =>
-    setExpandedRowId(prev => prev === id ? null : id)
-
-  const handleSortChange = (sort: { key: string; direction: "asc" | "desc" } | null) => {
-    setSortBy(sort?.key ?? null)
-    setSortDir(sort?.direction ?? "asc")
-    setPage(1)
-  }
-
-  const handlePageChange     = (newPage: number) => setPage(newPage)
-  const handlePageSizeChange = (newSize: number) => { setPageSize(newSize); setPage(1) }
 
   const handleFiltersChange = (active: ActiveFilters) => {
     const pf = active["purchases"]
@@ -313,9 +82,7 @@ export function ContactsTable({
 
   const filterBarExtra = (
     <div className="flex items-center gap-3">
-      {fetchError && (
-        <span className="text-xs text-red-500">Erro ao carregar contatos</span>
-      )}
+      {fetchError && <span className="text-xs text-red-500">Erro ao carregar contatos</span>}
       <button
         onClick={() => setDrawerOpen(true)}
         className={cn(
@@ -359,28 +126,25 @@ export function ContactsTable({
       <DataTable
         data={contacts}
         loading={loading}
-        columns={makeContactColumns(expandedRowId, onToggleExpand, (id) => navigate(`/contacts/${id}`))}
-
+        columns={makeContactColumns(expandedRowId, (id) => setExpandedRowId(prev => prev === id ? null : id), (id) => navigate(`/contacts/${id}`))}
         getRowId={(c) => c.id}
         tabs={TABS}
         activeTab={activeTab}
         onTabChange={(tabId) => { setActiveTab(tabId); setPage(1) }}
         onFiltersChange={handleFiltersChange}
-        onSearchChange={handleSearchChange}
+        onSearchChange={(v) => { setNameSearch(v); setPage(1) }}
         searchPlaceholder="Pesquisar por nome..."
-        onSortChange={handleSortChange}
+        onSortChange={(sort) => { setSortBy(sort?.key ?? null); setSortDir(sort?.direction ?? "asc"); setPage(1) }}
         onSelectionChange={handleSelectionChange}
         filterBarExtra={filterBarExtra}
         rowsPerPageOptions={[10, 25, 50]}
         expandedRowIds={expandedRowId ? new Set([expandedRowId]) : undefined}
         renderExpandedRow={(c) => <ContactExpandedRow contact={c} onEdit={() => openEdit(c)} />}
-        onRowClick={(c) => onToggleExpand(c.id)}
+        onRowClick={(c) => setExpandedRowId(prev => prev === c.id ? null : c.id)}
         serverPagination={{
-          total,
-          page,
-          pageSize,
-          onPageChange: handlePageChange,
-          onPageSizeChange: handlePageSizeChange,
+          total, page, pageSize,
+          onPageChange: (p) => setPage(p),
+          onPageSizeChange: (s) => { setPageSize(s); setPage(1) },
         }}
       />
 
