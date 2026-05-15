@@ -77,6 +77,7 @@ GOLD_TABLES = [
     ("gold_pedidos_detalhado",          "gold_pedidos_detalhado"),
     ("gold_pedidos_por_status",         "gold_pedidos_por_status"),
     ("gold_vendas_mensais",             "gold_vendas_mensais"),
+    ("gold_tickets_360",                "gold_tickets_360"),
 ]
 
 # ── Tipos explícitos por tabela ───────────────────────────────────────────────
