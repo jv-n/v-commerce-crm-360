@@ -213,6 +213,7 @@ export function DataTableRows<T,>({
                           "group/row transition-colors",
                           rowClassName || "hover:bg-gray-50/80",
                           isExpanded && expandedRowClassName,
+                          isExpanded && "bg-purple-50/",
                           isSelected && "bg-blue-50/60",
                           onRowClick && "cursor-pointer"
                         )}

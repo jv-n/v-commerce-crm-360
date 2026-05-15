@@ -87,14 +87,7 @@ export function DataTablePagination({
       </div>
 
       <div className="flex items-center gap-0.5">
-        <button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <KeyboardArrowLeftIcon sx={{ fontSize: 18 }} />
-        </button>
-
+        
         {totalWindows > 1 && pageWindow > 0 && (
           <button
             onClick={() => setPageWindow(w => w - 1)}
@@ -103,6 +96,14 @@ export function DataTablePagination({
             <KeyboardDoubleArrowLeftIcon sx={{ fontSize: 18 }} />
           </button>
         )}
+
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <KeyboardArrowLeftIcon sx={{ fontSize: 18 }} />
+        </button>
 
         {visiblePages.map(page => (
           <button
@@ -119,6 +120,14 @@ export function DataTablePagination({
           </button>
         ))}
 
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <KeyboardArrowRightIcon sx={{ fontSize: 18 }} />
+        </button>
+        
         {totalWindows > 1 && pageWindow < totalWindows - 1 && (
           <button
             onClick={() => setPageWindow(w => w + 1)}
@@ -127,14 +136,6 @@ export function DataTablePagination({
             <KeyboardDoubleArrowRightIcon sx={{ fontSize: 18 }} />
           </button>
         )}
-
-        <button
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <KeyboardArrowRightIcon sx={{ fontSize: 18 }} />
-        </button>
       </div>
 
       <span className="text-sm font-medium text-gray-900">
