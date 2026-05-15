@@ -4,9 +4,9 @@ from datetime import date
 from fastapi import Depends
 
 from sqlalchemy.orm import Session
-from sqlalchemy import asc, desc, select, func
+from sqlalchemy import asc, desc, func
 
-from app.models.contactModel import GoldCliente360, DimCliente
+from app.models.contactModel import GoldCliente360
 from app.models.saleModel import GoldPedidoDetalhado
 from app.schemas.contactSchemas import ContactOut, ContactsPageOut, ContactCreate, ContactUpdate, ContactResumoOut
 from database.database import get_db
@@ -22,16 +22,6 @@ _SORT_COLS = {
     "avgTicket":    GoldCliente360.ticket_medio,
 }
 
-
-def _fmt_phone(raw: str | None) -> str | None:
-    if not raw:
-        return None
-    digits = "".join(c for c in str(raw).split(".")[0] if c.isdigit())
-    if len(digits) == 11:
-        return f"({digits[:2]}){digits[2:7]}-{digits[7:]}"
-    if len(digits) == 10:
-        return f"({digits[:2]}){digits[2:6]}-{digits[6:]}"
-    return digits or None
 
 
 def _fmt_date(raw: str | None) -> str | None:
@@ -57,13 +47,13 @@ def _normalize_score(nota_nps: float | None) -> float:
     return round(nota_nps * 10, 1)
 
 
-def _to_contact_out(g: GoldCliente360, phone: str | None = None) -> ContactOut:
+def _to_contact_out(g: GoldCliente360) -> ContactOut:
     first = _fmt_date(g.data_primeiro_pedido)
     return ContactOut(
         id=g.id_cliente,
         name=g.nome_completo,
         email=g.email,
-        phone=_fmt_phone(phone),
+        phone=None,
         clientStatus=g.segmento_cliente,
         region=g.regiao,
         origin=g.origem,
@@ -104,7 +94,7 @@ class ContactService:
                        total_sessoes_min, total_sessoes_max,
                        abandono_carrinho_min, abandono_carrinho_max,
                        nps_recente_min, nps_recente_max):
-        """Aplica todos os filtros em GoldCliente360. Join com DimCliente não incluído."""
+        """Aplica todos os filtros em GoldCliente360."""
         if tab == "clients":
             query = query.filter(GoldCliente360.segmento_cliente.in_(["Ativo", "Inativo", "VIP"]))
         elif tab == "leads":
@@ -263,8 +253,7 @@ class ContactService:
 
         self.db.commit()
         self.db.refresh(gold)
-        dim = self.db.query(DimCliente).filter(DimCliente.id_cliente == contact_id).first()
-        return _to_contact_out(gold, phone=dim.telefone if dim else None)
+        return _to_contact_out(gold)
 
     def get_contacts(
         self,
@@ -342,17 +331,14 @@ class ContactService:
 
         rows = (
             count_q
-            .outerjoin(DimCliente, DimCliente.id_cliente == GoldCliente360.id_cliente)
-            .add_columns(DimCliente.telefone)
             .order_by(order_fn(sort_col))
             .offset((page - 1) * page_size)
             .limit(page_size)
             .all()
         )
 
-        # .add_columns() faz com que cada row seja (GoldCliente360, telefone)
         return ContactsPageOut(
-            data=[_to_contact_out(g, phone=phone) for g, phone in rows],
+            data=[_to_contact_out(g) for g in rows],
             total=total,
             page=page,
             pageSize=page_size,
@@ -362,8 +348,7 @@ class ContactService:
         gold = self.db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()
         if not gold:
             return None
-        dim = self.db.query(DimCliente).filter(DimCliente.id_cliente == contact_id).first()
-        return _to_contact_out(gold, phone=dim.telefone if dim else None)
+        return _to_contact_out(gold)
 
     def get_contact_resumo(self, contact_id: str) -> ContactResumoOut | None:
         gold = self.db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()

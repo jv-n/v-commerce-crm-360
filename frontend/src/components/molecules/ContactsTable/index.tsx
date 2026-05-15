@@ -147,7 +147,7 @@ export function ContactsTable({
       setFetchError(false)
       fetchContacts({
         page, pageSize, tab: activeTab,
-        search: nameSearch || undefined,
+        search: nameSearch,
         purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
         sortBy, sortDir,
         regioes:            advanced.regioes,
@@ -204,7 +204,7 @@ export function ContactsTable({
     page, pageSize, activeTab,
     nameSearch,
     purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
-    sortBy, sortDir, refetchKey,
+    sortBy, sortDir, refetchKey, nameSearch,
     advanced,
   ])
 
@@ -290,6 +290,11 @@ export function ContactsTable({
     ...(advanced.primeiraCompraFrom || advanced.primeiraCompraTo
       ? [{ label: "Primeira compra", value: `${advanced.primeiraCompraFrom || "—"} – ${advanced.primeiraCompraTo || "—"}` }] : []),
   ]
+
+  const handleSearchChange = useCallback((value: string) => {
+    setNameSearch(value)
+    setPage(1)
+  }, [])
 
   const openAdd     = () => { setEditingContact(null); setFormOpen(true) }
   const openEdit    = (c: Contact) => { setEditingContact(c); setFormOpen(true) }
