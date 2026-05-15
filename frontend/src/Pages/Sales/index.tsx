@@ -16,10 +16,6 @@ export default function Sales() {
     <div className="relative p-6 h-full flex flex-col gap-5 bg-white min-h-full rounded-xl">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Pedidos</h1>
-        <button onClick={() => tableRef.current?.openAdd()} className="flex items-center gap-2 bg-[#F7EBFF] border border-[#D1B1E5] rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors">
-          <AddCircleOutlineOutlinedIcon sx={{ fontSize: 18 }} />
-          Adicionar Pedido
-        </button>
         <div className="flex items-center gap-2">
           <button
             onClick={() => tableRef.current?.openExport()}
@@ -28,10 +24,10 @@ export default function Sales() {
             <IosShareOutlinedIcon sx={{ fontSize: 16 }} />
             Exportar
           </button>
-          <button className="flex items-center gap-2 bg-[#F7EBFF] border border-[#D1B1E5] rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors">
+          <button onClick={() => tableRef.current?.openAdd()} className="flex items-center gap-2 bg-[#F7EBFF] border border-[#D1B1E5] rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors">
             <AddCircleOutlineOutlinedIcon sx={{ fontSize: 18 }} />
             Adicionar Pedido
-          </button>
+          </button> 
         </div>
       </div>
       <SalesTable ref={tableRef} onCanUndoChange={setCanUndo} />

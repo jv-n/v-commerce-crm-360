@@ -115,7 +115,7 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
     const selectedCache   = useRef<Map<string, Sale>>(new Map())
     const [selectedIds,   setSelectedIds]   = useState<Set<string>>(new Set())
     useEffect(() => { salesRef.current = sales }, [sales])
-
+     // eslint-disable-next-line 
     const handleSelectionChange = useCallback((ids: Set<string>) => {
       const cache = selectedCache.current
       for (const id of cache.keys()) { if (!ids.has(id)) cache.delete(id) }
@@ -160,7 +160,7 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
       ...(serverFilters.status           ? [{ label: "Status",    value: serverFilters.status           }] : []),
       ...(serverFilters.metodo_pagamento ? [{ label: "Pagamento", value: serverFilters.metodo_pagamento }] : []),
       ...(serverFilters.categoria        ? [{ label: "Categoria", value: serverFilters.categoria        }] : []),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+   
     ], [activeTab, serverFilters.status, serverFilters.metodo_pagamento, serverFilters.categoria])
 
 
