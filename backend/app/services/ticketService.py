@@ -75,6 +75,8 @@ class TicketService:
         score: list[str] | None = None,
         opened_from: str = "",
         opened_to: str = "",
+        sort_key: str = "",
+        sort_dir: str = "asc",
     ) -> TicketsPageOut:
         responsible = responsible or []
         problem = problem or []
@@ -105,12 +107,12 @@ class TicketService:
 
         if opened_from:
             query = query.filter(
-                func.date(GoldTicket360.data_abertura) >= opened_from
+                GoldTicket360.data_abertura >= opened_from
             )
 
         if opened_to:
             query = query.filter(
-                func.date(GoldTicket360.data_abertura) <= opened_to
+                GoldTicket360.data_abertura <= f"{opened_to} 23:59:59"
             )
 
         if responsible:
@@ -168,9 +170,35 @@ class TicketService:
 
         total = query.with_entities(func.count(GoldTicket360.ticket_id)).scalar() or 0
 
+        sort_columns = {
+            "openedAt": GoldTicket360.data_abertura,
+            "client": func.lower(GoldTicket360.nome_cliente),
+            "responsible": func.lower(GoldTicket360.agente_suporte),
+            "score": GoldTicket360.nota_avaliacao,
+        }
+
+        sort_column = sort_columns.get(sort_key)
+        normalized_sort_dir = sort_dir.strip().lower()
+
+        if sort_column is not None:
+            if normalized_sort_dir == "desc":
+                query = query.order_by(
+                    sort_column.desc(),
+                    GoldTicket360.ticket_id.asc(),
+                )
+            else:
+                query = query.order_by(
+                    sort_column.asc(),
+                    GoldTicket360.ticket_id.asc(),
+                )
+        else:
+            query = query.order_by(
+                GoldTicket360.data_abertura.desc(),
+                GoldTicket360.ticket_id.asc(),
+            )
+
         rows = (
             query
-            .order_by(GoldTicket360.data_abertura.desc())
             .offset((page - 1) * page_size)
             .limit(page_size)
             .all()

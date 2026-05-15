@@ -135,6 +135,8 @@ export function getTicketColumns(
     {
       key: "openedAt",
       header: "Data abertura",
+      sortable: true,
+      sortValue: ticket => ticket.openedAt,
       minWidth: "115px",
       render: ticket => (
         <div className="flex flex-col leading-tight">
@@ -151,6 +153,8 @@ export function getTicketColumns(
     {
       key: "client",
       header: "Cliente",
+      sortable: true,
+      sortValue: ticket => ticket.client,
       minWidth: "130px",
       render: ticket => (
         <button
@@ -179,6 +183,8 @@ export function getTicketColumns(
     {
       key: "responsible",
       header: "Responsavel Ticket",
+      sortable: true,
+      sortValue: ticket => ticket.responsible.name,
       minWidth: "140px",
       filter: {
         type: "multi-select",
@@ -236,6 +242,8 @@ export function getTicketColumns(
     {
       key: "score",
       header: "Nota",
+      sortable: true,
+      sortValue: ticket => ticket.score ?? -1,
       minWidth: "70px",
       filter: {
         type: "multi-select",

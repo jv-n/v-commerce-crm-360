@@ -6,7 +6,7 @@ interface TicketApi {
   status_atendimento: TicketStatus | null
   tipo_problema: TicketProblem | null
   data_abertura: string | null
-  hora_abertura: number | null
+  hora_abertura: string | null
   agente_suporte: string | null
   nome_cliente: string | null
   regiao_cliente: string | null
@@ -16,8 +16,6 @@ interface TicketApi {
   tempo_resolucao_horas: number | null
   nota_avaliacao: number | null
   timestamp_ingestion: string | null
-
-  // Campo opcional de compatibilidade, caso o backend ainda envie.
   resolvido?: "True" | "False" | null
 }
 
@@ -45,6 +43,8 @@ interface TicketsParams {
   score?: string[]
   openedFrom?: string
   openedTo?: string
+  sortKey?: string
+  sortDir?: "asc" | "desc"
 }
 
 const API_BASE_URL = "http://127.0.0.1:8000"
@@ -139,6 +139,14 @@ export async function fetchTickets(params: TicketsParams): Promise<TicketsPage> 
 
   if (params.openedTo) {
     queryParams.set("openedTo", params.openedTo)
+  }
+
+  if (params.sortKey) {
+    queryParams.set("sortKey", params.sortKey)
+  }
+
+  if (params.sortDir) {
+    queryParams.set("sortDir", params.sortDir)
   }
 
   appendArrayParam(queryParams, "responsible", params.responsible)

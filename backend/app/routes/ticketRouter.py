@@ -26,6 +26,8 @@ def get_tickets(
     score: Annotated[list[str] | None, Query()] = None,
     openedFrom: str = Query(""),
     openedTo: str = Query(""),
+    sortKey: str = Query(""),
+    sortDir: str = Query("asc"),
     db: Session = Depends(get_db),
 ):
     return TicketService.get_tickets(
@@ -39,6 +41,8 @@ def get_tickets(
         score=score,
         opened_from=openedFrom,
         opened_to=openedTo,
+        sort_key=sortKey,
+        sort_dir=sortDir,
     )
 
 
