@@ -71,7 +71,7 @@ export function DataTablePagination({
                     "w-full text-left px-3 py-2 text-sm transition-colors",
                     n === rowsPerPage
                       ? "bg-white border-y border-black text-gray-900 font-medium"
-                      : "text-gray-900 hover:bg-[#EACAFF]"
+                      : "text-gray-900 hover:bg-[#F7EBFF]"
                   )}
                 >
                   {n}
