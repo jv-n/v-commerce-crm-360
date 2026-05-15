@@ -91,6 +91,21 @@ DTYPE_OVERRIDES: dict[str, dict] = {
         "receita_total": "float64",
         "ticket_medio":  "float64",
     },
+    "gold_tickets_360": {
+        "ticket_id": str,
+        "id_cliente": str,
+        "status_atendimento": str,
+        "tipo_problema": str,
+        "data_abertura": str,
+        "hora_abertura": str,
+        "agente_suporte": str,
+        "nome_cliente": str,
+        "regiao_cliente": str,
+        "estado_cliente": str,
+        "faixa_etaria": str,
+        "id_pedido": str,
+        "timestamp_ingestion": str,
+    },
 }
 
 # ── Índices ───────────────────────────────────────────────────────────────────
@@ -102,6 +117,7 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_gpedidos_metodo       ON gold_pedidos_detalhado(metodo_pagamento)",
     "CREATE INDEX IF NOT EXISTS idx_gpedidos_ano_mes      ON gold_pedidos_detalhado(ano_mes)",
     "CREATE INDEX IF NOT EXISTS idx_gpedidos_status_data  ON gold_pedidos_detalhado(status, data_pedido DESC)",
+
     # gold_cliente_360
     "CREATE INDEX IF NOT EXISTS idx_g360_email            ON gold_cliente_360(email)",
     "CREATE INDEX IF NOT EXISTS idx_g360_regiao           ON gold_cliente_360(regiao)",
@@ -112,23 +128,47 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_g360_nps_media        ON gold_cliente_360(nota_nps_media)",
     "CREATE INDEX IF NOT EXISTS idx_g360_receita          ON gold_cliente_360(receita_total)",
     "CREATE INDEX IF NOT EXISTS idx_g360_ticket_medio     ON gold_cliente_360(ticket_medio)",
+
+    # gold_tickets_360
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_ticket_id       ON gold_tickets_360(ticket_id)",
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_id_cliente      ON gold_tickets_360(id_cliente)",
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_id_pedido       ON gold_tickets_360(id_pedido)",
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_data_abertura   ON gold_tickets_360(data_abertura DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_status          ON gold_tickets_360(status_atendimento)",
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_agente          ON gold_tickets_360(agente_suporte)",
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_tipo_problema   ON gold_tickets_360(tipo_problema)",
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_nota            ON gold_tickets_360(nota_avaliacao)",
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_nome_cliente    ON gold_tickets_360(nome_cliente)",
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_regiao_cliente  ON gold_tickets_360(regiao_cliente)",
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_estado_cliente  ON gold_tickets_360(estado_cliente)",
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_faixa_etaria    ON gold_tickets_360(faixa_etaria)",
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_status_data     ON gold_tickets_360(status_atendimento, data_abertura DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_agente_status   ON gold_tickets_360(agente_suporte, status_atendimento)",
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_problema_status ON gold_tickets_360(tipo_problema, status_atendimento)",
+
     # dim_clientes (busca de menções no chat IA)
     "CREATE INDEX IF NOT EXISTS idx_dimcli_nome_completo  ON dim_clientes(nome_completo)",
     "CREATE INDEX IF NOT EXISTS idx_dimcli_id_cliente     ON dim_clientes(id_cliente)",
+
     # dim_produtos (busca de menções no chat IA)
     "CREATE INDEX IF NOT EXISTS idx_dimprod_nome_produto  ON dim_produtos(nome_produto)",
     "CREATE INDEX IF NOT EXISTS idx_dimprod_categoria     ON dim_produtos(categoria)",
+
     # ft_pedidos (busca de menções no chat IA)
     "CREATE INDEX IF NOT EXISTS idx_ftpedidos_id_pedido   ON ft_pedidos(id_pedido)",
+
     # gold_kpis_vendas_mensal
     "CREATE INDEX IF NOT EXISTS idx_gkpis_ano_mes         ON gold_kpis_vendas_mensal(ano_mes)",
+
     # gold_vendas_por_dimensao
     "CREATE INDEX IF NOT EXISTS idx_gdim_ano_mes          ON gold_vendas_por_dimensao(ano_mes)",
     "CREATE INDEX IF NOT EXISTS idx_gdim_regiao           ON gold_vendas_por_dimensao(regiao)",
     "CREATE INDEX IF NOT EXISTS idx_gdim_categoria        ON gold_vendas_por_dimensao(categoria)",
+
     # gold_desempenho_produto
     "CREATE INDEX IF NOT EXISTS idx_gprod_categoria       ON gold_desempenho_produto(categoria)",
     "CREATE INDEX IF NOT EXISTS idx_gprod_ativo           ON gold_desempenho_produto(ativo)",
+
     # gold_satisfacao_nps
     "CREATE INDEX IF NOT EXISTS idx_gnps_ano_mes          ON gold_satisfacao_nps(ano_mes)",
     "CREATE INDEX IF NOT EXISTS idx_gnps_categoria        ON gold_satisfacao_nps(categoria)",

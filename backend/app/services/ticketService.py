@@ -2,10 +2,10 @@ from datetime import date
 from uuid import uuid4
 
 from fastapi import HTTPException
-from sqlalchemy import and_, bindparam, func, or_, text
+from sqlalchemy import func, or_
 from sqlalchemy.orm import Session
 
-from app.models.ticketModel import FtTicketSuporte
+from app.models.ticketModel import GoldTicket360
 from app.schemas.ticketSchemas import (
     TicketCreate,
     TicketOut,
@@ -15,26 +15,6 @@ from app.schemas.ticketSchemas import (
 
 
 class TicketService:
-    @staticmethod
-    def _get_client_names_by_ids(db: Session, client_ids: list[str]) -> dict[str, str]:
-        if not client_ids:
-            return {}
-
-        rows = db.execute(
-            text("""
-                SELECT id_cliente, nome_completo
-                FROM dim_clientes
-                WHERE id_cliente IN :client_ids
-            """).bindparams(bindparam("client_ids", expanding=True)),
-            {"client_ids": client_ids},
-        ).fetchall()
-
-        return {
-            row[0]: row[1]
-            for row in rows
-            if row[0] and row[1]
-        }
-
     @staticmethod
     def _validate_iso_date(value: str, field_name: str) -> str:
         if not value:
@@ -51,27 +31,36 @@ class TicketService:
         return value
 
     @staticmethod
-    def _build_ticket_out(
-        ticket: FtTicketSuporte,
-        client_names: dict[str, str] | None = None,
-    ) -> TicketOut:
-        client_names = client_names or {}
+    def _status_to_resolvido(status_atendimento: str | None) -> str | None:
+        if not status_atendimento:
+            return None
 
+        normalized_status = status_atendimento.strip().lower()
+
+        if normalized_status == "finalizado":
+            return "True"
+
+        return "False"
+
+    @staticmethod
+    def _build_ticket_out(ticket: GoldTicket360) -> TicketOut:
         return TicketOut(
             ticket_id=ticket.ticket_id,
             id_cliente=ticket.id_cliente,
-            nome_cliente=client_names.get(ticket.id_cliente) if ticket.id_cliente else None,
-            id_pedido=ticket.id_pedido,
+            status_atendimento=ticket.status_atendimento,
             tipo_problema=ticket.tipo_problema,
             data_abertura=ticket.data_abertura,
-            data_resolucao=ticket.data_resolucao,
-            tempo_resolucao_minutos=ticket.tempo_resolucao_minutos,
-            tempo_resolucao_horas=ticket.tempo_resolucao_horas,
-            agente_suporte=ticket.agente_suporte,
-            nota_avaliacao=ticket.nota_avaliacao,
-            resolvido=ticket.resolvido,
             hora_abertura=ticket.hora_abertura,
-            dia_semana_abertura=ticket.dia_semana_abertura,
+            agente_suporte=ticket.agente_suporte,
+            nome_cliente=ticket.nome_cliente,
+            regiao_cliente=ticket.regiao_cliente,
+            estado_cliente=ticket.estado_cliente,
+            faixa_etaria=ticket.faixa_etaria,
+            id_pedido=ticket.id_pedido,
+            tempo_resolucao_horas=ticket.tempo_resolucao_horas,
+            nota_avaliacao=ticket.nota_avaliacao,
+            timestamp_ingestion=ticket.timestamp_ingestion,
+            resolvido=TicketService._status_to_resolvido(ticket.status_atendimento),
         )
 
     @staticmethod
@@ -82,7 +71,6 @@ class TicketService:
         search: str = "",
         responsible: list[str] | None = None,
         problem: list[str] | None = None,
-        resolved: str = "",
         status: list[str] | None = None,
         score: list[str] | None = None,
         opened_from: str = "",
@@ -96,76 +84,63 @@ class TicketService:
         opened_from = TicketService._validate_iso_date(opened_from, "openedFrom")
         opened_to = TicketService._validate_iso_date(opened_to, "openedTo")
 
-        query = db.query(FtTicketSuporte)
+        query = db.query(GoldTicket360)
 
         if search:
             like = f"%{search}%"
             query = query.filter(
                 or_(
-                    FtTicketSuporte.ticket_id.ilike(like),
-                    FtTicketSuporte.id_cliente.ilike(like),
-                    FtTicketSuporte.id_pedido.ilike(like),
-                    FtTicketSuporte.tipo_problema.ilike(like),
-                    FtTicketSuporte.agente_suporte.ilike(like),
-                    FtTicketSuporte.dia_semana_abertura.ilike(like),
+                    GoldTicket360.ticket_id.ilike(like),
+                    GoldTicket360.id_cliente.ilike(like),
+                    GoldTicket360.id_pedido.ilike(like),
+                    GoldTicket360.tipo_problema.ilike(like),
+                    GoldTicket360.agente_suporte.ilike(like),
+                    GoldTicket360.nome_cliente.ilike(like),
+                    GoldTicket360.status_atendimento.ilike(like),
+                    GoldTicket360.regiao_cliente.ilike(like),
+                    GoldTicket360.estado_cliente.ilike(like),
+                    GoldTicket360.faixa_etaria.ilike(like),
                 )
             )
 
         if opened_from:
             query = query.filter(
-                func.date(FtTicketSuporte.data_abertura) >= opened_from
+                func.date(GoldTicket360.data_abertura) >= opened_from
             )
 
         if opened_to:
             query = query.filter(
-                func.date(FtTicketSuporte.data_abertura) <= opened_to
+                func.date(GoldTicket360.data_abertura) <= opened_to
             )
 
         if responsible:
-            query = query.filter(FtTicketSuporte.agente_suporte.in_(responsible))
+            query = query.filter(GoldTicket360.agente_suporte.in_(responsible))
 
         if problem:
-            query = query.filter(FtTicketSuporte.tipo_problema.in_(problem))
+            query = query.filter(GoldTicket360.tipo_problema.in_(problem))
 
         if status:
-            status_filters = []
+            valid_statuses = {
+                "finalizado",
+                "em atendimento",
+                "aguardando",
+            }
 
-            for item in status:
-                normalized_status = item.strip().lower()
+            normalized_statuses = [
+                item.strip().lower()
+                for item in status
+                if item and item.strip()
+            ]
 
-                if normalized_status == "finalizado":
-                    status_filters.append(
-                        func.lower(FtTicketSuporte.resolvido) == "true"
-                    )
+            invalid_statuses = [
+                item for item in normalized_statuses if item not in valid_statuses
+            ]
 
-                elif normalized_status == "em atendimento":
-                    status_filters.append(
-                        and_(
-                            func.lower(FtTicketSuporte.resolvido) == "false",
-                            FtTicketSuporte.agente_suporte.is_not(None),
-                            func.trim(FtTicketSuporte.agente_suporte) != "",
-                        )
-                    )
+            if invalid_statuses:
+                raise HTTPException(status_code=400, detail="Status inválido")
 
-                elif normalized_status == "aguardando":
-                    status_filters.append(
-                        and_(
-                            func.lower(FtTicketSuporte.resolvido) == "false",
-                            or_(
-                                FtTicketSuporte.agente_suporte.is_(None),
-                                func.trim(FtTicketSuporte.agente_suporte) == "",
-                            ),
-                        )
-                    )
-
-                else:
-                    raise HTTPException(status_code=400, detail="Status inválido")
-
-            query = query.filter(or_(*status_filters))
-
-        elif resolved:
             query = query.filter(
-                func.lower(FtTicketSuporte.resolvido) == resolved.lower()
+                func.lower(GoldTicket360.status_atendimento).in_(normalized_statuses)
             )
 
         if score:
@@ -180,38 +155,30 @@ class TicketService:
                     "sem_avaliacao",
                     "sem avaliacao",
                 }:
-                    score_filters.append(FtTicketSuporte.nota_avaliacao.is_(None))
+                    score_filters.append(GoldTicket360.nota_avaliacao.is_(None))
                 else:
                     try:
                         score_value = float(normalized_score)
                     except ValueError:
                         raise HTTPException(status_code=400, detail="Nota inválida")
 
-                    score_filters.append(FtTicketSuporte.nota_avaliacao == score_value)
+                    score_filters.append(GoldTicket360.nota_avaliacao == score_value)
 
             query = query.filter(or_(*score_filters))
 
-        total = query.with_entities(func.count(FtTicketSuporte.ticket_id)).scalar() or 0
+        total = query.with_entities(func.count(GoldTicket360.ticket_id)).scalar() or 0
 
         rows = (
             query
-            .order_by(FtTicketSuporte.data_abertura.desc())
+            .order_by(GoldTicket360.data_abertura.desc())
             .offset((page - 1) * page_size)
             .limit(page_size)
             .all()
         )
 
-        client_ids = list({
-            ticket.id_cliente
-            for ticket in rows
-            if ticket.id_cliente
-        })
-
-        client_names = TicketService._get_client_names_by_ids(db, client_ids)
-
         return TicketsPageOut(
             data=[
-                TicketService._build_ticket_out(ticket, client_names)
+                TicketService._build_ticket_out(ticket)
                 for ticket in rows
             ],
             total=total,
@@ -221,35 +188,29 @@ class TicketService:
 
     @staticmethod
     def get_responsibles(db: Session) -> list[str]:
-        rows = db.execute(
-            text("""
-                SELECT agente_suporte
-                FROM dim_agentes_suporte
-                WHERE agente_suporte IS NOT NULL
-                  AND TRIM(agente_suporte) <> ''
-                ORDER BY agente_suporte ASC
-            """)
-        ).fetchall()
+        rows = (
+            db.query(GoldTicket360.agente_suporte)
+            .filter(GoldTicket360.agente_suporte.is_not(None))
+            .filter(func.trim(GoldTicket360.agente_suporte) != "")
+            .distinct()
+            .order_by(GoldTicket360.agente_suporte.asc())
+            .all()
+        )
 
         return [row[0] for row in rows]
 
     @staticmethod
     def get_ticket(db: Session, ticket_id: str) -> TicketOut:
-        row = db.get(FtTicketSuporte, ticket_id)
+        row = db.get(GoldTicket360, ticket_id)
 
         if not row:
             raise HTTPException(status_code=404, detail="Ticket não encontrado")
 
-        client_names = TicketService._get_client_names_by_ids(
-            db,
-            [row.id_cliente] if row.id_cliente else [],
-        )
-
-        return TicketService._build_ticket_out(row, client_names)
+        return TicketService._build_ticket_out(row)
 
     @staticmethod
     def create_ticket(db: Session, ticket_in: TicketCreate) -> TicketOut:
-        row = FtTicketSuporte(
+        row = GoldTicket360(
             ticket_id=str(uuid4()),
             **ticket_in.model_dump()
         )
@@ -258,12 +219,7 @@ class TicketService:
         db.commit()
         db.refresh(row)
 
-        client_names = TicketService._get_client_names_by_ids(
-            db,
-            [row.id_cliente] if row.id_cliente else [],
-        )
-
-        return TicketService._build_ticket_out(row, client_names)
+        return TicketService._build_ticket_out(row)
 
     @staticmethod
     def update_ticket(
@@ -271,7 +227,7 @@ class TicketService:
         ticket_id: str,
         ticket_in: TicketUpdate,
     ) -> TicketOut:
-        row = db.get(FtTicketSuporte, ticket_id)
+        row = db.get(GoldTicket360, ticket_id)
 
         if not row:
             raise HTTPException(status_code=404, detail="Ticket não encontrado")
@@ -282,16 +238,11 @@ class TicketService:
         db.commit()
         db.refresh(row)
 
-        client_names = TicketService._get_client_names_by_ids(
-            db,
-            [row.id_cliente] if row.id_cliente else [],
-        )
-
-        return TicketService._build_ticket_out(row, client_names)
+        return TicketService._build_ticket_out(row)
 
     @staticmethod
     def delete_ticket(db: Session, ticket_id: str) -> None:
-        row = db.get(FtTicketSuporte, ticket_id)
+        row = db.get(GoldTicket360, ticket_id)
 
         if not row:
             raise HTTPException(status_code=404, detail="Ticket não encontrado")

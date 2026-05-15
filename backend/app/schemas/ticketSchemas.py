@@ -4,22 +4,25 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 TipoProblema = Literal["Pagamento", "Reembolso", "Entrega", "Produto"]
+StatusAtendimento = Literal["Finalizado", "Em atendimento", "Aguardando"]
 Resolvido = Literal["True", "False"]
 
 
 class TicketBase(BaseModel):
     id_cliente: str | None = None
-    id_pedido: str | None = None
+    status_atendimento: StatusAtendimento | None = None
     tipo_problema: TipoProblema | None = None
     data_abertura: str | None = None
-    data_resolucao: str | None = None
-    tempo_resolucao_minutos: float | None = Field(default=None, ge=0)
-    tempo_resolucao_horas: float | None = Field(default=None, ge=0)
+    hora_abertura: str | None = None
     agente_suporte: str | None = None
+    nome_cliente: str | None = None
+    regiao_cliente: str | None = None
+    estado_cliente: str | None = None
+    faixa_etaria: str | None = None
+    id_pedido: str | None = None
+    tempo_resolucao_horas: float | None = Field(default=None, ge=0)
     nota_avaliacao: float | None = Field(default=None, ge=1, le=5)
-    resolvido: Resolvido | None = None
-    hora_abertura: int | None = Field(default=None, ge=0, le=23)
-    dia_semana_abertura: str | None = None
+    timestamp_ingestion: str | None = None
 
 
 class TicketCreate(TicketBase):
@@ -34,7 +37,7 @@ class TicketOut(TicketBase):
     model_config = ConfigDict(from_attributes=True)
 
     ticket_id: str
-    nome_cliente: str | None = None
+    resolvido: Resolvido | None = None
 
 
 class TicketsPageOut(BaseModel):

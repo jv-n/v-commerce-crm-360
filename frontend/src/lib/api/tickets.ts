@@ -3,18 +3,22 @@ import type { Ticket, TicketProblem, TicketStatus } from "@/types/ticket"
 interface TicketApi {
   ticket_id: string
   id_cliente: string | null
-  nome_cliente: string | null
-  id_pedido: string | null
+  status_atendimento: TicketStatus | null
   tipo_problema: TicketProblem | null
   data_abertura: string | null
-  data_resolucao: string | null
-  tempo_resolucao_minutos: number | null
-  tempo_resolucao_horas: number | null
-  agente_suporte: string | null
-  nota_avaliacao: number | null
-  resolvido: "True" | "False" | null
   hora_abertura: number | null
-  dia_semana_abertura: string | null
+  agente_suporte: string | null
+  nome_cliente: string | null
+  regiao_cliente: string | null
+  estado_cliente: string | null
+  faixa_etaria: string | null
+  id_pedido: string | null
+  tempo_resolucao_horas: number | null
+  nota_avaliacao: number | null
+  timestamp_ingestion: string | null
+
+  // Campo opcional de compatibilidade, caso o backend ainda envie.
+  resolvido?: "True" | "False" | null
 }
 
 interface TicketsApiResponse {
@@ -57,23 +61,33 @@ function getInitials(name?: string | null) {
   return `${parts[0][0]}${parts[parts.length - 1][0]}`.toUpperCase()
 }
 
-function mapStatus(
-  resolvido: TicketApi["resolvido"],
-  agenteSuporte: string | null
-): TicketStatus {
-  if (resolvido === "True") {
+function normalizeStatus(status?: string | null): TicketStatus {
+  if (status === "Finalizado") {
     return "Finalizado"
   }
 
-  if (resolvido === "False" && agenteSuporte?.trim()) {
+  if (status === "Em atendimento") {
     return "Em atendimento"
   }
 
   return "Aguardando"
 }
 
+function normalizeProblem(problem?: string | null): TicketProblem {
+  if (
+    problem === "Produto" ||
+    problem === "Entrega" ||
+    problem === "Pagamento" ||
+    problem === "Reembolso"
+  ) {
+    return problem
+  }
+
+  return "Produto"
+}
+
 function mapTicketFromApi(ticket: TicketApi): Ticket {
-  const responsibleName = ticket.agente_suporte || "Não informado"
+  const responsibleName = ticket.agente_suporte?.trim() || "Não informado"
 
   return {
     id: ticket.ticket_id,
@@ -85,9 +99,15 @@ function mapTicketFromApi(ticket: TicketApi): Ticket {
       initials: getInitials(responsibleName),
       name: responsibleName,
     },
-    problem: ticket.tipo_problema || "Produto",
-    status: mapStatus(ticket.resolvido, ticket.agente_suporte),
+    problem: normalizeProblem(ticket.tipo_problema),
+    status: normalizeStatus(ticket.status_atendimento),
     score: ticket.nota_avaliacao,
+
+    region: ticket.regiao_cliente || "Não informado",
+    state: ticket.estado_cliente || "Não informado",
+    ageRange: ticket.faixa_etaria || "Não informado",
+    resolutionTimeHours: ticket.tempo_resolucao_horas,
+    ingestionTimestamp: ticket.timestamp_ingestion || "",
   }
 }
 
