@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth/useAuth";
 
 function Logo() {
   return (
@@ -20,12 +20,12 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
 
-  function handleSubmit() {
-    const ok = login(email, password);
-    if (ok) {
-      navigate("/");
-    } else {
-      setError("E-mail ou senha incorretos. Verifique suas credenciais e tente novamente.");
+  async function handleSubmit() {
+    try {
+      await login(email, password);
+      navigate("/")
+    } catch (err){
+      setError(err instanceof Error ? err.message : "Erro ao fazer login")
     }
   }
 

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import AppNavbar from "@/components/molecules/AppNavbar";
 import AIChatSidebar from "@/components/molecules/AIChatSidebar";
+import type { MentionItem } from "@/lib/api/mentions";
 import {
     Sidebar,
     SidebarContent,
@@ -22,11 +23,15 @@ import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
 import LeaderboardIcon from '@mui/icons-material/Leaderboard';
 import MenuBookOutlinedIcon from '@mui/icons-material/MenuBookOutlined';
+import { useAuth } from "@/contexts/auth/useAuth";
+import ConfirmationNumberOutlinedIcon from '@mui/icons-material/ConfirmationNumberOutlined';
 
 export default function AppFrame() {
     const { pathname, state: locationState } = useLocation();
     const isOnChat = pathname === "/chat";
     const [isAIOpen, setIsAIOpen] = useState(false);
+    const { user } = useAuth()
+    const [pendingMention, setPendingMention] = useState<MentionItem | null>(null);
 
     // Fecha a sidebar ao entrar em /chat; reabre ao minimizar de volta
     useEffect(() => {
@@ -36,6 +41,17 @@ export default function AppFrame() {
             setIsAIOpen(true);
         }
     }, [isOnChat, locationState]);
+
+    // Escuta evento global para abrir o chat com menção pré-inserida
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const item = (e as CustomEvent<MentionItem>).detail;
+            setIsAIOpen(true);
+            setPendingMention(item);
+        };
+        window.addEventListener("open-ai-chat", handler);
+        return () => window.removeEventListener("open-ai-chat", handler);
+    }, []);
 
     const itemActive = (path: string) => pathname === path ? "bg-primary" : "bg-background";
 
@@ -49,6 +65,7 @@ export default function AppFrame() {
         { name: "Sales", nav: true, path: "/sales" },
         { name: "Products", nav: true, path: "/products" },
         { name: "Dashboard", nav: true, path: "/dashboard" },
+        { name: "Tickets", nav: true, path: "/tickets" },
     ];
 
     const sidebarItems3 = [
@@ -78,6 +95,8 @@ export default function AppFrame() {
                 return <MenuBookOutlinedIcon sx={{color: iconColor(title.toLowerCase())}}/>;
             case "Chat":
                 return <img src="v_ai.svg" alt="Chat Icon" height={48} width={48} />
+            case "Tickets":
+                return <ConfirmationNumberOutlinedIcon sx={{ color: iconColor("/tickets")} }/>;
             default:
                 return <div className="w-6 h-6 rounded-md bg-gray-500" />;
         }
@@ -92,7 +111,7 @@ export default function AppFrame() {
                 <SidebarContent>
                     <SidebarGroup>
                         <SidebarGroupContent>
-                            <SidebarMenu className="gap-2">
+                            <SidebarMenu className="gap-3">
                                 {sidebarItems1.map((item) => (
                                     <SidebarMenuItem key={item.name} className="flex align-center justify-center">
                                         <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
@@ -108,7 +127,7 @@ export default function AppFrame() {
                     <SidebarSeparator className="bg-foreground/30" />
                     <SidebarGroup>
                         <SidebarGroupContent>
-                            <SidebarMenu className="gap-2">
+                            <SidebarMenu className="gap-3">
                                 {sidebarItems2.map((item) => (
                                     <SidebarMenuItem key={item.name} className="flex align-center justify-center">
                                         <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
@@ -124,12 +143,12 @@ export default function AppFrame() {
                     <SidebarSeparator className="bg-foreground/30"/>
                     <SidebarGroup>
                         <SidebarGroupContent>
-                            <SidebarMenu className="gap-2">
+                            <SidebarMenu className="gap-3">
                                 {sidebarItems3.map((item) => (
                                     <SidebarMenuItem key={item.name} className="flex align-center justify-center">
                                         {item.nav ? (
                                             <SidebarMenuButton
-                                                className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
+                                                className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-background hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
                                                 asChild
                                             >
                                                 <NavLink to={item.path}>
@@ -138,7 +157,7 @@ export default function AppFrame() {
                                             </SidebarMenuButton>
                                         ) : (
                                             <SidebarMenuButton
-                                                className={`${isAIOpen ? "ring ring-primary" : ""} bg-background !w-11 !h-11 transition duration-400 hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
+                                                className={`${isAIOpen ? "ring ring-primary" : ""} bg-background !w-11 !h-11 transition duration-400 hover:bg-background hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
                                                 onClick={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }}
                                                 title="Abrir assistente V.IA"
                                             >
@@ -161,7 +180,9 @@ export default function AppFrame() {
                     <AIChatSidebar
                         open={isAIOpen}
                         onClose={() => setIsAIOpen(false)}
-                        userName="Joao Victor"
+                        userName= {user?.name ?? "Deslogado"}
+                        pendingMention={pendingMention}
+                        onMentionInserted={() => setPendingMention(null)}
                     />
                 </div>
             </SidebarInset>

@@ -16,6 +16,8 @@ export interface Product {
   name: string
   category: ProductCategory
   price: number | null
+  supplier: string | null
+  weightKg: number | null
   stock: number
   rating: number
   totalSales: number

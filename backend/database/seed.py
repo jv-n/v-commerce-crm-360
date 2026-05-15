@@ -6,40 +6,65 @@ Uso:
     python backend/database/seed.py
 
 O banco é criado em backend/database/vcommerce.db
+Os CSVs Gold devem estar em data-engineering/gold-data-csvs/
 Os CSVs Silver devem estar em data-engineering/silver-data-csvs/
-Os CSVs Gold  devem estar em data-engineering/gold-data-csvs/
 """
 
 import sqlite3
 import pandas as pd
 from pathlib import Path
-import sys
 import time
+import uuid
+from pwdlib import PasswordHash
+
+_password_hasher = PasswordHash.recommended()
 
 # ── Caminhos ──────────────────────────────────────────────────────────────────
-ROOT         = Path(__file__).resolve().parents[2]
-SILVER_DIR   = ROOT / "data-engineering" / "silver-data-csvs"
-GOLD_DIR     = ROOT / "data-engineering" / "gold-data-csvs"
-DB_PATH      = Path(__file__).resolve().parent / "vcommerce.db"
+ROOT       = Path(__file__).resolve().parents[2]
+GOLD_DIR   = ROOT / "data-engineering" / "gold-data-csvs"
+SILVER_DIR = ROOT / "data-engineering" / "silver-data-csvs"
+DB_PATH    = Path(__file__).resolve().parent / "vcommerce.db"
+
+# ── Usuários ──────────────────────────────────────────────────────────────────
+USERS = [
+    {
+        "name": "Gustavo Admin",
+        "email": "gustavo.admin@vcommerce.com",
+        "password": "admin123",
+        "role": "admin",
+    },
+    {
+        "name": "Joao Vendas",
+        "email": "joao.vendas@vcommerce.com",
+        "password": "vendas123",
+        "role": "sales",
+    },
+    {
+        "name": "Maria Suporte",
+        "email": "maria.suporte@vcommerce.com",
+        "password": "support123",
+        "role": "support",
+    },
+    {
+        "name": "Caio Vendas",
+        "email": "caio.vendas@vcommerce.com",
+        "password": "sales123",
+        "role": "sales",
+    },
+]
 
 # ── Tabelas Silver ────────────────────────────────────────────────────────────
-# (nome_do_arquivo_sem_extensao, nome_da_tabela_no_banco)
+# Necessárias para o mentionRouter (dim_clientes, dim_produtos, ft_pedidos,
+# dim_agentes_suporte) e para joins internos do agente de IA.
 SILVER_TABLES = [
-    # Dimensões (menores, carregadas primeiro)
-    ("dim_categorias_produto",  "dim_categorias_produto"),
-    ("dim_status_pedido",       "dim_status_pedido"),
-    ("dim_tipos_problema",      "dim_tipos_problema"),
-    ("dim_agentes_suporte",     "dim_agentes_suporte"),
-    ("dim_produtos",            "dim_produtos"),
-    ("dim_clientes",            "dim_clientes"),
-    # Fatos (maiores, dependem das dimensões)
-    ("ft_pedidos",              "ft_pedidos"),
-    ("ft_avaliacoes",           "ft_avaliacoes"),
-    ("ft_tickets_suporte",      "ft_tickets_suporte"),
-    ("ft_clickstream",          "ft_clickstream"),
+    ("dim_clientes",       "dim_clientes"),
+    ("dim_produtos",       "dim_produtos"),
+    ("dim_agentes_suporte","dim_agentes_suporte"),
+    ("ft_pedidos",         "ft_pedidos"),
 ]
 
 # ── Tabelas Gold ──────────────────────────────────────────────────────────────
+# (nome_do_arquivo_sem_extensao, nome_da_tabela_no_banco)
 GOLD_TABLES = [
     ("gold_cliente_360",                "gold_cliente_360"),
     ("gold_kpis_vendas_mensal",         "gold_kpis_vendas_mensal"),
@@ -47,6 +72,7 @@ GOLD_TABLES = [
     ("gold_desempenho_produto",         "gold_desempenho_produto"),
     ("gold_analise_suporte_por_tipo",   "gold_analise_suporte_por_tipo"),
     ("gold_analise_suporte_por_agente", "gold_analise_suporte_por_agente"),
+    ("gold_analise_suporte_cliente",    "gold_analise_suporte_cliente"),
     ("gold_satisfacao_nps",             "gold_satisfacao_nps"),
     ("gold_pedidos_detalhado",          "gold_pedidos_detalhado"),
     ("gold_pedidos_por_status",         "gold_pedidos_por_status"),
@@ -56,82 +82,55 @@ GOLD_TABLES = [
 # ── Tipos explícitos por tabela ───────────────────────────────────────────────
 # Evita inferência errada do pandas em colunas booleanas/numéricas ambíguas
 DTYPE_OVERRIDES: dict[str, dict] = {
-    # Silver
-    "dim_clientes": {
-        "device_ids": str,
-        "telefone": str,
-    },
-    "dim_produtos": {
-        "ativo": str,
-    },
-    "ft_avaliacoes": {
-        "recomenda": str,
-        "nota_nps": "float64",
-        "nota_produto": "float64",
-    },
-    "ft_tickets_suporte": {
-        "resolvido": str,
-        "tempo_resolucao_horas": "float64",
-        "nota_avaliacao": "float64",
-    },
-    "ft_clickstream": {
-        "is_conversao": str,
-        "tempo_pagina_seg": "float64",
-    },
-    # Gold
     "gold_desempenho_produto": {
         "ativo": str,
     },
     "gold_cliente_360": {
         "total_pedidos": "float64",
         "receita_total": "float64",
-        "ticket_medio": "float64",
+        "ticket_medio":  "float64",
     },
 }
 
 # ── Índices ───────────────────────────────────────────────────────────────────
 INDEXES = [
-    # Silver — dim_clientes
-    "CREATE INDEX IF NOT EXISTS idx_clientes_email     ON dim_clientes(email)",
-    "CREATE INDEX IF NOT EXISTS idx_clientes_regiao    ON dim_clientes(regiao)",
-    "CREATE INDEX IF NOT EXISTS idx_clientes_origem    ON dim_clientes(origem)",
-    # Silver — dim_produtos
-    "CREATE INDEX IF NOT EXISTS idx_produtos_categoria ON dim_produtos(categoria)",
-    "CREATE INDEX IF NOT EXISTS idx_produtos_ativo     ON dim_produtos(ativo)",
-    # Silver — ft_pedidos (pode não existir ainda)
-    "CREATE INDEX IF NOT EXISTS idx_pedidos_cliente    ON ft_pedidos(id_cliente)",
-    "CREATE INDEX IF NOT EXISTS idx_pedidos_produto    ON ft_pedidos(id_produto)",
-    "CREATE INDEX IF NOT EXISTS idx_pedidos_status     ON ft_pedidos(status)",
-    "CREATE INDEX IF NOT EXISTS idx_pedidos_ano_mes    ON ft_pedidos(ano_mes)",
-    # Silver — ft_avaliacoes
-    "CREATE INDEX IF NOT EXISTS idx_aval_cliente       ON ft_avaliacoes(id_cliente)",
-    "CREATE INDEX IF NOT EXISTS idx_aval_produto       ON ft_avaliacoes(id_produto)",
-    "CREATE INDEX IF NOT EXISTS idx_aval_pedido        ON ft_avaliacoes(id_pedido)",
-    "CREATE INDEX IF NOT EXISTS idx_aval_categoria     ON ft_avaliacoes(categoria_nps)",
-    # Silver — ft_tickets_suporte
-    "CREATE INDEX IF NOT EXISTS idx_tickets_cliente    ON ft_tickets_suporte(id_cliente)",
-    "CREATE INDEX IF NOT EXISTS idx_tickets_pedido     ON ft_tickets_suporte(id_pedido)",
-    "CREATE INDEX IF NOT EXISTS idx_tickets_agente     ON ft_tickets_suporte(agente_suporte)",
-    # Silver — ft_clickstream
-    "CREATE INDEX IF NOT EXISTS idx_click_cliente      ON ft_clickstream(id_cliente)",
-    "CREATE INDEX IF NOT EXISTS idx_click_produto      ON ft_clickstream(id_produto)",
-    "CREATE INDEX IF NOT EXISTS idx_click_tipo         ON ft_clickstream(tipo_evento)",
-    # Gold — gold_cliente_360
-    "CREATE INDEX IF NOT EXISTS idx_g360_email         ON gold_cliente_360(email)",
-    "CREATE INDEX IF NOT EXISTS idx_g360_regiao        ON gold_cliente_360(regiao)",
-    "CREATE INDEX IF NOT EXISTS idx_g360_segmento      ON gold_cliente_360(segmento_cliente)",
-    # Gold — gold_kpis_vendas_mensal
-    "CREATE INDEX IF NOT EXISTS idx_gkpis_ano_mes      ON gold_kpis_vendas_mensal(ano_mes)",
-    # Gold — gold_vendas_por_dimensao
-    "CREATE INDEX IF NOT EXISTS idx_gdim_ano_mes       ON gold_vendas_por_dimensao(ano_mes)",
-    "CREATE INDEX IF NOT EXISTS idx_gdim_regiao        ON gold_vendas_por_dimensao(regiao)",
-    "CREATE INDEX IF NOT EXISTS idx_gdim_categoria     ON gold_vendas_por_dimensao(categoria)",
-    # Gold — gold_desempenho_produto
-    "CREATE INDEX IF NOT EXISTS idx_gprod_categoria    ON gold_desempenho_produto(categoria)",
-    "CREATE INDEX IF NOT EXISTS idx_gprod_ativo        ON gold_desempenho_produto(ativo)",
-    # Gold — gold_satisfacao_nps
-    "CREATE INDEX IF NOT EXISTS idx_gnps_ano_mes       ON gold_satisfacao_nps(ano_mes)",
-    "CREATE INDEX IF NOT EXISTS idx_gnps_categoria     ON gold_satisfacao_nps(categoria)",
+    # gold_pedidos_detalhado
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_data_pedido  ON gold_pedidos_detalhado(data_pedido DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_status       ON gold_pedidos_detalhado(status)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_categoria    ON gold_pedidos_detalhado(categoria)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_metodo       ON gold_pedidos_detalhado(metodo_pagamento)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_ano_mes      ON gold_pedidos_detalhado(ano_mes)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_status_data  ON gold_pedidos_detalhado(status, data_pedido DESC)",
+    # gold_cliente_360
+    "CREATE INDEX IF NOT EXISTS idx_g360_email            ON gold_cliente_360(email)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_regiao           ON gold_cliente_360(regiao)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_segmento         ON gold_cliente_360(segmento_cliente)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_nome_completo    ON gold_cliente_360(nome_completo)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_total_pedidos    ON gold_cliente_360(total_pedidos)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_data_ultimo      ON gold_cliente_360(data_ultimo_pedido)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_nps_media        ON gold_cliente_360(nota_nps_media)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_receita          ON gold_cliente_360(receita_total)",
+    "CREATE INDEX IF NOT EXISTS idx_g360_ticket_medio     ON gold_cliente_360(ticket_medio)",
+    # dim_clientes (busca de menções no chat IA)
+    "CREATE INDEX IF NOT EXISTS idx_dimcli_nome_completo  ON dim_clientes(nome_completo)",
+    "CREATE INDEX IF NOT EXISTS idx_dimcli_id_cliente     ON dim_clientes(id_cliente)",
+    # dim_produtos (busca de menções no chat IA)
+    "CREATE INDEX IF NOT EXISTS idx_dimprod_nome_produto  ON dim_produtos(nome_produto)",
+    "CREATE INDEX IF NOT EXISTS idx_dimprod_categoria     ON dim_produtos(categoria)",
+    # ft_pedidos (busca de menções no chat IA)
+    "CREATE INDEX IF NOT EXISTS idx_ftpedidos_id_pedido   ON ft_pedidos(id_pedido)",
+    # gold_kpis_vendas_mensal
+    "CREATE INDEX IF NOT EXISTS idx_gkpis_ano_mes         ON gold_kpis_vendas_mensal(ano_mes)",
+    # gold_vendas_por_dimensao
+    "CREATE INDEX IF NOT EXISTS idx_gdim_ano_mes          ON gold_vendas_por_dimensao(ano_mes)",
+    "CREATE INDEX IF NOT EXISTS idx_gdim_regiao           ON gold_vendas_por_dimensao(regiao)",
+    "CREATE INDEX IF NOT EXISTS idx_gdim_categoria        ON gold_vendas_por_dimensao(categoria)",
+    # gold_desempenho_produto
+    "CREATE INDEX IF NOT EXISTS idx_gprod_categoria       ON gold_desempenho_produto(categoria)",
+    "CREATE INDEX IF NOT EXISTS idx_gprod_ativo           ON gold_desempenho_produto(ativo)",
+    # gold_satisfacao_nps
+    "CREATE INDEX IF NOT EXISTS idx_gnps_ano_mes          ON gold_satisfacao_nps(ano_mes)",
+    "CREATE INDEX IF NOT EXISTS idx_gnps_categoria        ON gold_satisfacao_nps(categoria)",
 ]
 
 
@@ -165,21 +164,48 @@ def create_indexes(conn: sqlite3.Connection) -> None:
         try:
             cursor.execute(sql)
         except sqlite3.OperationalError:
-            pass  # tabela não existe ainda (ex: ft_pedidos ausente)
+            pass  # tabela não existe ainda — ignora silenciosamente
     conn.commit()
+
+
+def seed_users(conn: sqlite3.Connection) -> None:
+    conn.execute("DROP TABLE IF EXISTS users")
+    conn.execute("""
+        CREATE TABLE users (
+            id       TEXT PRIMARY KEY,
+            name     TEXT NOT NULL,
+            email    TEXT NOT NULL UNIQUE,
+            password TEXT NOT NULL,
+            role     TEXT NOT NULL
+        )
+    """)
+    cursor = conn.cursor()
+    for user in USERS:
+        user_id = str(uuid.uuid4())
+        hashed = _password_hasher.hash(user["password"])
+        cursor.execute(
+            "INSERT OR IGNORE INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)",
+            (user_id, user["name"], user["email"], hashed, user["role"]),
+        )
+    conn.commit()
+    print(f"   {'users':<30} {len(USERS):>8,} linhas  [seed estático]")
 
 
 def seed() -> None:
     print(f"\n{'='*60}")
     print("  V-Commerce CRM 360 — Seed do banco SQLite")
     print(f"{'='*60}")
-    print(f"  Silver : {SILVER_DIR}")
-    print(f"  Gold   : {GOLD_DIR}")
-    print(f"  Banco  : {DB_PATH}\n")
+    print(f"  Silver: {SILVER_DIR}")
+    print(f"  Gold  : {GOLD_DIR}")
+    print(f"  Banco : {DB_PATH}\n")
+
+    if not GOLD_DIR.exists():
+        print(f"ERRO: Pasta Gold não encontrada em {GOLD_DIR}")
+        raise SystemExit(1)
 
     if not SILVER_DIR.exists():
         print(f"ERRO: Pasta Silver não encontrada em {SILVER_DIR}")
-        sys.exit(1)
+        raise SystemExit(1)
 
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
@@ -205,19 +231,21 @@ def seed() -> None:
 
     # ── Camada Gold ───────────────────────────────────────────────────────────
     print()
-    if not GOLD_DIR.exists():
-        print(f"  ⚠  Pasta Gold não encontrada em {GOLD_DIR} — pulando tabelas Gold.")
-    else:
-        print("  [ Gold ]")
-        for stem, table_name in GOLD_TABLES:
-            t0 = time.time()
-            df = load_csv(GOLD_DIR, stem)
-            if df is None:
-                continue
-            print(f"   {table_name:<35} {len(df):>8,} linhas", end="", flush=True)
-            insert_table(conn, df, table_name)
-            print(f"  [{time.time() - t0:.1f}s]")
-            total_rows += len(df)
+    print("  [ Gold ]")
+    for stem, table_name in GOLD_TABLES:
+        t0 = time.time()
+        df = load_csv(GOLD_DIR, stem)
+        if df is None:
+            continue
+        print(f"   {table_name:<35} {len(df):>8,} linhas", end="", flush=True)
+        insert_table(conn, df, table_name)
+        print(f"  [{time.time() - t0:.1f}s]")
+        total_rows += len(df)
+
+    # ── Usuários ──────────────────────────────────────────────────────────────
+    print()
+    print("  [ Usuários ]")
+    seed_users(conn)
 
     # ── Índices ───────────────────────────────────────────────────────────────
     print(f"\n  Criando índices...", end=" ", flush=True)

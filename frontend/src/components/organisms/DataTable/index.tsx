@@ -1,29 +1,42 @@
 import type { ReactNode } from "react"
-import { useState, useMemo } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
-import type { DataTableProps, SelectFilterDef, NumberRangeFilterDef, MultiSelectFilterDef, ServerPagination } from "./types"
-import { useFilterState, isFilterActive, formatActiveFilter } from "./hooks/useFilterState"
+import type {
+  DataTableProps,
+  SelectFilterDef,
+  NumberRangeFilterDef,
+  MultiSelectFilterDef,
+  ServerPagination,
+} from "./types"
+import {
+  useFilterState,
+  isFilterActive,
+  formatActiveFilter,
+} from "./hooks/useFilterState"
 import { useRowSelection } from "./hooks/useRowSelection"
 import { usePagination } from "./hooks/usePagination"
+
 import { DataTableTabs } from "./molecules/DataTableTabs"
-import { DataTableFilterBar } from "./molecules/DataTableFilterBar"
 import { DataTableRows } from "./molecules/DataTableRows"
+import { DataTableFilterBar } from "./molecules/DataTableFilterBar"
 import { DataTablePagination } from "./molecules/DataTablePagination"
 import { FilterPill } from "./atoms/FilterPill"
 import { TogglePill } from "./atoms/TogglePill"
 import { SelectDropdown } from "./atoms/SelectDropdown"
 import { NumberRangeDropdown } from "./atoms/NumberRangeDropdown"
 import { MultiSelectDropdown } from "./atoms/MultiSelectDropdown"
+import { DateRangeDropdown } from "./atoms/DateRangeDropdown"
 
 function buildServerPageInfo(sp: ServerPagination, dataLength: number) {
   const totalPages = Math.max(1, Math.ceil(sp.total / sp.pageSize))
+
   return {
-    pageData:    null,
-    safePage:    sp.page,
+    pageData: null,
+    safePage: sp.page,
     pageNumbers: Array.from({ length: totalPages }, (_, i) => i + 1),
-    startItem:   sp.total === 0 ? 0 : (sp.page - 1) * sp.pageSize + 1,
-    endItem:     Math.min(sp.page * sp.pageSize, sp.total),
-    totalItems:  sp.total,
+    startItem: sp.total === 0 ? 0 : (sp.page - 1) * sp.pageSize + 1,
+    endItem: Math.min(sp.page * sp.pageSize, sp.total),
+    totalItems: sp.total,
     _dataLength: dataLength,
   }
 }
@@ -51,9 +64,14 @@ export function DataTable<T,>({
   tabsRightSlot,
   searchFn,
   searchPlaceholder,
+  searchPrefix,
   onSortChange,
+  onRowClick,
+  extraActiveFilterCount = 0,
+  onClearExtraFilters,
+  onSelectionChange,
 }: DataTableProps<T>) {
-  const [searchOpen,  setSearchOpen]  = useState(false)
+  const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
 
   const handleSearchChange = (q: string) => {
@@ -66,31 +84,49 @@ export function DataTable<T,>({
     return data.filter(row => searchFn(row, searchQuery))
   }, [data, searchFn, searchQuery])
 
-  const filters    = useFilterState(columns, searchedData, onFiltersChange)
+  const filters = useFilterState(columns, searchedData, onFiltersChange)
   const pagination = usePagination(defaultRowsPerPage)
-  const selection  = useRowSelection(getRowId)
+  const selection = useRowSelection(getRowId)
 
-  const [shownOptionalKeys, setShownOptionalKeys] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    onSelectionChange?.(selection.selectedRows)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection.selectedRows])
+
+  const [shownOptionalKeys, setShownOptionalKeys] = useState<Set<string>>(
+    new Set()
+  )
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
 
+  const totalActiveFilterCount =
+    filters.activeFilterCount + extraActiveFilterCount
+
   const handleSort = (key: string) => {
     const newDir = sortKey === key && sortDir === "asc" ? "desc" : "asc"
+
     setSortKey(key)
     setSortDir(newDir)
     pagination.resetPage()
-    if (serverPagination) onSortChange?.({ key, direction: newDir })
+
+    if (serverPagination) {
+      onSortChange?.({ key, direction: newDir })
+    }
   }
 
   const sortedData = (arr: T[]): T[] => {
     if (!sortKey || serverPagination) return arr
+
     const col = columns.find(c => c.key === sortKey)
     if (!col?.sortValue) return arr
+
     return [...arr].sort((a, b) => {
       const va = col.sortValue!(a) ?? ""
       const vb = col.sortValue!(b) ?? ""
+
       if (va < vb) return sortDir === "asc" ? -1 : 1
       if (va > vb) return sortDir === "asc" ? 1 : -1
+
       return 0
     })
   }
@@ -99,10 +135,10 @@ export function DataTable<T,>({
     ? { ...buildServerPageInfo(serverPagination, data.length), pageData: data }
     : pagination.paginate(sortedData(filters.filteredData))
 
-  const visibleColumns  = columns.filter(c => c.visible !== false)
-  
+  const visibleColumns = columns.filter(c => c.visible !== false)
+
   const mandatoryFilterCols = columns.filter(c => c.filter && !c.filterOptional)
-  const optionalFilterCols  = columns.filter(c => c.filter && c.filterOptional)
+  const optionalFilterCols = columns.filter(c => c.filter && c.filterOptional)
 
   const isActive = (key: string) => {
     const f = filters.activeFilters[key]
@@ -112,6 +148,7 @@ export function DataTable<T,>({
   const shownOptionalCols = optionalFilterCols.filter(
     c => shownOptionalKeys.has(c.key) || isActive(c.key)
   )
+
   const filterPillCols = [...mandatoryFilterCols, ...shownOptionalCols]
 
   const availableOptionalFilters = optionalFilterCols
@@ -122,6 +159,13 @@ export function DataTable<T,>({
     setShownOptionalKeys(prev => new Set([...prev, key]))
   }
 
+  const clearAllFilters = () => {
+    filters.clearAllFilters()
+    pagination.resetPage()
+    setShownOptionalKeys(new Set())
+    onClearExtraFilters?.()
+  }
+
   const handleTabChange = (tabId: string) => {
     onTabChange?.(tabId)
     filters.clearAllFilters()
@@ -130,16 +174,23 @@ export function DataTable<T,>({
     setShownOptionalKeys(new Set())
     setSortKey(null)
     setSortDir("asc")
+    onClearExtraFilters?.()
   }
 
-  const renderPill = (colKey: string, alignRight = false, isOptional = false): ReactNode => {
+  const renderPill = (
+    colKey: string,
+    alignRight = false,
+    isOptional = false
+  ): ReactNode => {
     const col = columns.find(c => c.key === colKey)
     if (!col?.filter) return null
+
     const def = col.filter
 
     if (def.type === "toggle") {
       const active = filters.activeFilters[colKey]
       const isOn = active?.type === "toggle" ? active.active : false
+
       return (
         <TogglePill
           key={colKey}
@@ -159,6 +210,7 @@ export function DataTable<T,>({
     const handleClear = () => {
       filters.clearFilter(colKey)
       pagination.resetPage()
+
       if (isOptional) {
         setShownOptionalKeys(prev => {
           const next = new Set(prev)
@@ -169,18 +221,23 @@ export function DataTable<T,>({
     }
 
     let content: ReactNode
+
     if (def.type === "select") {
       content = (
         <SelectDropdown
           options={(def as SelectFilterDef<T>).options}
           activeValue={active?.type === "select" ? active.value : ""}
-          onSelect={val => { filters.setFilter(colKey, { type: "select", value: val }); pagination.resetPage() }}
+          onSelect={val => {
+            filters.setFilter(colKey, { type: "select", value: val })
+            pagination.resetPage()
+          }}
           onClear={handleClear}
         />
       )
     } else if (def.type === "multi-select") {
       const msDef = def as MultiSelectFilterDef<T>
       const activeVals = active?.type === "multi-select" ? active.values : []
+
       content = (
         <MultiSelectDropdown
           options={msDef.options}
@@ -190,7 +247,27 @@ export function DataTable<T,>({
             const next = activeVals.includes(val)
               ? activeVals.filter(v => v !== val)
               : [...activeVals, val]
-            filters.setFilter(colKey, { type: "multi-select", values: next }, true)
+
+            filters.setFilter(
+              colKey,
+              { type: "multi-select", values: next },
+              true
+            )
+            pagination.resetPage()
+          }}
+          onClear={handleClear}
+        />
+      )
+    } else if (def.type === "date-range") {
+      content = (
+        <DateRangeDropdown
+          current={
+            active?.type === "date-range"
+              ? { from: active.from, to: active.to }
+              : null
+          }
+          onApply={(from, to) => {
+            filters.setFilter(colKey, { type: "date-range", from, to })
             pagination.resetPage()
           }}
           onClear={handleClear}
@@ -199,8 +276,15 @@ export function DataTable<T,>({
     } else {
       content = (
         <NumberRangeDropdown
-          current={active?.type === "number-range" ? { min: active.min, max: active.max } : null}
-          onApply={(min, max) => { filters.setFilter(colKey, { type: "number-range", min, max }); pagination.resetPage() }}
+          current={
+            active?.type === "number-range"
+              ? { min: active.min, max: active.max }
+              : null
+          }
+          onApply={(min, max) => {
+            filters.setFilter(colKey, { type: "number-range", min, max })
+            pagination.resetPage()
+          }}
           onClear={handleClear}
           minBound={(def as NumberRangeFilterDef<T>).minBound}
           maxBound={(def as NumberRangeFilterDef<T>).maxBound}
@@ -216,7 +300,10 @@ export function DataTable<T,>({
         activeValue={active_ ? formatActiveFilter(active!) : undefined}
         isOpen={filters.openFilter === colKey}
         onToggle={() => filters.toggleOpenFilter(colKey)}
-        onClear={e => { e.stopPropagation(); handleClear() }}
+        onClear={e => {
+          e.stopPropagation()
+          handleClear()
+        }}
         alignRight={alignRight}
       >
         {content}
@@ -224,12 +311,18 @@ export function DataTable<T,>({
     )
   }
 
-  const showFilterBar = filterPillCols.length > 0 || availableOptionalFilters.length > 0
+  const showFilterBar =
+    filterPillCols.length > 0 ||
+    availableOptionalFilters.length > 0 ||
+    !!filterBarExtra
 
   return (
     <>
       {filters.openFilter && (
-        <div className="fixed inset-0 z-40" onClick={() => filters.setOpenFilter(null)} />
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => filters.setOpenFilter(null)}
+        />
       )}
 
       <div className={cn("flex flex-col bg-white overflow-hidden flex-1 min-h-0")}>
@@ -243,20 +336,26 @@ export function DataTable<T,>({
             searchQuery={searchQuery}
             onSearchOpen={() => setSearchOpen(true)}
             onSearchChange={handleSearchChange}
-            onSearchClose={() => { setSearchOpen(false); handleSearchChange("") }}
+            onSearchClose={() => {
+              setSearchOpen(false)
+              handleSearchChange("")
+            }}
             searchPlaceholder={searchPlaceholder}
+            searchPrefix={searchPrefix}
           />
         )}
 
         {showFilterBar && (
           <DataTableFilterBar
-            activeFilterCount={filters.activeFilterCount}
-            onClearAll={() => { filters.clearAllFilters(); pagination.resetPage(); setShownOptionalKeys(new Set()) }}
+            activeFilterCount={totalActiveFilterCount}
+            onClearAll={clearAllFilters}
             availableOptionalFilters={availableOptionalFilters}
             onAddFilter={addOptionalFilter}
             extra={filterBarExtra}
           >
-            {filterPillCols.map(col => renderPill(col.key, false, col.filterOptional))}
+            {filterPillCols.map(col =>
+              renderPill(col.key, false, col.filterOptional)
+            )}
           </DataTableFilterBar>
         )}
 
@@ -278,17 +377,20 @@ export function DataTable<T,>({
           sortKey={sortKey}
           sortDir={sortDir}
           onSort={handleSort}
-        />
-
-        <DataTablePagination
-          {...pageInfo}
-          currentPage={safePage}
-          rowsPerPage={serverPagination?.pageSize ?? pagination.rowsPerPage}
-          rowsPerPageOptions={rowsPerPageOptions}
-          onPageChange={serverPagination?.onPageChange ?? pagination.setCurrentPage}
-          onRowsPerPageChange={serverPagination?.onPageSizeChange ?? pagination.changeRowsPerPage}
+          onRowClick={onRowClick}
         />
       </div>
+
+      <DataTablePagination
+        {...pageInfo}
+        currentPage={safePage}
+        rowsPerPage={serverPagination?.pageSize ?? pagination.rowsPerPage}
+        rowsPerPageOptions={rowsPerPageOptions}
+        onPageChange={serverPagination?.onPageChange ?? pagination.setCurrentPage}
+        onRowsPerPageChange={
+          serverPagination?.onPageSizeChange ?? pagination.changeRowsPerPage
+        }
+      />
     </>
   )
 }

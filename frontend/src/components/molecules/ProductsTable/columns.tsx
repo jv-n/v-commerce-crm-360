@@ -1,30 +1,32 @@
 import type { Column } from "@/components/organisms/DataTable/types"
+import { RowExpandButton } from "@/components/organisms/DataTable/atoms/RowExpandButton"
+import { CellText }        from "@/components/organisms/DataTable/atoms/CellText"
+import { CellTag }         from "@/components/organisms/DataTable/atoms/CellTag"
 import type { Product, ProductCategory } from "@/types/product"
-import { cn } from "@/lib/utils"
-import { CiCircleChevRight, CiCircleChevDown } from "react-icons/ci"
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward"
+import { cn } from "@/lib/utils"
 
 const ALL_CATEGORIES: ProductCategory[] = [
   "Automotivo", "Beleza", "Brinquedos", "Casa", "Eletronicos",
   "Esportes", "Indefinida", "Moveis", "Vestuario",
 ]
 
-const CATEGORY_STYLES: Record<ProductCategory, string> = {
+const CATEGORY_COLORS: Record<ProductCategory, string> = {
   "Automotivo":  "bg-slate-100 text-[#06121C]",
   "Beleza":      "bg-pink-100 text-[#06121C]",
-  "Brinquedos":  "bg-[#E2CBFF] text-[#06121C]",
-  "Casa":        "bg-[#FFE9CB] text-[#06121C]",
-  "Eletronicos": "bg-[#FFA58E] text-[#06121C]",
-  "Esportes":    "bg-[#FFCBFE] text-[#06121C]",
+  "Brinquedos":  "bg-violet-100 text-[#06121C]",
+  "Casa":        "bg-amber-100 text-[#06121C]",
+  "Eletronicos": "bg-blue-100 text-[#06121C]",
+  "Esportes":    "bg-green-100 text-[#06121C]",
   "Indefinida":  "bg-gray-100 text-[#06121C]",
-  "Moveis":      "bg-[#FFE9CB] text-[#06121C]",
+  "Moveis":      "bg-orange-100 text-[#06121C]",
   "Vestuario":   "bg-teal-100 text-[#06121C]",
 }
 
-function getRatingStyles(rating: number): { dot: string; badge: string; text: string } {
-  if (rating >= 7) return { dot: "bg-[#257719]",  badge: "bg-[#D2F9BE]",  text: "text-[#257719]" }
-  if (rating >= 5) return { dot: "bg-[#D8AE30]", badge: "bg-[#F9ED9B]", text: "text-[#CCA327]" }
-  return              { dot: "bg-[#EF5466]",    badge: "bg-[#FFEDEF]",    text: "text-[#D1293D]" }
+function getRatingStyles(rating: number): { dotClass: string; colorClasses: string } {
+  if (rating >= 7) return { dotClass: "bg-[#257719]", colorClasses: "bg-[#D2F9BE] text-[#257719]" }
+  if (rating >= 5) return { dotClass: "bg-[#D8AE30]", colorClasses: "bg-[#F9ED9B] text-[#CCA327]" }
+  return              { dotClass: "bg-[#EF5466]", colorClasses: "bg-[#FFEDEF] text-[#D1293D]" }
 }
 
 export function makeProductColumns(
@@ -32,6 +34,7 @@ export function makeProductColumns(
   onToggle: (id: string) => void,
   allIds: string[],
   onToggleAll: () => void,
+  onNavigate: (id: string) => void,
 ): Column<Product>[] {
   const allExpanded = allIds.length > 0 && allIds.every(id => expandedRowIds.has(id))
 
@@ -39,23 +42,13 @@ export function makeProductColumns(
     {
       key: "info",
       header: (
-        <button onClick={onToggleAll} className="flex items-center justify-center">
-          {allExpanded
-            ? <CiCircleChevDown size={18} color="#7C3AED" />
-            : <CiCircleChevRight size={18} color="#06121C" />
-          }
-        </button>
+        <RowExpandButton
+          expanded={allExpanded}
+          onClick={(e) => { e.stopPropagation(); onToggleAll() }}
+        />
       ),
       render: (p) => (
-        <button
-          onClick={(e) => { e.stopPropagation(); onToggle(p.id) }}
-          className="flex items-center justify-center"
-        >
-          {expandedRowIds.has(p.id)
-            ? <CiCircleChevDown size={18} color="#7C3AED" />
-            : <CiCircleChevRight size={18} color="#06121C" />
-          }
-        </button>
+        <RowExpandButton expanded={expandedRowIds.has(p.id)} />
       ),
     },
 
@@ -63,9 +56,7 @@ export function makeProductColumns(
       key: "id",
       header: "ID",
       minWidth: "130px",
-      render: (p) => (
-        <span className="text-xs font-medium text-[#06121C]">{p.id}</span>
-      ),
+      render: (p) => <CellText value={p.id} variant="primary" />,
     },
 
     {
@@ -73,9 +64,8 @@ export function makeProductColumns(
       header: "Nome",
       minWidth: "180px",
       sortable: true,
-      render: (p) => (
-        <span className="font-medium text-gray-900 truncate block max-w-[220px]">{p.name}</span>
-      ),
+      copyId: (p) => p.id,
+      render: (p) => <CellText value={p.name} truncate maxWidth="220px" />,
     },
 
     {
@@ -89,12 +79,7 @@ export function makeProductColumns(
         filterFn: (p, value) => p.category === (value as ProductCategory),
       },
       render: (p) => (
-        <span className={cn(
-          "inline-block text-xs font-medium px-3 py-1 rounded-[3.83px] whitespace-nowrap",
-          CATEGORY_STYLES[p.category]
-        )}>
-          {p.category}
-        </span>
+        <CellTag label={p.category} colorClasses={CATEGORY_COLORS[p.category]} />
       ),
     },
 
@@ -116,10 +101,8 @@ export function makeProductColumns(
       },
       render: (p) =>
         p.price != null
-          ? <span className="text-gray-800 font-medium text-sm">
-              {p.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })}
-            </span>
-          : <span className="text-gray-400 text-sm">R$ xx,xx</span>,
+          ? <CellText value={p.price.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })} variant="primary" />
+          : <CellText value="R$ —" variant="muted" />,
     },
 
     {
@@ -137,9 +120,7 @@ export function makeProductColumns(
           return true
         },
       },
-      render: (p) => (
-        <span className="text-gray-600 text-sm">{p.stock} produtos</span>
-      ),
+      render: (p) => <CellText value={`${p.stock} produtos`} variant="primary" />,
     },
 
     {
@@ -162,10 +143,11 @@ export function makeProductColumns(
       render: (p) => {
         const s = getRatingStyles(p.rating)
         return (
-          <span className={cn("inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-[3.83px] text-xs font-semibold", s.badge, s.text)}>
-            <span className={cn("w-2 h-2 rounded-full flex-shrink-0", s.dot)} />
-            {p.rating.toFixed(1)}
-          </span>
+          <CellTag
+            label={p.rating.toFixed(1)}
+            colorClasses={s.colorClasses}
+            dotClass={s.dotClass}
+          />
         )
       },
     },
@@ -184,17 +166,21 @@ export function makeProductColumns(
           return true
         },
       },
-      render: (p) => (
-        <span className="text-gray-800 font-medium">{p.totalSales}</span>
-      ),
+      render: (p) => <CellText value={p.totalSales} variant="primary" />,
     },
 
     {
       key: "actions",
       header: "",
-      render: () => (
-        <button className="flex items-center justify-center w-8 h-8 rounded-lg border border-[#D1B1E5] bg-[#F7EBFF] text-black hover:bg-purple-100 transition-colors">
-          <ArrowForwardIcon sx={{ fontSize: 16 }} />
+      render: (p) => (
+        <button
+          onClick={(e) => { e.stopPropagation(); onNavigate(p.id) }}
+          className={cn(
+            "flex items-center justify-center w-8 h-8 rounded-lg",
+            "border border-[#D1B1E5] bg-[#F7EBFF] hover:bg-purple-100 transition-colors"
+          )}
+        >
+          <ArrowForwardIcon sx={{ fontSize: 16, color: "#06121C" }} />
         </button>
       ),
     },

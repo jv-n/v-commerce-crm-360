@@ -8,7 +8,7 @@ import { useState } from "react"
 import SearchInput from "../SearchInput";
 import Dropdown from "../Dropdown";
 import { Separator } from "@/components/atoms/separator";
-import { useAuth } from "@/contexts/AuthContext";
+import { useAuth } from "@/contexts/auth/useAuth";
 import { useNavigate } from "react-router-dom";
 
 interface AppNavbarProps {

@@ -1,9 +1,11 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { cn } from "@/lib/utils"
+
 import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft"
 import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight"
 import KeyboardDoubleArrowLeftIcon from "@mui/icons-material/KeyboardDoubleArrowLeft"
 import KeyboardDoubleArrowRightIcon from "@mui/icons-material/KeyboardDoubleArrowRight"
+import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md"
 
 const WINDOW_SIZE = 10
 
@@ -32,47 +34,72 @@ export function DataTablePagination({
 }: DataTablePaginationProps) {
   const totalPages = pageNumbers.length
   const totalWindows = Math.ceil(totalPages / WINDOW_SIZE)
-
-  const [pageWindow, setPageWindow] = useState(() => Math.floor((currentPage - 1) / WINDOW_SIZE))
+  const pageWindow = Math.floor((currentPage - 1) / WINDOW_SIZE)
+  const [rppOpen, setRppOpen] = useState(false)
+  const rppRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
-    setPageWindow(Math.floor((currentPage - 1) / WINDOW_SIZE))
-  }, [currentPage])
+    if (!rppOpen) return
+    const handler = (e: MouseEvent) => {
+      if (rppRef.current && !rppRef.current.contains(e.target as Node)) setRppOpen(false)
+    }
+    document.addEventListener("mousedown", handler)
+    return () => document.removeEventListener("mousedown", handler)
+  }, [rppOpen])
 
   const visiblePages = pageNumbers.slice(pageWindow * WINDOW_SIZE, (pageWindow + 1) * WINDOW_SIZE)
 
   return (
     <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200">
-      <div className="flex items-center gap-2 text-sm text-gray-600">
+      <div className="flex items-center gap-3 text-sm text-gray-900">
         <span>Linhas por página</span>
-        <select
-          value={rowsPerPage}
-          onChange={e => onRowsPerPageChange(Number(e.target.value))}
-          className="border border-[#D1B1E5] rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-1 focus:ring-gray-300 bg-[#F7EBFF]"
-        >
-          {rowsPerPageOptions.map(n => (
-            <option key={n} value={n}>{n}</option>
-          ))}
-        </select>
+        <div className="relative" ref={rppRef}>
+          <button
+            onClick={() => setRppOpen(o => !o)}
+            className="flex items-center gap-1.5 border border-[#D1B1E5] rounded-md px-2.5 py-1 text-sm bg-[#F7EBFF] hover:bg-[#EACAFF] transition-colors min-w-[56px] justify-between"
+          >
+            <span>{rowsPerPage}</span>
+            {rppOpen ? <MdKeyboardArrowUp size={14} /> : <MdKeyboardArrowDown size={14} />}
+          </button>
+          {rppOpen && (
+            <div className="absolute left-full ml-2 top-0 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-50 min-w-[80px]">
+              {rowsPerPageOptions.map(n => (
+                <button
+                  key={n}
+                  onClick={() => { onRowsPerPageChange(n); setRppOpen(false) }}
+                  className={cn(
+                    "w-full text-left px-3 py-2 text-sm transition-colors",
+                    n === rowsPerPage
+                      ? "bg-white border-y border-black text-gray-900 font-medium"
+                      : "text-gray-900 hover:bg-[#EACAFF]"
+                  )}
+                >
+                  {n}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="flex items-center gap-0.5">
-        <button
-          onClick={() => onPageChange(currentPage - 1)}
-          disabled={currentPage === 1}
-          className="p-1.5 rounded hover:bg-gray-100 transition-colors text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <KeyboardArrowLeftIcon sx={{ fontSize: 18 }} />
-        </button>
-
+        
         {totalWindows > 1 && pageWindow > 0 && (
           <button
-            onClick={() => setPageWindow(w => w - 1)}
-            className="p-1.5 rounded hover:bg-gray-100 transition-colors text-gray-600"
+            onClick={() => onPageChange((pageWindow - 1) * WINDOW_SIZE + 1)}
+            className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600"
           >
             <KeyboardDoubleArrowLeftIcon sx={{ fontSize: 18 }} />
           </button>
         )}
+
+        <button
+          onClick={() => onPageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+          className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <KeyboardArrowLeftIcon sx={{ fontSize: 18 }} />
+        </button>
 
         {visiblePages.map(page => (
           <button
@@ -82,32 +109,32 @@ export function DataTablePagination({
               "w-8 h-8 text-sm rounded transition-colors",
               currentPage === page
                 ? "bg-[#F7EBFF] border border-[#D1B1E5] text-gray-600"
-                : "text-gray-600 hover:bg-gray-100"
+                : "text-gray-600 hover:bg-[#EACAFF]"
             )}
           >
             {page}
           </button>
         ))}
 
+        <button
+          onClick={() => onPageChange(currentPage + 1)}
+          disabled={currentPage === totalPages}
+          className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+        >
+          <KeyboardArrowRightIcon sx={{ fontSize: 18 }} />
+        </button>
+        
         {totalWindows > 1 && pageWindow < totalWindows - 1 && (
           <button
-            onClick={() => setPageWindow(w => w + 1)}
-            className="p-1.5 rounded hover:bg-gray-100 transition-colors text-gray-600"
+            onClick={() => onPageChange((pageWindow + 1) * WINDOW_SIZE + 1)}
+            className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600"
           >
             <KeyboardDoubleArrowRightIcon sx={{ fontSize: 18 }} />
           </button>
         )}
-
-        <button
-          onClick={() => onPageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
-          className="p-1.5 rounded hover:bg-gray-100 transition-colors text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
-        >
-          <KeyboardArrowRightIcon sx={{ fontSize: 18 }} />
-        </button>
       </div>
 
-      <span className="text-sm text-gray-500">
+      <span className="text-sm font-medium text-gray-900">
         {startItem}–{endItem} of {totalItems}
       </span>
     </div>

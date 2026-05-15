@@ -1,21 +1,37 @@
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
-from app.schemas.contactSchemas import ContactsPageOut, ContactOut, ContactCreate, ContactUpdate
+from app.schemas.contactSchemas import ContactsPageOut, ContactOut, ContactCreate, ContactUpdate, ContactResumoOut
 from app.services.contactService import ContactService
 from database.database import get_db
 
 router = APIRouter(prefix="/contacts", tags=["contacts"])
 
 
+@router.get("/{contact_id}/resumo", response_model=ContactResumoOut)
+def get_contact_resumo(contact_id: str, db: Session = Depends(get_db)):
+    result = ContactService(db).get_contact_resumo(contact_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return result
+
+
+@router.get("/{contact_id}", response_model=ContactOut)
+def get_contact_by_id(contact_id: str, db: Session = Depends(get_db)):
+    result = ContactService(db).get_contact_by_id(contact_id)
+    if not result:
+        raise HTTPException(status_code=404, detail="Contact not found")
+    return result
+
+
 @router.post("/", response_model=ContactOut, status_code=201)
 def create_contact(body: ContactCreate, db: Session = Depends(get_db)):
-    return ContactService.create_contact(db, body)
+    return ContactService(db).create_contact(body)
 
 
 @router.put("/{contact_id}", response_model=ContactOut)
 def update_contact(contact_id: str, body: ContactUpdate, db: Session = Depends(get_db)):
-    result = ContactService.update_contact(db, contact_id, body)
+    result = ContactService(db).update_contact(contact_id, body)
     if not result:
         raise HTTPException(status_code=404, detail="Contact not found")
     return result
@@ -24,7 +40,7 @@ def update_contact(contact_id: str, body: ContactUpdate, db: Session = Depends(g
 @router.get("/", response_model=ContactsPageOut)
 def get_contacts(
     page: int = Query(1, ge=1),
-    pageSize: int = Query(20, ge=1, le=100),
+    pageSize: int = Query(20, ge=1, le=500000),
     tab: str = Query("all"),
     search: str = Query(""),
     purchases_min: int | None = Query(None, ge=0),
@@ -56,8 +72,7 @@ def get_contacts(
     nota_prod_max: float | None = Query(None),
     db: Session = Depends(get_db),
 ):
-    return ContactService.get_contacts(
-        db,
+    return ContactService(db).get_contacts(
         page=page,
         page_size=pageSize,
         tab=tab,
