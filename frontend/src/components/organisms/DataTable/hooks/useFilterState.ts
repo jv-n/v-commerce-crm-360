@@ -2,10 +2,16 @@ import { useState, useMemo } from "react"
 import type { Column, ActiveFilters, ActiveFilter } from "../types"
 
 export function isFilterActive(f: ActiveFilter): boolean {
-  if (f.type === "select") return f.value !== ""
-  if (f.type === "toggle") return f.active
+  if (f.type === "select")       return f.value !== ""
+  if (f.type === "toggle")       return f.active
   if (f.type === "multi-select") return f.values.length > 0
-  return f.min != null || f.max != null
+  if (f.type === "date-range")   return f.from != null || f.to != null
+  return f.min != null || f.max != null  // number-range
+}
+
+function fmtDate(iso: string): string {
+  const [y, m, d] = iso.split("-")
+  return `${d}/${m}/${y}`
 }
 
 export function formatActiveFilter(f: ActiveFilter): string {
@@ -16,7 +22,13 @@ export function formatActiveFilter(f: ActiveFilter): string {
     if (f.values.length <= 2) return f.values.join(", ")
     return `${f.values.length} selecionados`
   }
-  const { min, max } = f
+  if (f.type === "date-range") {
+    if (f.from && f.to) return `${fmtDate(f.from)} – ${fmtDate(f.to)}`
+    if (f.from) return `a partir de ${fmtDate(f.from)}`
+    if (f.to)   return `até ${fmtDate(f.to)}`
+    return ""
+  }
+  const { min, max } = f  // number-range
   if (min != null && max != null) return `${min} – ${max}`
   if (min != null) return `≥ ${min}`
   if (max != null) return `≤ ${max}`
@@ -76,6 +88,8 @@ export function useFilterState<T>(columns: Column<T>[], data: T[], onChange?: (f
           return def.filterFn(row)
         if (def.type === "multi-select" && active.type === "multi-select")
           return !def.filterFn || def.filterFn(row, active.values)
+        if (def.type === "date-range" && active.type === "date-range")
+          return def.filterFn(row, active.from, active.to)
         return true
       })
     )

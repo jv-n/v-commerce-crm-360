@@ -31,20 +31,56 @@ export interface MultiSelectFilterDef<T> {
   label: string
   options: string[]
   renderOption?: (value: string) => ReactNode
-  /** Omit when filtering is handled server-side */
   filterFn?: (row: T, values: string[]) => boolean
 }
 
-export type FilterDef<T> = SelectFilterDef<T> | NumberRangeFilterDef<T> | ToggleFilterDef<T> | MultiSelectFilterDef<T>
+export interface DateRangeFilterDef<T> {
+  type: "date-range"
+  label: string
+  filterFn: (row: T, from: string | null, to: string | null) => boolean
+}
+
+export type FilterDef<T> =
+  | SelectFilterDef<T>
+  | NumberRangeFilterDef<T>
+  | ToggleFilterDef<T>
+  | MultiSelectFilterDef<T>
+  | DateRangeFilterDef<T>
 
 // ─── Active filter state ──────────────────────────────────────────────────────
 
-export type SelectActiveFilter      = { type: "select"; value: string }
-export type NumberRangeActiveFilter = { type: "number-range"; min: number | null; max: number | null }
-export type ToggleActiveFilter      = { type: "toggle"; active: boolean }
-export type MultiSelectActiveFilter = { type: "multi-select"; values: string[] }
-export type ActiveFilter            = SelectActiveFilter | NumberRangeActiveFilter | ToggleActiveFilter | MultiSelectActiveFilter
-export type ActiveFilters           = Record<string, ActiveFilter>
+export type SelectActiveFilter = { type: "select"; value: string }
+
+export type NumberRangeActiveFilter = {
+  type: "number-range"
+  min: number | null
+  max: number | null
+}
+
+export type ToggleActiveFilter = {
+  type: "toggle"
+  active: boolean
+}
+
+export type MultiSelectActiveFilter = {
+  type: "multi-select"
+  values: string[]
+}
+
+export type DateRangeActiveFilter = {
+  type: "date-range"
+  from: string | null
+  to:   string | null
+}
+
+export type ActiveFilter =
+  | SelectActiveFilter
+  | NumberRangeActiveFilter
+  | ToggleActiveFilter
+  | MultiSelectActiveFilter
+  | DateRangeActiveFilter
+
+export type ActiveFilters = Record<string, ActiveFilter>
 
 // ─── Column & Table props ─────────────────────────────────────────────────────
 
@@ -52,16 +88,14 @@ export interface Column<T> {
   key: string
   header: ReactNode
   minWidth?: string
-  /** Set false to hide from table while keeping filter available */
   visible?: boolean
-  /** If true, filter is hidden by default and only shown when user adds it via "+" */
   filterOptional?: boolean
-  /** Enables sort button on header; used for client-side sort */
   sortable?: boolean
-  /** Value extractor for client-side sorting */
   sortValue?: (row: T) => string | number | null | undefined
   render: (row: T) => ReactNode
   filter?: FilterDef<T>
+  /** When provided, shows a copy-to-clipboard icon next to the cell content with this ID value */
+  copyId?: (row: T) => string
 }
 
 export interface Tab {
@@ -89,13 +123,12 @@ export interface DataTableProps<T> {
   rightFilterKey?: string
   rowsPerPageOptions?: number[]
   defaultRowsPerPage?: number
-  /** When provided, disables internal pagination and uses these server-driven values */
   serverPagination?: ServerPagination
-  /** Called whenever a column filter changes */
   onFiltersChange?: (filters: ActiveFilters) => void
-  /** Called whenever the search query changes */
   onSearchChange?: (query: string) => void
   onSortChange?: (sort: { key: string; direction: "asc" | "desc" } | null) => void
+  /** Quando fornecido, clicar em qualquer ponto da linha chama este callback (ex: toggle expand) */
+  onRowClick?: (row: T) => void
   noBorder?: boolean
   headerClassName?: string
   rowClassName?: string
@@ -104,7 +137,23 @@ export interface DataTableProps<T> {
   expandedRowIds?: Set<string>
   renderExpandedRow?: (row: T) => React.ReactNode
   filterBarExtra?: React.ReactNode
+  searchPrefix?: React.ReactNode
   tabsRightSlot?: React.ReactNode
   searchFn?: (row: T, query: string) => boolean
   searchPlaceholder?: string
+
+  /**
+   * Quantidade de filtros externos ativos.
+   * Exemplo: filtros criados via filterBarExtra, como data inicial/final.
+   */
+  extraActiveFilterCount?: number
+
+  /**
+   * Função chamada junto com "Limpar todos".
+   * Serve para limpar filtros externos criados fora da DataTable.
+   */
+  onClearExtraFilters?: () => void
+
+  /** Disparado sempre que o conjunto de linhas selecionadas muda. */
+  onSelectionChange?: (ids: Set<string>) => void
 }

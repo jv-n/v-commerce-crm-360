@@ -140,6 +140,7 @@ export default function Chat() {
     routeState.sessionStartedAt ? new Date(routeState.sessionStartedAt) : new Date()
   );
   const [messages, setMessages] = useState<ChatMessage[]>(() => routeState.messages ?? []);
+  const [lastMessageAt, setLastMessageAt] = useState<Date | null>(() => routeState.messages?.length ? new Date() : null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -202,11 +203,13 @@ export default function Chat() {
     setViewing(null);
     const displayText = trimmed.replace(/\n\n\[Menções:.*\]$/s, "").trim();
     setMessages((prev) => [...prev, { role: "user", content: displayText }]);
+    setLastMessageAt(new Date());
     mentionInputRef.current?.clear();
     setIsLoading(true);
     try {
       const res = await sendMessage(trimmed, sessionId);
       setMessages((prev) => [...prev, { role: "assistant", content: res.answer, sources: res.sources, queries: res.queries }]);
+      setLastMessageAt(new Date());
     } catch (err) {
       setMessages((prev) => [...prev, { role: "assistant", content: err instanceof Error ? `⚠️ ${err.message}` : "⚠️ Erro inesperado. Tente novamente." }]);
     } finally {
@@ -226,6 +229,7 @@ export default function Chat() {
     }
     setSessionId(crypto.randomUUID());
     setMessages([]);
+    setLastMessageAt(null);
     mentionInputRef.current?.clear();
     setViewing(null);
     await loadHistory();
@@ -270,9 +274,27 @@ export default function Chat() {
     } finally { setIsLoading(false); }
   };
 
-  const filteredHistory = history.filter((c) =>
-    c.title.toLowerCase().includes(historySearch.toLowerCase())
-  );
+  // Formata data/hora: só hora se hoje, DD/MM + hora se outro dia
+  const fmtTime = (d: Date | string | null) => {
+    if (!d) return null;
+    const date = typeof d === "string" ? new Date(d) : d;
+    const now = new Date();
+    const isToday = date.toDateString() === now.toDateString();
+    return isToday
+      ? date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+      : date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
+  };
+
+  // Conversa ativa como item sintético (id=-1) para exibir no topo do histórico
+  const activeConvTitle = messages.find((m) => m.role === "user")?.content.slice(0, 60) ?? "Conversa em andamento";
+  const activeConvSummary: ConversationSummary | null = messages.length > 0
+    ? { id: -1, session_id: sessionId, title: activeConvTitle, message_count: messages.length, started_at: sessionStartedAt.toISOString(), ended_at: "" }
+    : null;
+
+  const filteredHistory = [
+    ...(activeConvSummary && activeConvTitle.toLowerCase().includes(historySearch.toLowerCase()) ? [activeConvSummary] : []),
+    ...history.filter((c) => c.title.toLowerCase().includes(historySearch.toLowerCase())),
+  ];
 
   const showSuggestions = !viewing && messages.length === 0;
 
@@ -310,26 +332,41 @@ export default function Chat() {
               </p>
             </div>
           ) : (
-            filteredHistory.map((conv) => (
-              <button
-                key={conv.id}
-                onClick={() => openConversation(conv)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg transition-all duration-150 group relative ${
-                  viewing?.id === conv.id
-                    ? "bg-purple-50 text-purple-700"
-                    : "hover:bg-gray-50 text-gray-700"
-                }`}
-              >
-                <p className="text-sm leading-snug line-clamp-1 pr-5">{conv.title}</p>
+            filteredHistory.map((conv) => {
+              const isActive = conv.id === -1;
+              const isViewing = !isActive && viewing?.id === conv.id;
+              const isCurrent = isActive && !viewing;
+              return (
                 <button
-                  onClick={(e) => handleDeleteConversation(e, conv.id)}
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
-                  title="Remover"
+                  key={conv.id}
+                  onClick={() => isActive ? setViewing(null) : openConversation(conv)}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg transition-all duration-150 group relative ${
+                    isCurrent || isViewing
+                      ? "bg-purple-50 text-purple-700"
+                      : "hover:bg-gray-50 text-gray-700"
+                  }`}
                 >
-                  <DeleteOutlineOutlinedIcon sx={{ fontSize: 13 }} />
+                  <div className="flex items-center gap-1.5">
+                    {isActive && (
+                      <span className="shrink-0 w-1.5 h-1.5 rounded-full bg-purple-500" />
+                    )}
+                    <p className="text-sm leading-snug line-clamp-1 pr-5">{conv.title}</p>
+                  </div>
+                  <p className="text-xs text-gray-400 mt-0.5 pl-0.5">
+                    {isActive ? fmtTime(lastMessageAt) : fmtTime(conv.ended_at)}
+                  </p>
+                  {!isActive && (
+                    <button
+                      onClick={(e) => handleDeleteConversation(e, conv.id)}
+                      className="absolute right-2 top-1/2 -translate-y-1/2 w-5 h-5 flex items-center justify-center rounded text-gray-300 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all"
+                      title="Remover"
+                    >
+                      <DeleteOutlineOutlinedIcon sx={{ fontSize: 13 }} />
+                    </button>
+                  )}
                 </button>
-              </button>
-            ))
+              );
+            })
           )}
         </div>
       </div>

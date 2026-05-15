@@ -10,8 +10,9 @@ class Settings(BaseSettings):
 
     GEMINI_API_KEY: str = ""
 
-    # Google AI Studio — obtenha em https://aistudio.google.com/app/apikey
-    GEMINI_API_KEY: str = ""
+    SECRET_KEY: str = "mude-me" #mudar em prod
+
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 8
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 

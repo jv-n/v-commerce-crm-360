@@ -3,8 +3,8 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import userRouter, contactRouter, agentRouter, productRouter, saleRouter
-from app.routes import conversationRouter, mentionRouter, reviewRouter
+from app.routes import userRouter, contactRouter, agentRouter, productRouter, saleRouter, ticketRouter
+from app.routes import conversationRouter, mentionRouter, reviewRouter, authRouter
 
 # Injeta a GEMINI_API_KEY no ambiente para o PydanticAI/Google SDK
 # (lida do .env via pydantic-settings no config.py)
@@ -15,6 +15,7 @@ if settings.GEMINI_API_KEY:
 # Garante que a tabela de conversas existe no banco (cria se necessário)
 from database.database import engine
 from app.models.conversationModel import Conversation  # noqa: F401 — importar registra o model no metadata
+from app.models.productModel import ProductActivity    # noqa: F401 — registra ft_product_activities no metadata
 from database.database import Base
 Base.metadata.create_all(bind=engine, checkfirst=True)
 
@@ -44,6 +45,8 @@ app.include_router(productRouter.router)
 app.include_router(conversationRouter.router)
 app.include_router(mentionRouter.router)
 app.include_router(reviewRouter.router)
+app.include_router(authRouter.router)
+app.include_router(ticketRouter.router)
 
 @app.get("/", tags=["Health"])
 async def health_check():

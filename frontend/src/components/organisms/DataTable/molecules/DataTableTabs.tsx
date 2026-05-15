@@ -18,6 +18,7 @@ interface DataTableTabsProps {
   onSearchChange: (q: string) => void
   onSearchClose: () => void
   searchPlaceholder?: string
+  searchPrefix?: ReactNode
 }
 
 export function DataTableTabs({
@@ -31,6 +32,7 @@ export function DataTableTabs({
   onSearchChange,
   onSearchClose,
   searchPlaceholder = "Pesquisar...",
+  searchPrefix,
 }: DataTableTabsProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -49,7 +51,7 @@ export function DataTableTabs({
             onClick={() => onTabChange(tab.id)}
           />
         ))}
-        <button className="p-2 ml-1 text-gray-400 hover:text-gray-600 rounded hover:bg-[#F7EBFF]">
+        <button className="p-2 ml-1 text-black hover:text-gray-600 rounded hover:bg-[#F7EBFF]">
           <AddIcon sx={{ fontSize: 16 }} />
         </button>
       </div>
@@ -60,6 +62,7 @@ export function DataTableTabs({
         {searchOpen ? (
           <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-md px-2 py-1">
             <SearchOutlinedIcon sx={{ fontSize: 16, color: "#9CA3AF" }} />
+            {searchPrefix}
             <input
               ref={inputRef}
               type="text"
@@ -78,7 +81,7 @@ export function DataTableTabs({
         ) : (
           <button
             onClick={onSearchOpen}
-            className="p-1.5 text-gray-500 hover:text-gray-700 hover:bg-[#F7EBFF] rounded"
+            className="p-1.5 text-black hover:text-gray-700 hover:bg-[#F7EBFF] rounded"
           >
             <SearchOutlinedIcon sx={{ fontSize: 18 }} />
           </button>

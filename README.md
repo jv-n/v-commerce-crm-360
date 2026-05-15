@@ -23,6 +23,14 @@ v-commerce-crm-360/
 └── README.md
 ```
 
+## Documentação
+
+- [Documentação Frontend](./docs/frontend_doc/)
+- [Documentação Backend](./docs/backend_doc/)
+- [Documentação Data Engineering](./docs/data-engineering_doc/)
+- [Documentação Agente de IA](./docs/ai-agent_doc/)
+- [Decisões Arquiteturais](./docs/decisions-doc.md)
+
 ---
 
 ## 2. Exportar os CSVs para o repositório local

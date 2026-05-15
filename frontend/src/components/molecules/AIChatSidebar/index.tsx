@@ -31,6 +31,21 @@ interface AIChatSidebarProps {
   open: boolean;
   onClose: () => void;
   userName?: string;
+  pendingMention?: MentionItem | null;
+  onMentionInserted?: () => void;
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function fmtTime(d: Date | string | null | undefined): string | null {
+  if (!d) return null;
+  const date = typeof d === "string" ? new Date(d) : d;
+  if (isNaN(date.getTime())) return null;
+  const now = new Date();
+  const isToday = date.toDateString() === now.toDateString();
+  return isToday
+    ? date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })
+    : date.toLocaleDateString("pt-BR", { day: "2-digit", month: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 // ── Componente ───────────────────────────────────────────────────────────────
@@ -39,6 +54,8 @@ export default function AIChatSidebar({
   open,
   onClose,
   userName = "você",
+  pendingMention,
+  onMentionInserted,
 }: AIChatSidebarProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -46,6 +63,7 @@ export default function AIChatSidebar({
   const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
   const [sessionStartedAt] = useState<Date>(() => new Date());
   const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [lastMessageAt, setLastMessageAt] = useState<Date | null>(null);
   const [suggestions, setSuggestions] = useState<string[]>([]);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -59,6 +77,17 @@ export default function AIChatSidebar({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mentionInputRef = useRef<MentionInputHandle>(null);
+
+  // Insere chip quando o painel abre com uma menção pendente
+  useEffect(() => {
+    if (!open || !pendingMention) return;
+    const t = setTimeout(() => {
+      mentionInputRef.current?.insertChip(pendingMention);
+      mentionInputRef.current?.focus();
+      onMentionInserted?.();
+    }, 60);
+    return () => clearTimeout(t);
+  }, [open, pendingMention]);
 
   // ── Carregar histórico do backend ─────────────────────────────────────────
 
@@ -110,6 +139,7 @@ export default function AIChatSidebar({
     const displayText = trimmed.replace(/\n\n\[Menções:.*\]$/s, "").trim();
     const userMsg: ChatMessage = { role: "user", content: displayText };
     setMessages((prev) => [...prev, userMsg]);
+    setLastMessageAt(new Date());
     mentionInputRef.current?.clear();
     setIsLoading(true);
 
@@ -122,6 +152,7 @@ export default function AIChatSidebar({
         queries: res.queries,
       };
       setMessages((prev) => [...prev, assistantMsg]);
+      setLastMessageAt(new Date());
     } catch (err) {
       setMessages((prev) => [
         ...prev,
@@ -165,6 +196,7 @@ export default function AIChatSidebar({
 
     setSessionId(crypto.randomUUID());
     setMessages([]);
+    setLastMessageAt(null);
     mentionInputRef.current?.clear();
     setShowHistory(false);
     setViewing(null);
@@ -281,9 +313,16 @@ export default function AIChatSidebar({
 
   // ── Derivados ─────────────────────────────────────────────────────────────
 
-  const filteredHistory = history.filter((c) =>
-    c.title.toLowerCase().includes(historySearch.toLowerCase())
-  );
+  // Conversa ativa como item sintético (id=-1) para exibir no topo do histórico
+  const activeConvTitle = messages.find((m) => m.role === "user")?.content.slice(0, 60) ?? "Conversa em andamento";
+  const activeConvSummary: ConversationSummary | null = messages.length > 0
+    ? { id: -1, session_id: sessionId, title: activeConvTitle, message_count: messages.length, started_at: sessionStartedAt.toISOString(), ended_at: "" }
+    : null;
+
+  const filteredHistory = [
+    ...(activeConvSummary && activeConvTitle.toLowerCase().includes(historySearch.toLowerCase()) ? [activeConvSummary] : []),
+    ...history.filter((c) => c.title.toLowerCase().includes(historySearch.toLowerCase())),
+  ];
 
   const showSuggestions =
     !showHistory && !viewing && messages.length === 0 && suggestions.length > 0 && (mentionInputRef.current?.isEmpty() ?? true);
@@ -388,34 +427,42 @@ export default function AIChatSidebar({
                 )}
               </div>
             ) : (
-              filteredHistory.map((conv) => (
-                <button
-                  key={conv.id}
-                  onClick={() => openConversation(conv)}
-                  className="w-full text-left px-4 py-3 rounded-xl border border-gray-100 hover:border-purple-200 hover:bg-purple-50 transition-all duration-150 group relative"
-                >
-                  <p className="text-sm text-gray-700 font-medium group-hover:text-purple-700 line-clamp-2 leading-snug pr-6">
-                    {conv.title}
-                  </p>
-                  <p className="text-xs text-gray-400 mt-1">
-                    {conv.message_count} mensagens ·{" "}
-                    {new Date(conv.ended_at).toLocaleDateString("pt-BR", {
-                      day: "2-digit",
-                      month: "short",
-                      hour: "2-digit",
-                      minute: "2-digit",
-                    })}
-                  </p>
-                  {/* Botão deletar */}
+              filteredHistory.map((conv) => {
+                const isActive = conv.id === -1;
+                return (
                   <button
-                    onClick={(e) => handleDeleteConversation(e, conv.id)}
-                    className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded text-gray-300 hover:text-red-400 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
-                    title="Remover conversa"
+                    key={conv.id}
+                    onClick={() => isActive ? (setViewing(null), setShowHistory(false)) : openConversation(conv)}
+                    className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-150 group relative ${
+                      isActive
+                        ? "border-purple-200 bg-purple-50"
+                        : "border-gray-100 hover:border-purple-200 hover:bg-purple-50"
+                    }`}
                   >
-                    <DeleteOutlineOutlinedIcon sx={{ fontSize: 14 }} />
+                    <div className="flex items-center gap-2 pr-6">
+                      {isActive && <span className="shrink-0 w-2 h-2 rounded-full bg-purple-500" />}
+                      <p className={`text-sm font-medium line-clamp-2 leading-snug ${isActive ? "text-purple-700" : "text-gray-700 group-hover:text-purple-700"}`}>
+                        {conv.title}
+                      </p>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">
+                      {conv.message_count} mensagens
+                      {isActive
+                        ? fmtTime(lastMessageAt) && ` · ${fmtTime(lastMessageAt)}`
+                        : fmtTime(conv.ended_at) && ` · ${fmtTime(conv.ended_at)}`}
+                    </p>
+                    {!isActive && (
+                      <button
+                        onClick={(e) => handleDeleteConversation(e, conv.id)}
+                        className="absolute top-3 right-3 w-6 h-6 flex items-center justify-center rounded text-gray-300 hover:text-red-400 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-all"
+                        title="Remover conversa"
+                      >
+                        <DeleteOutlineOutlinedIcon sx={{ fontSize: 14 }} />
+                      </button>
+                    )}
                   </button>
-                </button>
-              ))
+                );
+              })
             )}
           </div>
 

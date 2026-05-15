@@ -14,6 +14,10 @@ interface SalesParams {
   status?: string
   metodo_pagamento?: string
   categoria?: string
+  data_from?: string
+  data_to?: string
+  search?: string
+  search_field?: string
 }
 
 interface RawSale {
@@ -56,6 +60,55 @@ function toSale(raw: RawSale): Sale {
   }
 }
 
+export interface SaleFormData {
+  id_cliente?:      string
+  id_produto?:      string
+  nome_cliente:     string
+  nome_produto:     string
+  categoria:        string
+  quantidade:       number
+  valor_pedido:     number
+  metodo_pagamento: string
+  status:           string
+  data_pedido:      string
+}
+
+export interface SaleUpdateData {
+  nome_cliente?:     string
+  nome_produto?:     string
+  categoria?:        string
+  quantidade?:       number
+  valor_pedido?:     number
+  metodo_pagamento?: string
+  status?:           string
+  data_pedido?:      string
+}
+
+export async function updateSale(id: string, data: SaleUpdateData): Promise<void> {
+  const res = await fetch(`/api/sales/${id}`, {
+    method:  "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify(data),
+  })
+  if (!res.ok) throw new Error(`Erro ao atualizar pedido: ${res.status}`)
+}
+
+export async function createSale(data: SaleFormData): Promise<void> {
+  const [y, m] = data.data_pedido.split("-")
+  const body = {
+    id_pedido:     crypto.randomUUID(),
+    ano_mes:       `${y}-${m}`,
+    receita_bruta: data.valor_pedido,
+    ...data,
+  }
+  const res = await fetch("/api/sales/", {
+    method:  "POST",
+    headers: { "Content-Type": "application/json" },
+    body:    JSON.stringify(body),
+  })
+  if (!res.ok) throw new Error(`Erro ao criar pedido: ${res.status}`)
+}
+
 export async function fetchSales(params: SalesParams): Promise<SalesPage> {
   const query = new URLSearchParams({
     page:     String(params.page),
@@ -64,6 +117,10 @@ export async function fetchSales(params: SalesParams): Promise<SalesPage> {
     ...(params.status           ? { status:           params.status           } : {}),
     ...(params.metodo_pagamento ? { metodo_pagamento: params.metodo_pagamento } : {}),
     ...(params.categoria        ? { categoria:        params.categoria        } : {}),
+    ...(params.data_from        ? { data_from:        params.data_from        } : {}),
+    ...(params.data_to          ? { data_to:          params.data_to          } : {}),
+    ...(params.search           ? { search:           params.search           } : {}),
+    ...(params.search_field && params.search_field !== "all" ? { search_field: params.search_field } : {}),
   })
 
   const res = await fetch(`/api/sales/?${query}`)
