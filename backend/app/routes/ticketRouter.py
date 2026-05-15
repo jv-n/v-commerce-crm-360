@@ -18,7 +18,7 @@ router = APIRouter(prefix="/tickets", tags=["tickets"])
 @router.get("/", response_model=TicketsPageOut)
 def get_tickets(
     page: int = Query(1, ge=1),
-    pageSize: int = Query(20, ge=1, le=100),
+    pageSize: int = Query(20, ge=1, le=100000),
     search: str = Query(""),
     responsible: Annotated[list[str] | None, Query()] = None,
     problem: Annotated[list[str] | None, Query()] = None,

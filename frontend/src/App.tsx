@@ -11,6 +11,7 @@ import Sales from './Pages/Sales'
 import Products from './Pages/Products'
 import ProductDetail from './Pages/Products/ProductDetail'
 import Chat from './Pages/Chat'
+import Dashboard from './Pages/Dashboard'
 import Tickets from './Pages/Tickets'
 import Unauthorized from './Pages/Unauthorized'
 
@@ -32,6 +33,7 @@ function App() {
               <Route path="/products" element={<Products />} />
               <Route path="/products/:id" element={<ProductDetail />} />
               <Route path="/chat" element={<Chat />} />
+              <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/tickets" element={<Tickets />} /> 
             </Route>
           </Route>

@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import type {
   DataTableProps,
@@ -25,6 +25,7 @@ import { TogglePill } from "./atoms/TogglePill"
 import { SelectDropdown } from "./atoms/SelectDropdown"
 import { NumberRangeDropdown } from "./atoms/NumberRangeDropdown"
 import { MultiSelectDropdown } from "./atoms/MultiSelectDropdown"
+import { DateRangeDropdown } from "./atoms/DateRangeDropdown"
 
 function buildServerPageInfo(sp: ServerPagination, dataLength: number) {
   const totalPages = Math.max(1, Math.ceil(sp.total / sp.pageSize))
@@ -63,10 +64,12 @@ export function DataTable<T,>({
   tabsRightSlot,
   searchFn,
   searchPlaceholder,
+  searchPrefix,
   onSortChange,
   onRowClick,
   extraActiveFilterCount = 0,
   onClearExtraFilters,
+  onSelectionChange,
 }: DataTableProps<T>) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -84,6 +87,11 @@ export function DataTable<T,>({
   const filters = useFilterState(columns, searchedData, onFiltersChange)
   const pagination = usePagination(defaultRowsPerPage)
   const selection = useRowSelection(getRowId)
+
+  useEffect(() => {
+    onSelectionChange?.(selection.selectedRows)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection.selectedRows])
 
   const [shownOptionalKeys, setShownOptionalKeys] = useState<Set<string>>(
     new Set()
@@ -250,6 +258,21 @@ export function DataTable<T,>({
           onClear={handleClear}
         />
       )
+    } else if (def.type === "date-range") {
+      content = (
+        <DateRangeDropdown
+          current={
+            active?.type === "date-range"
+              ? { from: active.from, to: active.to }
+              : null
+          }
+          onApply={(from, to) => {
+            filters.setFilter(colKey, { type: "date-range", from, to })
+            pagination.resetPage()
+          }}
+          onClear={handleClear}
+        />
+      )
     } else {
       content = (
         <NumberRangeDropdown
@@ -318,6 +341,7 @@ export function DataTable<T,>({
               handleSearchChange("")
             }}
             searchPlaceholder={searchPlaceholder}
+            searchPrefix={searchPrefix}
           />
         )}
 
