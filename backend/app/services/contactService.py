@@ -1,5 +1,8 @@
+import csv
+import io
 import uuid
 from datetime import date
+from typing import Generator
 
 from fastapi import Depends
 
@@ -343,6 +346,93 @@ class ContactService:
             page=page,
             pageSize=page_size,
         )
+
+    def export_contacts_csv(
+        self,
+        tab: str = "all", search: str = "",
+        purchases_min: int | None = None, purchases_max: int | None = None,
+        created_year: str = "", engagement: str = "",
+        client_status: list[str] | None = None,
+        regioes: list[str] | None = None, origens: list[str] | None = None,
+        pagamentos: list[str] | None = None,
+        receita_min: float | None = None, receita_max: float | None = None,
+        ticket_medio_min: float | None = None, ticket_medio_max: float | None = None,
+        primeira_compra_from: str = "", primeira_compra_to: str = "",
+        ultima_compra_from: str = "", ultima_compra_to: str = "",
+        tickets_suporte_min: int | None = None, tickets_suporte_max: int | None = None,
+        nota_atend_min: float | None = None, nota_atend_max: float | None = None,
+        nps_min: float | None = None, nps_max: float | None = None,
+        nota_prod_min: float | None = None, nota_prod_max: float | None = None,
+        generos: list[str] | None = None, faixas_etarias: list[str] | None = None,
+        estados: list[str] | None = None,
+        canais_preferidos: list[str] | None = None, dispositivos: list[str] | None = None,
+        origens_sessao: list[str] | None = None, periodos_dia: list[str] | None = None,
+        dias_semana: list[str] | None = None, categorias_visualizadas: list[str] | None = None,
+        taxa_conversao_min: float | None = None, taxa_conversao_max: float | None = None,
+        total_sessoes_min: int | None = None, total_sessoes_max: int | None = None,
+        abandono_carrinho_min: int | None = None, abandono_carrinho_max: int | None = None,
+        nps_recente_min: float | None = None, nps_recente_max: float | None = None,
+    ) -> Generator[str, None, None]:
+        _HEADERS = [
+            "id_cliente", "nome_completo", "email",
+            "genero", "faixa_etaria", "regiao", "cidade", "estado", "origem",
+            "segmento_cliente",
+            "total_pedidos", "total_produtos_distintos",
+            "receita_total", "ticket_medio",
+            "data_primeiro_pedido", "data_ultimo_pedido", "metodo_pagamento_favorito",
+            "total_tickets", "taxa_resolucao", "nota_media_atendimento",
+            "nota_nps_media", "nota_nps_recente", "nota_produto_media", "categoria_nps_recente",
+            "taxa_conversao_pct", "total_sessoes", "total_eventos",
+            "total_visualizacoes", "total_carrinho", "total_checkouts",
+            "total_compras_cs", "total_abandono_carrinho", "tempo_medio_pagina_seg",
+            "data_primeiro_evento", "data_ultimo_evento",
+            "canal_preferido", "dispositivo_preferido", "origem_sessao_preferida",
+            "periodo_dia_preferido", "dia_semana_mais_ativo",
+            "produto_mais_visualizado", "categoria_mais_visualizada",
+        ]
+
+        buf = io.StringIO()
+        writer = csv.writer(buf)
+        writer.writerow(_HEADERS)
+        yield buf.getvalue()
+
+        query = self._apply_filters(
+            self.db.query(GoldCliente360),
+            tab, search, purchases_min, purchases_max, created_year, engagement,
+            client_status, regioes, origens, pagamentos,
+            receita_min, receita_max, ticket_medio_min, ticket_medio_max,
+            primeira_compra_from, primeira_compra_to, ultima_compra_from, ultima_compra_to,
+            tickets_suporte_min, tickets_suporte_max, nota_atend_min, nota_atend_max,
+            nps_min, nps_max, nota_prod_min, nota_prod_max,
+            generos, faixas_etarias, estados,
+            canais_preferidos, dispositivos, origens_sessao,
+            periodos_dia, dias_semana, categorias_visualizadas,
+            taxa_conversao_min, taxa_conversao_max,
+            total_sessoes_min, total_sessoes_max,
+            abandono_carrinho_min, abandono_carrinho_max,
+            nps_recente_min, nps_recente_max,
+        )
+
+        for g in query.yield_per(500):
+            buf.seek(0); buf.truncate(0)
+            writer.writerow([
+                g.id_cliente, g.nome_completo, g.email,
+                g.genero, g.faixa_etaria, g.regiao, g.cidade, g.estado, g.origem,
+                g.segmento_cliente,
+                g.total_pedidos, g.total_produtos_distintos,
+                g.receita_total, g.ticket_medio,
+                g.data_primeiro_pedido, g.data_ultimo_pedido, g.metodo_pagamento_favorito,
+                g.total_tickets, g.taxa_resolucao, g.nota_media_atendimento,
+                g.nota_nps_media, g.nota_nps_recente, g.nota_produto_media, g.categoria_nps_recente,
+                g.taxa_conversao_pct, g.total_sessoes, g.total_eventos,
+                g.total_visualizacoes, g.total_carrinho, g.total_checkouts,
+                g.total_compras_cs, g.total_abandono_carrinho, g.tempo_medio_pagina_seg,
+                g.data_primeiro_evento, g.data_ultimo_evento,
+                g.canal_preferido, g.dispositivo_preferido, g.origem_sessao_preferida,
+                g.periodo_dia_preferido, g.dia_semana_mais_ativo,
+                g.produto_mais_visualizado, g.categoria_mais_visualizada,
+            ])
+            yield buf.getvalue()
 
     def get_contact_by_id(self, contact_id: str) -> ContactOut | None:
         gold = self.db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()
