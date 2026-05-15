@@ -2,26 +2,32 @@ import { useState } from "react"
 import { useNavigate, useOutletContext } from "react-router-dom"
 import { MOCKED_SHORTCUTS } from "@/lib/mocks/home"
 import type { ShortcutItem } from "@/types/home"
+import MentionInput, { type MentionInputHandle } from "@/components/molecules/MentionInput"
+import { useRef } from "react"
 import {
   ContactPage as ContactPageIcon,
+  ContactPageOutlined as ContactPageOutlinedIcon,     
   ConfirmationNumber as ConfirmationNumberIcon,
+  ConfirmationNumberOutlined as ConfirmationNumberOutlinedIcon,
   BarChart as BarChartIcon,
+  BarChartOutlined as BarChartOutlinedIcon,     
   RequestQuote as RequestQuoteIcon,
-  Bookmark as BookmarkIcon,
+  RequestQuoteOutlined as RequestQuoteOutlinedIcon,  
+  Inventory2Outlined as Inventory2OutlinedIcon,
   MenuBook as MenuBookIcon,
-  FlagOutlined as FlagOutlinedIcon,
+  MenuBookOutlined as MenuBookOutlinedIcon,
   FlagOutlined,
 } from "@mui/icons-material"
 
 //ícones 
 
 const ICON_MAP: Record<string, React.ElementType> = {
-  ContactPage:         ContactPageIcon,
-  ConfirmationNumber:  ConfirmationNumberIcon,
-  BarChart:            BarChartIcon,
-  RequestQuote:        RequestQuoteIcon,
-  Bookmark:            BookmarkIcon,
-  MenuBook:            MenuBookIcon,
+  ContactPage:        ContactPageOutlinedIcon,
+  ConfirmationNumber: ConfirmationNumberOutlinedIcon,
+  BarChart:           BarChartOutlinedIcon,
+  RequestQuote:       RequestQuoteOutlinedIcon,
+  Inventory2Outlined: Inventory2OutlinedIcon,
+  MenuBook:           MenuBookOutlinedIcon,
 }
 
 function formatDate(date: Date): string {
@@ -51,16 +57,16 @@ function ShortcutCard({
       onClick={onClick}
       className="
         flex flex-col items-center justify-center gap-3
-        border-2 border-[#4ADE80] rounded-xl
+        border-[3px] border-[#74FF60] rounded-xl
         py-8 px-4
         hover:bg-[#f0fdf4] active:scale-95
         transition-all duration-150
       "
     >
       {IconComponent && (
-        <IconComponent sx={{ fontSize: 40, color: "#4ADE80" }} />
+        <IconComponent sx={{ fontSize: 40, color: "#74FF60" }} />
       )}
-      <span className="text-[14px] font-semibold text-[#4ADE80]">
+      <span className="text-[14px] font-semibold text-[#74FF60]">
         {shortcut.label}
       </span>
     </button>
@@ -75,6 +81,7 @@ export default function Home() {
   const { onOpenAI } = useOutletContext<{ onOpenAI: (message?: string) => void }>()
 
   const today = new Date()
+  const mentionInputRef = useRef<MentionInputHandle>(null)
 
   return (
     <div className="relative px-6 py-5 h-full flex flex-col gap-5 bg-white min-h-full rounded-xl overflow-y-auto">
@@ -87,30 +94,26 @@ export default function Home() {
         </h1>
       </div>
 
-      <div className="border border-dashed border-[#A855F7] rounded-xl p-4">
+      <div className="p-4">
         <div className="flex items-center gap-2 mb-1">
-          <img src="/v_ai.svg" alt="Assistente de IA" className="w-4 h-4" />
-          <span className="text-[13px] font-semibold text-gray-900">
+          <img src="/v_ai.svg" alt="Assistente de IA" className="w-6 h-6" />
+          <span className="text-[24px] font-bold text-gray-900">
             Assistente de IA
           </span>
         </div>
-        <p className="text-[11px] text-gray-400 mb-3 leading-relaxed">
+        <p className="text-[15px] text-gray-400 mb-3 leading-relaxed">
           Agente para assistência e informações sobre dados com o sistema.
           Realize a interação através de textos no campo abaixo ou acesse o
           botão no menu lateral para expandir o assistente.
         </p>
-        <input
-          type="text"
-          value={aiQuery}
-          onChange={(e) => setAiQuery(e.target.value)}
-          onKeyDown={(e) => { 
-            if (e.key === "Enter" && aiQuery.trim()) {
-              onOpenAI(aiQuery) 
-              setAiQuery("")    
+        <MentionInput
+          ref={mentionInputRef}
+          onSend={(text) => {
+            if (text.trim()) {
+              onOpenAI(text)
+              mentionInputRef.current?.clear()
             }
           }}
-          placeholder="Consulte informações sobre o sistema..."
-          className="w-full text-[12px] text-gray-700 border border-[#4ADE80] rounded-lg px-3 py-2 outline-none focus:ring-1 focus:ring-[#4ADE80] placeholder:text-gray-300 bg-transparent"
         />
       </div>
       <div className="flex items-center gap-2 mb-1">

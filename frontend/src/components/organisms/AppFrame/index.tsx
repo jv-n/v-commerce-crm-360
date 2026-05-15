@@ -31,6 +31,7 @@ export default function AppFrame() {
     const isOnHome = pathname === "/";
     const [isAIOpen, setIsAIOpen] = useState(false);
     const [pendingMention, setPendingMention] = useState<MentionItem | null>(null);
+    const [initialMessage, setInitialMessage] = useState("")
 
     // Fecha a sidebar ao entrar em /chat; reabre ao minimizar de volta
     useEffect(() => {
@@ -183,7 +184,9 @@ export default function AppFrame() {
                     </div>
                     <div className="flex flex-1 min-h-0">
                         <div className="flex-1 min-h-0 overflow-hidden">
-                            <Outlet context={{ onOpenAI: () => { if (!isOnChat) setIsAIOpen((prev) => !prev); } }} />
+                        <Outlet context={{ onOpenAI: (message?: string) => { if (!isOnChat) {
+                            if (message) setInitialMessage(message) 
+                                setIsAIOpen((prev) => !prev); } }}} />
                         </div>
                         <AIChatSidebar
                         open={isAIOpen}
@@ -191,6 +194,8 @@ export default function AppFrame() {
                         userName="Joao Victor"
                         pendingMention={pendingMention}
                         onMentionInserted={() => setPendingMention(null)}
+                        initialMessage={initialMessage}   
+                        onInitialMessageSent={() => setInitialMessage("")}
                         />
                     </div>
                 
