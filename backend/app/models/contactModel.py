@@ -18,6 +18,8 @@ class GoldCliente360(Base):
     nome_completo:             Mapped[str | None]   = mapped_column(String,  nullable=True)
     email:                     Mapped[str | None]   = mapped_column(String,  nullable=True)
     regiao:                    Mapped[str | None]   = mapped_column(String,  nullable=True)
+    cidade:                    Mapped[str | None]   = mapped_column(String,  nullable=True)
+    estado:                    Mapped[str | None]   = mapped_column(String,  nullable=True)
     origem:                    Mapped[str | None]   = mapped_column(String,  nullable=True)
     total_pedidos:             Mapped[float | None] = mapped_column(Float,   nullable=True)
     total_produtos_distintos:  Mapped[float | None] = mapped_column(Float,   nullable=True)
