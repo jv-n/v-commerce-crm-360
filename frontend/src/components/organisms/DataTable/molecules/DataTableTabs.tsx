@@ -18,6 +18,7 @@ interface DataTableTabsProps {
   onSearchChange: (q: string) => void
   onSearchClose: () => void
   searchPlaceholder?: string
+  searchPrefix?: ReactNode
 }
 
 export function DataTableTabs({
@@ -31,6 +32,7 @@ export function DataTableTabs({
   onSearchChange,
   onSearchClose,
   searchPlaceholder = "Pesquisar...",
+  searchPrefix,
 }: DataTableTabsProps) {
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -60,6 +62,7 @@ export function DataTableTabs({
         {searchOpen ? (
           <div className="flex items-center gap-1 bg-gray-50 border border-gray-200 rounded-md px-2 py-1">
             <SearchOutlinedIcon sx={{ fontSize: 16, color: "#9CA3AF" }} />
+            {searchPrefix}
             <input
               ref={inputRef}
               type="text"

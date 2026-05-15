@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import or_
 from fastapi import HTTPException
 
 from app.models.saleModel import GoldPedidoDetalhado
@@ -21,6 +22,10 @@ class SaleService:
         metodo_pagamento: str = "",
         categoria: str = "",
         ano_mes: str = "",
+        data_from: str = "",
+        data_to: str = "",
+        search: str = "",
+        search_field: str = "all",
     ):
         query = self.db.query(GoldPedidoDetalhado)
 
@@ -34,6 +39,21 @@ class SaleService:
             query = query.filter(GoldPedidoDetalhado.categoria == categoria)
         if ano_mes:
             query = query.filter(GoldPedidoDetalhado.ano_mes == ano_mes)
+        if data_from:
+            query = query.filter(GoldPedidoDetalhado.data_pedido >= data_from)
+        if data_to:
+            query = query.filter(GoldPedidoDetalhado.data_pedido <= data_to)
+        if search:
+            pattern = f"%{search}%"
+            if search_field == "client":
+                query = query.filter(GoldPedidoDetalhado.nome_cliente.ilike(pattern))
+            elif search_field == "product":
+                query = query.filter(GoldPedidoDetalhado.nome_produto.ilike(pattern))
+            else:
+                query = query.filter(or_(
+                    GoldPedidoDetalhado.nome_cliente.ilike(pattern),
+                    GoldPedidoDetalhado.nome_produto.ilike(pattern),
+                ))
 
         return query
 
@@ -46,8 +66,12 @@ class SaleService:
         metodo_pagamento: str = "",
         categoria: str = "",
         ano_mes: str = "",
+        data_from: str = "",
+        data_to: str = "",
+        search: str = "",
+        search_field: str = "all",
     ) -> SalesPageOut:
-        query = self._base_query(tab, status, metodo_pagamento, categoria, ano_mes)
+        query = self._base_query(tab, status, metodo_pagamento, categoria, ano_mes, data_from, data_to, search, search_field)
 
         total = query.count()
 

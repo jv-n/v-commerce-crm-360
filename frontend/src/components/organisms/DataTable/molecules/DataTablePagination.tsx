@@ -34,7 +34,7 @@ export function DataTablePagination({
 }: DataTablePaginationProps) {
   const totalPages = pageNumbers.length
   const totalWindows = Math.ceil(totalPages / WINDOW_SIZE)
-  const [pageWindow, setPageWindow] = useState(() => Math.floor((currentPage - 1) / WINDOW_SIZE))
+  const pageWindow = Math.floor((currentPage - 1) / WINDOW_SIZE)
   const [rppOpen, setRppOpen] = useState(false)
   const rppRef = useRef<HTMLDivElement>(null)
 
@@ -46,10 +46,6 @@ export function DataTablePagination({
     document.addEventListener("mousedown", handler)
     return () => document.removeEventListener("mousedown", handler)
   }, [rppOpen])
-
-  useEffect(() => {
-    setPageWindow(Math.floor((currentPage - 1) / WINDOW_SIZE))
-  }, [currentPage])
 
   const visiblePages = pageNumbers.slice(pageWindow * WINDOW_SIZE, (pageWindow + 1) * WINDOW_SIZE)
 
@@ -87,6 +83,16 @@ export function DataTablePagination({
       </div>
 
       <div className="flex items-center gap-0.5">
+        
+        {totalWindows > 1 && pageWindow > 0 && (
+          <button
+            onClick={() => onPageChange((pageWindow - 1) * WINDOW_SIZE + 1)}
+            className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600"
+          >
+            <KeyboardDoubleArrowLeftIcon sx={{ fontSize: 18 }} />
+          </button>
+        )}
+
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
@@ -94,15 +100,6 @@ export function DataTablePagination({
         >
           <KeyboardArrowLeftIcon sx={{ fontSize: 18 }} />
         </button>
-
-        {totalWindows > 1 && pageWindow > 0 && (
-          <button
-            onClick={() => setPageWindow(w => w - 1)}
-            className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600"
-          >
-            <KeyboardDoubleArrowLeftIcon sx={{ fontSize: 18 }} />
-          </button>
-        )}
 
         {visiblePages.map(page => (
           <button
@@ -119,15 +116,6 @@ export function DataTablePagination({
           </button>
         ))}
 
-        {totalWindows > 1 && pageWindow < totalWindows - 1 && (
-          <button
-            onClick={() => setPageWindow(w => w + 1)}
-            className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600"
-          >
-            <KeyboardDoubleArrowRightIcon sx={{ fontSize: 18 }} />
-          </button>
-        )}
-
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
@@ -135,6 +123,15 @@ export function DataTablePagination({
         >
           <KeyboardArrowRightIcon sx={{ fontSize: 18 }} />
         </button>
+        
+        {totalWindows > 1 && pageWindow < totalWindows - 1 && (
+          <button
+            onClick={() => onPageChange((pageWindow + 1) * WINDOW_SIZE + 1)}
+            className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600"
+          >
+            <KeyboardDoubleArrowRightIcon sx={{ fontSize: 18 }} />
+          </button>
+        )}
       </div>
 
       <span className="text-sm font-medium text-gray-900">

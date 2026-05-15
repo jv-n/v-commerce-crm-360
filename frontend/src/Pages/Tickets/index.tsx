@@ -2,6 +2,7 @@ import { useRef, useState } from "react"
 
 import UndoIcon from "@mui/icons-material/Undo"
 import RefreshIcon from "@mui/icons-material/Refresh"
+import IosShareOutlinedIcon from "@mui/icons-material/IosShareOutlined"
 
 import { AddCircleButtonIcon } from "@/components/atoms/add-circle-button-icon"
 import { cn } from "@/lib/utils"
@@ -19,10 +20,19 @@ export default function Tickets() {
       <div className="flex shrink-0 items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Tickets</h1>
 
-        <button className="flex items-center gap-2 rounded-lg border border-[#D1B1E5] bg-[#F7EBFF] px-3.5 py-1.5 text-[15px] font-medium text-[#06121C] shadow-sm transition-colors hover:bg-[#F0DDFD]">
-          <AddCircleButtonIcon />
-          Adicionar Ticket
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => tableRef.current?.openExport()}
+            className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors"
+          >
+            <IosShareOutlinedIcon sx={{ fontSize: 16 }} />
+            Exportar
+          </button>
+          <button className="flex items-center gap-2 rounded-lg border border-[#D1B1E5] bg-[#F7EBFF] px-3.5 py-1.5 text-[15px] font-medium text-[#06121C] shadow-sm transition-colors hover:bg-[#F0DDFD]">
+            <AddCircleButtonIcon />
+            Adicionar Ticket
+          </button>
+        </div>
       </div>
 
       <div className="min-h-0 flex-1 overflow-visible">

@@ -1,12 +1,15 @@
 import uuid
 from datetime import date
 
+from fastapi import Depends
+
 from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc, select, func
 
 from app.models.contactModel import GoldCliente360, DimCliente
 from app.models.saleModel import GoldPedidoDetalhado
 from app.schemas.contactSchemas import ContactOut, ContactsPageOut, ContactCreate, ContactUpdate, ContactResumoOut
+from database.database import get_db
 
 _VALID_STATUSES = {"Ativo", "Inativo", "VIP", "Lead", "Em risco"}
 
@@ -82,18 +85,25 @@ def _to_contact_out(g: GoldCliente360, phone: str | None = None) -> ContactOut:
 
 
 class ContactService:
-    def __init__(self, db: Session):
+    def __init__(self, db: Session = Depends(get_db)):
         self.db = db
 
     def _apply_filters(self, query, tab, search, purchases_min, purchases_max,
-                       created_year, engagement, client_status, has_phone,
+                       created_year, engagement, client_status,
                        regioes, origens, pagamentos,
                        receita_min, receita_max, ticket_medio_min, ticket_medio_max,
                        primeira_compra_from, primeira_compra_to,
                        ultima_compra_from, ultima_compra_to,
                        tickets_suporte_min, tickets_suporte_max,
                        nota_atend_min, nota_atend_max,
-                       nps_min, nps_max, nota_prod_min, nota_prod_max):
+                       nps_min, nps_max, nota_prod_min, nota_prod_max,
+                       generos, faixas_etarias, estados,
+                       canais_preferidos, dispositivos, origens_sessao,
+                       periodos_dia, dias_semana, categorias_visualizadas,
+                       taxa_conversao_min, taxa_conversao_max,
+                       total_sessoes_min, total_sessoes_max,
+                       abandono_carrinho_min, abandono_carrinho_max,
+                       nps_recente_min, nps_recente_max):
         """Aplica todos os filtros em GoldCliente360. Join com DimCliente não incluído."""
         if tab == "clients":
             query = query.filter(GoldCliente360.segmento_cliente.in_(["Ativo", "Inativo", "VIP"]))
@@ -127,15 +137,6 @@ class ContactService:
         if client_status:
             query = query.filter(GoldCliente360.segmento_cliente.in_(client_status))
 
-        # has_phone: EXISTS subquery — evita o join completo só para o count
-        if has_phone:
-            phone_exists = (
-                select(DimCliente.id_cliente)
-                .where(DimCliente.id_cliente == GoldCliente360.id_cliente)
-                .where(DimCliente.telefone.isnot(None))
-                .exists()
-            )
-            query = query.filter(phone_exists)
 
         if regioes:
             query = query.filter(GoldCliente360.regiao.in_(regioes))
@@ -183,6 +184,45 @@ class ContactService:
             query = query.filter(GoldCliente360.nota_produto_media >= nota_prod_min)
         if nota_prod_max is not None:
             query = query.filter(GoldCliente360.nota_produto_media <= nota_prod_max)
+
+        if generos:
+            query = query.filter(GoldCliente360.genero.in_(generos))
+        if faixas_etarias:
+            query = query.filter(GoldCliente360.faixa_etaria.in_(faixas_etarias))
+        if estados:
+            query = query.filter(GoldCliente360.estado.in_(estados))
+        if canais_preferidos:
+            query = query.filter(GoldCliente360.canal_preferido.in_(canais_preferidos))
+        if dispositivos:
+            query = query.filter(GoldCliente360.dispositivo_preferido.in_(dispositivos))
+        if origens_sessao:
+            query = query.filter(GoldCliente360.origem_sessao_preferida.in_(origens_sessao))
+        if periodos_dia:
+            query = query.filter(GoldCliente360.periodo_dia_preferido.in_(periodos_dia))
+        if dias_semana:
+            query = query.filter(GoldCliente360.dia_semana_mais_ativo.in_(dias_semana))
+        if categorias_visualizadas:
+            query = query.filter(GoldCliente360.categoria_mais_visualizada.in_(categorias_visualizadas))
+
+        if taxa_conversao_min is not None:
+            query = query.filter(GoldCliente360.taxa_conversao_pct >= taxa_conversao_min)
+        if taxa_conversao_max is not None:
+            query = query.filter(GoldCliente360.taxa_conversao_pct <= taxa_conversao_max)
+
+        if total_sessoes_min is not None:
+            query = query.filter(GoldCliente360.total_sessoes >= total_sessoes_min)
+        if total_sessoes_max is not None:
+            query = query.filter(GoldCliente360.total_sessoes <= total_sessoes_max)
+
+        if abandono_carrinho_min is not None:
+            query = query.filter(GoldCliente360.total_abandono_carrinho >= abandono_carrinho_min)
+        if abandono_carrinho_max is not None:
+            query = query.filter(GoldCliente360.total_abandono_carrinho <= abandono_carrinho_max)
+
+        if nps_recente_min is not None:
+            query = query.filter(GoldCliente360.nota_nps_recente >= nps_recente_min)
+        if nps_recente_max is not None:
+            query = query.filter(GoldCliente360.nota_nps_recente <= nps_recente_max)
 
         return query
 
@@ -237,7 +277,6 @@ class ContactService:
         created_year: str = "",
         engagement: str = "",
         client_status: list[str] | None = None,
-        has_phone: bool = False,
         sort_by: str = "",
         sort_dir: str = "asc",
         regioes: list[str] | None = None,
@@ -259,14 +298,38 @@ class ContactService:
         nps_max: float | None = None,
         nota_prod_min: float | None = None,
         nota_prod_max: float | None = None,
+        generos: list[str] | None = None,
+        faixas_etarias: list[str] | None = None,
+        estados: list[str] | None = None,
+        canais_preferidos: list[str] | None = None,
+        dispositivos: list[str] | None = None,
+        origens_sessao: list[str] | None = None,
+        periodos_dia: list[str] | None = None,
+        dias_semana: list[str] | None = None,
+        categorias_visualizadas: list[str] | None = None,
+        taxa_conversao_min: float | None = None,
+        taxa_conversao_max: float | None = None,
+        total_sessoes_min: int | None = None,
+        total_sessoes_max: int | None = None,
+        abandono_carrinho_min: int | None = None,
+        abandono_carrinho_max: int | None = None,
+        nps_recente_min: float | None = None,
+        nps_recente_max: float | None = None,
     ) -> ContactsPageOut:
         filter_args = (
             tab, search, purchases_min, purchases_max, created_year, engagement,
-            client_status, has_phone, regioes, origens, pagamentos,
+            client_status, regioes, origens, pagamentos,
             receita_min, receita_max, ticket_medio_min, ticket_medio_max,
             primeira_compra_from, primeira_compra_to, ultima_compra_from, ultima_compra_to,
             tickets_suporte_min, tickets_suporte_max, nota_atend_min, nota_atend_max,
             nps_min, nps_max, nota_prod_min, nota_prod_max,
+            generos, faixas_etarias, estados,
+            canais_preferidos, dispositivos, origens_sessao,
+            periodos_dia, dias_semana, categorias_visualizadas,
+            taxa_conversao_min, taxa_conversao_max,
+            total_sessoes_min, total_sessoes_max,
+            abandono_carrinho_min, abandono_carrinho_max,
+            nps_recente_min, nps_recente_max,
         )
 
         # ── Count: só em GoldCliente360, sem join ─────────────────────────────
@@ -277,27 +340,28 @@ class ContactService:
         sort_col = _SORT_COLS.get(sort_by, GoldCliente360.nome_completo)
         order_fn = desc if sort_dir == "desc" else asc
 
-        gold_rows: list[GoldCliente360] = (
+        rows = (
             count_q
+            .outerjoin(DimCliente, DimCliente.id_cliente == GoldCliente360.id_cliente)
+            .add_columns(DimCliente.telefone)
             .order_by(order_fn(sort_col))
             .offset((page - 1) * page_size)
             .limit(page_size)
             .all()
         )
 
-        # ── Telefones: um único IN para os IDs desta página ───────────────────
-        ids = [g.id_cliente for g in gold_rows]
-        phone_map: dict[str, str | None] = {}
-        if ids:
-            dim_rows = (
-                self.db.query(DimCliente)
+        phones_map: dict[str, str | None] = {}
+        if rows:
+            ids = [g.id_cliente for g in rows]
+            phones_map = {
+                d.id_cliente: d.telefone
+                for d in self.db.query(DimCliente.id_cliente, DimCliente.telefone)
                 .filter(DimCliente.id_cliente.in_(ids))
                 .all()
-            )
-            phone_map = {d.id_cliente: d.telefone for d in dim_rows}
+            }
 
         return ContactsPageOut(
-            data=[_to_contact_out(g, phone=phone_map.get(g.id_cliente)) for g in gold_rows],
+            data=[_to_contact_out(g, phone=phones_map.get(g.id_cliente)) for g in rows],
             total=total,
             page=page,
             pageSize=page_size,
