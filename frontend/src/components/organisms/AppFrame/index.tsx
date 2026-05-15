@@ -58,18 +58,25 @@ export default function AppFrame() {
         { name: "Home", nav: true, path: "/" },
     ];
 
-    const sidebarItems2 = [
-        { name: "Contacts", nav: true, path: "/contacts" },
-        { name: "Sales", nav: true, path: "/sales" },
-        { name: "Products", nav: true, path: "/products" },
-        { name: "Dashboard", nav: true, path: "/dashboard" },
-        { name: "Tickets", nav: true, path: "/tickets" },
+    const allSidebarItems2 = [
+        { name: "Contacts",  nav: true,  path: "/contacts",  roles: ["admin", "sales"] },
+        { name: "Sales",     nav: true,  path: "/sales",     roles: ["admin"] },
+        { name: "Products",  nav: true,  path: "/products",  roles: [] },
+        { name: "Dashboard", nav: true,  path: "/dashboard", roles: ["admin"] },
+        { name: "Tickets",   nav: true,  path: "/tickets",   roles: ["admin", "support"] },
     ];
 
-    const sidebarItems3 = [
-        { name: "Book", nav: true, path: "/book" },
-        { name: "Chat", nav: false, path: "" },
+    const sidebarItems2 = allSidebarItems2.filter(
+        (item) => item.roles.length === 0 || (user?.role && item.roles.includes(user.role))
+    );
+
+    const allSidebarItems3 = [
+        { name: "Chat", nav: false, path: "", roles: ["admin"] },
     ];
+
+    const sidebarItems3 = allSidebarItems3.filter(
+        (item) => item.roles.length === 0 || (user?.role && item.roles.includes(user.role))
+    );
 
     const iconColor = (path: string) => {
         return path === pathname ? "#000" : "#74FF60";
