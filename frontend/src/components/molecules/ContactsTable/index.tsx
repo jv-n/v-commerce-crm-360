@@ -20,8 +20,9 @@ import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
 import TuneIcon from "@mui/icons-material/Tune"
 
 const TABS: Tab[] = [
-  { id: "all",   label: "Todos os contatos" },
-  { id: "leads", label: "Leads" },
+  { id: "all",     label: "Todos os contatos" },
+  { id: "clients", label: "Todos os clientes" },
+  { id: "leads",   label: "Leads" },
 ]
 
 const DEFAULT_PAGE_SIZE = 10
@@ -123,11 +124,6 @@ export function ContactsTable({
 
   const { purchasesMin, purchasesMax, createdYear, engagement, clientStatuses } = serverFilters
 
-  const handleSearchChange = (q: string) => {
-    setNameSearch(q)
-    setPage(1)
-  }
-
   useEffect(() => {
     const hasText =
       nameSearch !== "" ||
@@ -136,7 +132,11 @@ export function ContactsTable({
       advanced.ticketsSuporteMin !== "" || advanced.ticketsSuporteMax !== "" ||
       advanced.notaAtendMin !== "" || advanced.notaAtendMax !== "" ||
       advanced.npsMin !== "" || advanced.npsMax !== "" ||
-      advanced.notaProdMin !== "" || advanced.notaProdMax !== ""
+      advanced.notaProdMin !== "" || advanced.notaProdMax !== "" ||
+      advanced.taxaConversaoMin !== "" || advanced.taxaConversaoMax !== "" ||
+      advanced.totalSessoesMin !== "" || advanced.totalSessoesMax !== "" ||
+      advanced.abandonoCarrinhoMin !== "" || advanced.abandonoCarrinhoMax !== "" ||
+      advanced.npsRecenteMin !== "" || advanced.npsRecenteMax !== ""
 
     const delay = hasText ? 300 : 0
     if (debounceRef.current) clearTimeout(debounceRef.current)
@@ -147,7 +147,6 @@ export function ContactsTable({
       setFetchError(false)
       fetchContacts({
         page, pageSize, tab: activeTab,
-        search: nameSearch || undefined,
         purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
         sortBy, sortDir,
         regioes:            advanced.regioes,
@@ -169,6 +168,23 @@ export function ContactsTable({
         npsMax:             advanced.npsMax !== "" ? Number(advanced.npsMax) : undefined,
         notaProdMin:        advanced.notaProdMin !== "" ? Number(advanced.notaProdMin) : undefined,
         notaProdMax:        advanced.notaProdMax !== "" ? Number(advanced.notaProdMax) : undefined,
+        generos:            advanced.generos,
+        faixasEtarias:      advanced.faixasEtarias,
+        estados:            advanced.estados,
+        canaisPreferidos:   advanced.canaisPreferidos,
+        dispositivos:       advanced.dispositivos,
+        origensSessao:      advanced.origensSessao,
+        periodosDia:        advanced.periodosDia,
+        diasSemana:         advanced.diasSemana,
+        categoriasVisualizadas: advanced.categoriasVisualizadas,
+        taxaConversaoMin:   advanced.taxaConversaoMin !== "" ? Number(advanced.taxaConversaoMin) : undefined,
+        taxaConversaoMax:   advanced.taxaConversaoMax !== "" ? Number(advanced.taxaConversaoMax) : undefined,
+        totalSessoesMin:    advanced.totalSessoesMin !== "" ? Number(advanced.totalSessoesMin) : undefined,
+        totalSessoesMax:    advanced.totalSessoesMax !== "" ? Number(advanced.totalSessoesMax) : undefined,
+        abandonoCarrinhoMin: advanced.abandonoCarrinhoMin !== "" ? Number(advanced.abandonoCarrinhoMin) : undefined,
+        abandonoCarrinhoMax: advanced.abandonoCarrinhoMax !== "" ? Number(advanced.abandonoCarrinhoMax) : undefined,
+        npsRecenteMin:      advanced.npsRecenteMin !== "" ? Number(advanced.npsRecenteMin) : undefined,
+        npsRecenteMax:      advanced.npsRecenteMax !== "" ? Number(advanced.npsRecenteMax) : undefined,
       })
         .then((res) => {
           if (cancelled) return
@@ -184,7 +200,7 @@ export function ContactsTable({
       if (debounceRef.current) clearTimeout(debounceRef.current)
     }
   }, [
-    page, pageSize, activeTab, nameSearch,
+    page, pageSize, activeTab,
     purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
     sortBy, sortDir, refetchKey,
     advanced,

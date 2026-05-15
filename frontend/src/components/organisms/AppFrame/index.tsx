@@ -17,7 +17,6 @@ import {
     SidebarSeparator,
  } from "@/components/molecules/Sidebar/sidebar";
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
-import BookmarkBorderOutlinedIcon from '@mui/icons-material/BookmarkBorderOutlined';
 import ContactPageOutlinedIcon from '@mui/icons-material/ContactPageOutlined';
 import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
@@ -57,7 +56,6 @@ export default function AppFrame() {
 
     const sidebarItems1 = [
         { name: "Home", nav: true, path: "/" },
-        { name: "Bookmarks", nav: true, path: "/bookmarks" },
     ];
 
     const sidebarItems2 = [
@@ -81,8 +79,6 @@ export default function AppFrame() {
         switch (title) {
             case "Home":
                 return <HomeOutlinedIcon sx={{ color: iconColor("/")} }/>;
-            case "Bookmarks":
-                return <BookmarkBorderOutlinedIcon sx={{ color: iconColor("/bookmarks")} }/>;
             case "Contacts":
                 return <ContactPageOutlinedIcon sx={{ color: iconColor("/contacts")} }/>;
             case "Sales":

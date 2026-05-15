@@ -19,7 +19,7 @@ interface ContactsParams {
   clientStatuses?: string[]
   sortBy?: string | null
   sortDir?: "asc" | "desc"
-  // advanced filters
+  // advanced filters — compras / financeiro
   regioes?: string[]
   origens?: string[]
   pagamentos?: string[]
@@ -39,6 +39,25 @@ interface ContactsParams {
   npsMax?: number
   notaProdMin?: number
   notaProdMax?: number
+  // advanced filters — perfil
+  generos?: string[]
+  faixasEtarias?: string[]
+  estados?: string[]
+  // advanced filters — comportamento digital
+  canaisPreferidos?: string[]
+  dispositivos?: string[]
+  origensSessao?: string[]
+  periodosDia?: string[]
+  diasSemana?: string[]
+  categoriasVisualizadas?: string[]
+  taxaConversaoMin?: number
+  taxaConversaoMax?: number
+  totalSessoesMin?: number
+  totalSessoesMax?: number
+  abandonoCarrinhoMin?: number
+  abandonoCarrinhoMax?: number
+  npsRecenteMin?: number
+  npsRecenteMax?: number
 }
 
 interface RawContact {
@@ -172,12 +191,29 @@ export async function fetchContacts(params: ContactsParams): Promise<ContactsPag
     ...(params.npsMax != null                ? { nps_max:              String(params.npsMax)           } : {}),
     ...(params.notaProdMin != null           ? { nota_prod_min:        String(params.notaProdMin)      } : {}),
     ...(params.notaProdMax != null           ? { nota_prod_max:        String(params.notaProdMax)      } : {}),
+    ...(params.taxaConversaoMin != null      ? { taxa_conversao_min:   String(params.taxaConversaoMin) } : {}),
+    ...(params.taxaConversaoMax != null      ? { taxa_conversao_max:   String(params.taxaConversaoMax) } : {}),
+    ...(params.totalSessoesMin != null       ? { total_sessoes_min:    String(params.totalSessoesMin)  } : {}),
+    ...(params.totalSessoesMax != null       ? { total_sessoes_max:    String(params.totalSessoesMax)  } : {}),
+    ...(params.abandonoCarrinhoMin != null   ? { abandono_carrinho_min: String(params.abandonoCarrinhoMin) } : {}),
+    ...(params.abandonoCarrinhoMax != null   ? { abandono_carrinho_max: String(params.abandonoCarrinhoMax) } : {}),
+    ...(params.npsRecenteMin != null         ? { nps_recente_min:      String(params.npsRecenteMin)    } : {}),
+    ...(params.npsRecenteMax != null         ? { nps_recente_max:      String(params.npsRecenteMax)    } : {}),
   })
 
   params.clientStatuses?.forEach(s => query.append("client_status", s))
   params.regioes?.forEach(r   => query.append("regioes",    r))
   params.origens?.forEach(o   => query.append("origens",    o))
   params.pagamentos?.forEach(p => query.append("pagamentos", p))
+  params.generos?.forEach(g            => query.append("generos",              g))
+  params.faixasEtarias?.forEach(f      => query.append("faixas_etarias",       f))
+  params.estados?.forEach(e            => query.append("estados",              e))
+  params.canaisPreferidos?.forEach(c   => query.append("canais_preferidos",    c))
+  params.dispositivos?.forEach(d       => query.append("dispositivos",         d))
+  params.origensSessao?.forEach(o      => query.append("origens_sessao",       o))
+  params.periodosDia?.forEach(p        => query.append("periodos_dia",         p))
+  params.diasSemana?.forEach(d         => query.append("dias_semana",          d))
+  params.categoriasVisualizadas?.forEach(c => query.append("categorias_visualizadas", c))
 
   const res = await fetch(`/api/contacts/?${query}`)
   if (!res.ok) throw new Error(`Erro ao buscar contatos: ${res.status}`)
