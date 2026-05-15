@@ -30,33 +30,33 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 rounded-xl bg-card p-4 shadow-sm",
+        "flex flex-col gap-1 rounded-xl bg-card p-3 shadow-sm",
         className
       )}
     >
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
-          <span className="[&_svg]:size-4">{icon}</span>
+        <div className="flex items-center gap-1 text-xs font-medium text-muted-foreground">
+          <span className="[&_svg]:size-3.5">{icon}</span>
           {title}
         </div>
         <InfoOutlinedIcon
           className="text-muted-foreground cursor-default"
-          style={{ fontSize: 16 }}
+          style={{ fontSize: 14 }}
         />
       </div>
 
       {/* Main value + trend */}
       <div className="flex items-center gap-2">
-        <span className="text-3xl font-bold text-card-foreground leading-none">
+        <span className="text-2xl font-bold text-card-foreground leading-none">
           {currentValue}
         </span>
         <TrendBadge value={trendPercent} />
       </div>
 
-      {/* Comparison with same period last year */}
+      {/* Comparison */}
       <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-        <span className="size-2 rounded-full bg-primary shrink-0" />
+        <span className="size-1.5 rounded-full bg-primary shrink-0" />
         <span>
           {comparisonLabel}: {comparisonValue}
         </span>
