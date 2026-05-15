@@ -25,16 +25,20 @@ function App() {
           <Route element={<ProtectedRoute />}>
             <Route element={<AppFrame />}>
               <Route path="/" element={<Home />} />
-              <Route element={<ProtectedRoute allowedRoles={["admin", "sales"]}/>}>
-                <Route path="/contacts" element={<Contacts />} />
-                <Route path="/contacts/:id" element={<ContactDetail />} />
-                <Route path="/sales" element={<Sales />} />
-              </Route>
+              <Route path="/contacts/:id" element={<ContactDetail />} />
               <Route path="/products" element={<Products />} />
               <Route path="/products/:id" element={<ProductDetail />} />
-              <Route path="/chat" element={<Chat />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/tickets" element={<Tickets />} /> 
+              <Route element={<ProtectedRoute allowedRoles={["admin", "sales"]} />}>
+                <Route path="/contacts" element={<Contacts />} />
+              </Route>
+              <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+                <Route path="/sales" element={<Sales />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/chat" element={<Chat />} />
+              </Route>
+              <Route element={<ProtectedRoute allowedRoles={["admin", "support"]} />}>
+                <Route path="/tickets" element={<Tickets />} />
+              </Route>
             </Route>
           </Route>
           <Route path="*" element={<Navigate to="/login" replace />} />
