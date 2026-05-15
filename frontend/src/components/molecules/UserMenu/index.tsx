@@ -1,6 +1,7 @@
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
 import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
+import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -12,6 +13,7 @@ import {
 
 interface UserMenuProps {
     name: string
+    role?: string
     avatarSrc?: string
     onLogout?: () => void
 }
@@ -25,7 +27,16 @@ function getInitials(name: string) {
         .toUpperCase()
 }
 
-export default function UserMenu({ name, avatarSrc, onLogout }: UserMenuProps) {
+function getRoleLabel(role?: string) {
+    switch (role) {
+        case "admin":   return "Liderança"
+        case "sales":   return "Vendedor"
+        case "support": return "Agente de Suporte"
+        default:        return role ?? ""
+    }
+}
+
+export default function UserMenu({ name, role, avatarSrc, onLogout }: UserMenuProps) {
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -45,6 +56,12 @@ export default function UserMenu({ name, avatarSrc, onLogout }: UserMenuProps) {
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
                 <DropdownMenuGroup>
+                    {role && (
+                        <DropdownMenuItem disabled>
+                            <BadgeOutlinedIcon sx={{ color: "#0a0a0a" }} />
+                            {getRoleLabel(role)}
+                        </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem>
                         <PersonOutlinedIcon sx={{ color: "#0a0a0a" }} />
                         My Profile

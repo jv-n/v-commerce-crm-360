@@ -202,6 +202,7 @@ export function ContactsTable({
     }
   }, [
     page, pageSize, activeTab,
+    nameSearch,
     purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
     sortBy, sortDir, refetchKey, nameSearch,
     advanced,
@@ -311,6 +312,11 @@ export function ContactsTable({
     setSortDir(sort?.direction ?? "asc")
     setPage(1)
   }
+
+  const handleSearchChange = useCallback((value: string) => {
+    setNameSearch(value)
+    setPage(1)
+  }, [])
 
   const handlePageChange     = (newPage: number) => setPage(newPage)
   const handlePageSizeChange = (newSize: number) => { setPageSize(newSize); setPage(1) }
