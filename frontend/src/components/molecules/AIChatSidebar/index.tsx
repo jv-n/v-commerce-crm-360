@@ -31,6 +31,8 @@ interface AIChatSidebarProps {
   open: boolean;
   onClose: () => void;
   userName?: string;
+  pendingMention?: MentionItem | null;
+  onMentionInserted?: () => void;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -52,6 +54,8 @@ export default function AIChatSidebar({
   open,
   onClose,
   userName = "você",
+  pendingMention,
+  onMentionInserted,
 }: AIChatSidebarProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -73,6 +77,17 @@ export default function AIChatSidebar({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const mentionInputRef = useRef<MentionInputHandle>(null);
+
+  // Insere chip quando o painel abre com uma menção pendente
+  useEffect(() => {
+    if (!open || !pendingMention) return;
+    const t = setTimeout(() => {
+      mentionInputRef.current?.insertChip(pendingMention);
+      mentionInputRef.current?.focus();
+      onMentionInserted?.();
+    }, 60);
+    return () => clearTimeout(t);
+  }, [open, pendingMention]);
 
   // ── Carregar histórico do backend ─────────────────────────────────────────
 

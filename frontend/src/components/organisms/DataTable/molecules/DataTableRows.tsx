@@ -40,10 +40,10 @@ export function DataTableRows<T,>({
   onToggleRow,
   loading = false,
   emptyMessage = "Nenhum item encontrado.",
-  headerClassName = "bg-gray-50",
-  rowClassName = "",
-  expandedRowClassName,
-  dividersClassName = "divide-gray-100",
+  headerClassName = "bg-[#F0DDFD]",
+  rowClassName = "hover:bg-[#F7EBFF]",
+  expandedRowClassName = "bg-[#F7EBFF]",
+  dividersClassName = "divide-[#9F83B2]",
   expandedRowIds,
   renderExpandedRow,
   sortKey,
@@ -211,7 +211,7 @@ export function DataTableRows<T,>({
                       <tr
                         className={cn(
                           "group/row transition-colors",
-                          rowClassName || "hover:bg-gray-50/80",
+                          rowClassName,
                           isExpanded && expandedRowClassName,
                           isExpanded && "bg-purple-50/",
                           isSelected && "bg-blue-50/60",

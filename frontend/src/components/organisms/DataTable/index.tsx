@@ -1,5 +1,5 @@
 import type { ReactNode } from "react"
-import { useMemo, useState } from "react"
+import { useMemo, useState, useEffect } from "react"
 import { cn } from "@/lib/utils"
 import type {
   DataTableProps,
@@ -69,6 +69,7 @@ export function DataTable<T,>({
   onRowClick,
   extraActiveFilterCount = 0,
   onClearExtraFilters,
+  onSelectionChange,
 }: DataTableProps<T>) {
   const [searchOpen, setSearchOpen] = useState(false)
   const [searchQuery, setSearchQuery] = useState("")
@@ -86,6 +87,11 @@ export function DataTable<T,>({
   const filters = useFilterState(columns, searchedData, onFiltersChange)
   const pagination = usePagination(defaultRowsPerPage)
   const selection = useRowSelection(getRowId)
+
+  useEffect(() => {
+    onSelectionChange?.(selection.selectedRows)
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selection.selectedRows])
 
   const [shownOptionalKeys, setShownOptionalKeys] = useState<Set<string>>(
     new Set()

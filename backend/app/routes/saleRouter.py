@@ -11,7 +11,7 @@ router = APIRouter(prefix="/sales", tags=["sales"])
 @router.get("/", response_model=SalesPageOut)
 def get_sales(
     page: int = Query(1, ge=1),
-    pageSize: int = Query(20, ge=1, le=100),
+    pageSize: int = Query(20, ge=1, le=500000),
     tab: str = Query("all"),
     status: str = Query(""),
     metodo_pagamento: str = Query(""),

@@ -15,6 +15,7 @@ if settings.GEMINI_API_KEY:
 # Garante que a tabela de conversas existe no banco (cria se necessário)
 from database.database import engine
 from app.models.conversationModel import Conversation  # noqa: F401 — importar registra o model no metadata
+from app.models.productModel import ProductActivity    # noqa: F401 — registra ft_product_activities no metadata
 from database.database import Base
 Base.metadata.create_all(bind=engine, checkfirst=True)
 

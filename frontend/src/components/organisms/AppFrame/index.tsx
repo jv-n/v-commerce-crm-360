@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Outlet, NavLink, useLocation } from "react-router-dom";
 import AppNavbar from "@/components/molecules/AppNavbar";
 import AIChatSidebar from "@/components/molecules/AIChatSidebar";
+import type { MentionItem } from "@/lib/api/mentions";
 import {
     Sidebar,
     SidebarContent,
@@ -30,6 +31,7 @@ export default function AppFrame() {
     const isOnChat = pathname === "/chat";
     const [isAIOpen, setIsAIOpen] = useState(false);
     const { user } = useAuth()
+    const [pendingMention, setPendingMention] = useState<MentionItem | null>(null);
 
     // Fecha a sidebar ao entrar em /chat; reabre ao minimizar de volta
     useEffect(() => {
@@ -39,6 +41,17 @@ export default function AppFrame() {
             setIsAIOpen(true);
         }
     }, [isOnChat, locationState]);
+
+    // Escuta evento global para abrir o chat com menção pré-inserida
+    useEffect(() => {
+        const handler = (e: Event) => {
+            const item = (e as CustomEvent<MentionItem>).detail;
+            setIsAIOpen(true);
+            setPendingMention(item);
+        };
+        window.addEventListener("open-ai-chat", handler);
+        return () => window.removeEventListener("open-ai-chat", handler);
+    }, []);
 
     const itemActive = (path: string) => pathname === path ? "bg-primary" : "bg-background";
 
@@ -168,6 +181,8 @@ export default function AppFrame() {
                         open={isAIOpen}
                         onClose={() => setIsAIOpen(false)}
                         userName= {user?.name ?? "Deslogado"}
+                        pendingMention={pendingMention}
+                        onMentionInserted={() => setPendingMention(null)}
                     />
                 </div>
             </SidebarInset>

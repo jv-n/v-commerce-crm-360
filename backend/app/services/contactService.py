@@ -97,6 +97,8 @@ class ContactService:
         """Aplica todos os filtros em GoldCliente360. Join com DimCliente não incluído."""
         if tab == "clients":
             query = query.filter(GoldCliente360.segmento_cliente.in_(["Ativo", "Inativo", "VIP"]))
+        elif tab == "leads":
+            query = query.filter(GoldCliente360.segmento_cliente == "Lead")
 
         if search:
             term = f"%{search}%"
@@ -258,9 +260,6 @@ class ContactService:
         nota_prod_min: float | None = None,
         nota_prod_max: float | None = None,
     ) -> ContactsPageOut:
-        if tab == "leads":
-            return ContactsPageOut(data=[], total=0, page=page, pageSize=page_size)
-
         filter_args = (
             tab, search, purchases_min, purchases_max, created_year, engagement,
             client_status, has_phone, regioes, origens, pagamentos,
@@ -278,27 +277,18 @@ class ContactService:
         sort_col = _SORT_COLS.get(sort_by, GoldCliente360.nome_completo)
         order_fn = desc if sort_dir == "desc" else asc
 
-        gold_rows: list[GoldCliente360] = (
+        rows = (
             count_q
+            .outerjoin(DimCliente, DimCliente.id_cliente == GoldCliente360.id_cliente)
+            .add_columns(DimCliente.telefone)
             .order_by(order_fn(sort_col))
             .offset((page - 1) * page_size)
             .limit(page_size)
             .all()
         )
 
-        # ── Telefones: um único IN para os IDs desta página ───────────────────
-        ids = [g.id_cliente for g in gold_rows]
-        phone_map: dict[str, str | None] = {}
-        if ids:
-            dim_rows = (
-                self.db.query(DimCliente)
-                .filter(DimCliente.id_cliente.in_(ids))
-                .all()
-            )
-            phone_map = {d.id_cliente: d.telefone for d in dim_rows}
-
         return ContactsPageOut(
-            data=[_to_contact_out(g, phone=phone_map.get(g.id_cliente)) for g in gold_rows],
+            data=[_to_contact_out(g, phone=phone) for g, phone in rows],
             total=total,
             page=page,
             pageSize=page_size,

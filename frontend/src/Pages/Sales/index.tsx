@@ -1,6 +1,7 @@
 
 import { SalesTable, type SalesTableHandle } from "@/components/organisms/SalesTable/salesTable"
 import AddCircleOutlineOutlinedIcon from '@mui/icons-material/AddCircleOutlineOutlined';
+import IosShareOutlinedIcon from "@mui/icons-material/IosShareOutlined"
 import { useRef, useState } from "react"
 import UndoIcon from "@mui/icons-material/Undo"
 import RefreshIcon from "@mui/icons-material/Refresh"
@@ -19,6 +20,19 @@ export default function Sales() {
           <AddCircleOutlineOutlinedIcon sx={{ fontSize: 18 }} />
           Adicionar Pedido
         </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => tableRef.current?.openExport()}
+            className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors"
+          >
+            <IosShareOutlinedIcon sx={{ fontSize: 16 }} />
+            Exportar
+          </button>
+          <button className="flex items-center gap-2 bg-[#F7EBFF] border border-[#D1B1E5] rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors">
+            <AddCircleOutlineOutlinedIcon sx={{ fontSize: 18 }} />
+            Adicionar Pedido
+          </button>
+        </div>
       </div>
       <SalesTable ref={tableRef} onCanUndoChange={setCanUndo} />
 

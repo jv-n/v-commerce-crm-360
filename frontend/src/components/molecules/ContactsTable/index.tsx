@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react"
+import { useState, useEffect, useRef, useCallback } from "react"
 import { useNavigate } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { makeContactColumns } from "./columns"
@@ -9,6 +9,7 @@ import {
   EMPTY_CONTACT_ADVANCED,
   contactAdvancedActiveCount,
 } from "./AdvancedFiltersDrawer"
+import { ExportPopover, type ExportPill } from "@/components/molecules/ExportPopover"
 import type { ContactAdvancedFilters } from "./AdvancedFiltersDrawer"
 import type { Contact } from "@/types/contact"
 import type { Tab, ActiveFilters } from "@/components/organisms/DataTable/types"
@@ -19,7 +20,8 @@ import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
 import TuneIcon from "@mui/icons-material/Tune"
 
 const TABS: Tab[] = [
-  { id: "all", label: "Todos os contatos" },
+  { id: "all",   label: "Todos os contatos" },
+  { id: "leads", label: "Leads" },
 ]
 
 const DEFAULT_PAGE_SIZE = 10
@@ -91,7 +93,15 @@ export interface ContactsTableHandle {
   openAdd: () => void
 }
 
-export function ContactsTable({ onOpenAdd }: { onOpenAdd?: (fn: () => void) => void }) {
+export function ContactsTable({
+  onOpenAdd,
+  onOpenExport,
+  onSwitchToLeads,
+}: {
+  onOpenAdd?: (fn: () => void) => void
+  onOpenExport?: (fn: () => void) => void
+  onSwitchToLeads?: (fn: () => void) => void
+}) {
   const navigate = useNavigate()
   const [activeTab, setActiveTab]         = useState("all")
   const [page, setPage]                   = useState(1)
@@ -174,10 +184,97 @@ export function ContactsTable({ onOpenAdd }: { onOpenAdd?: (fn: () => void) => v
     advanced,
   ])
 
-  const openAdd  = () => { setEditingContact(null); setFormOpen(true) }
-  const openEdit = (c: Contact) => { setEditingContact(c); setFormOpen(true) }
+  const [exportOpen,    setExportOpen]    = useState(false)
+  const [exportLoading, setExportLoading] = useState(false)
+
+  // ── Seleção acumulativa por cache ────────────────────────────────────────────
+  const contactsRef    = useRef<Contact[]>([])
+  const selectedCache  = useRef<Map<string, Contact>>(new Map())
+  const [selectedIds,  setSelectedIds]  = useState<Set<string>>(new Set())
+  useEffect(() => { contactsRef.current = contacts }, [contacts])
+
+  const handleSelectionChange = useCallback((ids: Set<string>) => {
+    const cache = selectedCache.current
+    for (const id of cache.keys()) { if (!ids.has(id)) cache.delete(id) }
+    for (const c of contactsRef.current) { if (ids.has(c.id)) cache.set(c.id, c) }
+    setSelectedIds(new Set(ids))
+  }, [])
+
+  const buildCSV = (rows: Contact[]) => {
+    const headers = ["ID", "Nome", "Email", "Status", "Região", "Origem", "Compras", "Produtos distintos", "Receita total", "Ticket médio", "Primeira compra", "Última compra", "Pagamento favorito", "Tickets suporte", "Taxa resolução", "Nota atendimento", "Engajamento", "NPS", "Nota produto"]
+    const lines = rows.map(c => [c.id, c.name ?? "", c.email ?? "", c.clientStatus ?? "", c.region ?? "", c.origin ?? "", c.purchases, c.distinctProducts, c.totalRevenue, c.avgTicket, c.firstPurchase ?? "", c.lastPurchase ?? "", c.favPaymentMethod ?? "", c.totalTickets, c.resolutionRate, c.avgSupportRating ?? "", c.engagement, c.engagementScore, c.productRating ?? ""])
+    return [headers, ...lines].map(r => r.map(v => `"${String(v ?? "").replace(/"/g, '""')}"`).join(",")).join("\n")
+  }
+
+  const downloadCSV = (csv: string, filename: string) => {
+    const blob = new Blob(["﻿" + csv], { type: "text/csv;charset=utf-8;" })
+    const url  = URL.createObjectURL(blob)
+    const a    = document.createElement("a")
+    a.href = url; a.download = filename; a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleExportCSV = async () => {
+    setExportLoading(true)
+    try {
+      const res = await fetchContacts({
+        page: 1, pageSize: 500000, tab: activeTab,
+        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses, hasPhone,
+        sortBy, sortDir,
+        regioes: advanced.regioes, origens: advanced.origens, pagamentos: advanced.pagamentos,
+        receitaMin:         advanced.receitaMin         !== "" ? Number(advanced.receitaMin)         : undefined,
+        receitaMax:         advanced.receitaMax         !== "" ? Number(advanced.receitaMax)         : undefined,
+        ticketMedioMin:     advanced.ticketMedioMin     !== "" ? Number(advanced.ticketMedioMin)     : undefined,
+        ticketMedioMax:     advanced.ticketMedioMax     !== "" ? Number(advanced.ticketMedioMax)     : undefined,
+        primeiraCompraFrom: advanced.primeiraCompraFrom || undefined,
+        primeiraCompraTo:   advanced.primeiraCompraTo   || undefined,
+        ultimaCompraFrom:   advanced.ultimaCompraFrom   || undefined,
+        ultimaCompraTo:     advanced.ultimaCompraTo     || undefined,
+        ticketsSuporteMin:  advanced.ticketsSuporteMin  !== "" ? Number(advanced.ticketsSuporteMin)  : undefined,
+        ticketsSuporteMax:  advanced.ticketsSuporteMax  !== "" ? Number(advanced.ticketsSuporteMax)  : undefined,
+        notaAtendMin:       advanced.notaAtendMin       !== "" ? Number(advanced.notaAtendMin)       : undefined,
+        notaAtendMax:       advanced.notaAtendMax       !== "" ? Number(advanced.notaAtendMax)       : undefined,
+        npsMin:             advanced.npsMin             !== "" ? Number(advanced.npsMin)             : undefined,
+        npsMax:             advanced.npsMax             !== "" ? Number(advanced.npsMax)             : undefined,
+        notaProdMin:        advanced.notaProdMin        !== "" ? Number(advanced.notaProdMin)        : undefined,
+        notaProdMax:        advanced.notaProdMax        !== "" ? Number(advanced.notaProdMax)        : undefined,
+      })
+      downloadCSV(buildCSV(res.data), `contatos_${new Date().toISOString().slice(0, 10)}.csv`)
+      setExportOpen(false)
+    } finally { setExportLoading(false) }
+  }
+
+  const handleExportSelected = async () => {
+    setExportLoading(true)
+    try {
+      downloadCSV(buildCSV(Array.from(selectedCache.current.values())), `contatos_selecionados_${new Date().toISOString().slice(0, 10)}.csv`)
+      setExportOpen(false)
+    } finally { setExportLoading(false) }
+  }
+
+  const exportPills: ExportPill[] = [
+    ...(serverFilters.clientStatuses.length  ? [{ label: "Status",      value: serverFilters.clientStatuses.join(", ") }] : []),
+    ...(serverFilters.purchasesMin != null   ? [{ label: "Compras mín", value: String(serverFilters.purchasesMin)      }] : []),
+    ...(serverFilters.purchasesMax != null   ? [{ label: "Compras máx", value: String(serverFilters.purchasesMax)      }] : []),
+    ...(serverFilters.engagement             ? [{ label: "Engajamento", value: serverFilters.engagement                }] : []),
+    ...(serverFilters.createdYear            ? [{ label: "Ano criação", value: serverFilters.createdYear               }] : []),
+    ...(serverFilters.hasPhone               ? [{ label: "Tem telefone",value: "Sim"                                   }] : []),
+    ...(advanced.regioes.length              ? [{ label: "Regiões",     value: advanced.regioes.join(", ")             }] : []),
+    ...(advanced.origens.length              ? [{ label: "Origens",     value: advanced.origens.join(", ")             }] : []),
+    ...(advanced.pagamentos.length           ? [{ label: "Pagamentos",  value: advanced.pagamentos.join(", ")          }] : []),
+    ...(advanced.receitaMin !== "" || advanced.receitaMax !== ""
+      ? [{ label: "Receita", value: `${advanced.receitaMin || "—"} – ${advanced.receitaMax || "—"}` }] : []),
+    ...(advanced.primeiraCompraFrom || advanced.primeiraCompraTo
+      ? [{ label: "Primeira compra", value: `${advanced.primeiraCompraFrom || "—"} – ${advanced.primeiraCompraTo || "—"}` }] : []),
+  ]
+
+  const openAdd     = () => { setEditingContact(null); setFormOpen(true) }
+  const openEdit    = (c: Contact) => { setEditingContact(c); setFormOpen(true) }
+  const switchLeads = () => { setActiveTab("leads"); setPage(1) }
 
   useEffect(() => { onOpenAdd?.(openAdd) }, [])
+  useEffect(() => { onOpenExport?.(() => setExportOpen(true)) }, [])
+  useEffect(() => { onSwitchToLeads?.(switchLeads) }, [])
 
   const onToggleExpand = (id: string) =>
     setExpandedRowId(prev => prev === id ? null : id)
@@ -235,6 +332,18 @@ export function ContactsTable({ onOpenAdd }: { onOpenAdd?: (fn: () => void) => v
 
   return (
     <>
+      <ExportPopover
+        open={exportOpen}
+        onClose={() => setExportOpen(false)}
+        total={total}
+        entityLabel="Contatos"
+        pills={exportPills}
+        exportLoading={exportLoading}
+        onExport={handleExportCSV}
+        selectedCount={selectedIds.size}
+        onExportSelected={handleExportSelected}
+      />
+
       <ContactAdvancedFiltersDrawer
         open={drawerOpen}
         filters={advanced}
@@ -254,9 +363,8 @@ export function ContactsTable({ onOpenAdd }: { onOpenAdd?: (fn: () => void) => v
         onTabChange={(tabId) => { setActiveTab(tabId); setPage(1) }}
         onFiltersChange={handleFiltersChange}
         onSortChange={handleSortChange}
+        onSelectionChange={handleSelectionChange}
         filterBarExtra={filterBarExtra}
-        headerClassName="bg-[#F0DDFD]"
-        dividersClassName="divide-[#9F83B2]"
         rowsPerPageOptions={[10, 25, 50]}
         expandedRowIds={expandedRowId ? new Set([expandedRowId]) : undefined}
         renderExpandedRow={(c) => <ContactExpandedRow contact={c} onEdit={() => openEdit(c)} />}
