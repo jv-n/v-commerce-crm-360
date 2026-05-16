@@ -164,7 +164,7 @@ export default function Dashboard() {
       {/* Chart cards: fill remaining vertical space */}
       <div className="flex flex-row w-full h-full gap-6">
         <ModuleBarChart
-            title="Receita mensal"
+            title="Receita no período"
             period={period}
         />
         <BrazilMapCard period={period} />
