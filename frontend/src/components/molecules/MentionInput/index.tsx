@@ -348,7 +348,7 @@ const MentionInput = forwardRef<MentionInputHandle, Props>(
       <div className="relative">
         {/* Dropdown */}
         {showDropdown && results.length > 0 && (
-          <div className="absolute bottom-full mb-2 left-0 right-0 bg-white rounded-xl border border-gray-200 shadow-lg overflow-hidden z-[9999]">
+          <div className="absolute bottom-full mb-2 left-0 right-0 bg-white rounded-xl border border-gray-200 shadow-lg max-h-[200px] overflow-y-auto z-[9999]">
             {results.map((item, i) => (
               <button
                 key={`${item.type}-${item.id}`}
