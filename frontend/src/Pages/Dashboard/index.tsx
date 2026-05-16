@@ -162,7 +162,7 @@ export default function Dashboard() {
         <ModuleBarChart
             title="Receita mensal" 
             type="pedidos"
-            serial_data={[3, 4, 7, 9]}
+            serial_data={[145678, 215256, 175478, 310251]}
             xAxis_data={["Jan", "Fev", "Mar", "Apr"]}
         />
         <BrazilMapCard period={period} />
