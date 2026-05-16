@@ -35,3 +35,14 @@ class MapItemOut(BaseModel):
 class MapDataOut(BaseModel):
     view: str
     items: list[MapItemOut]
+
+
+class RevenueSeriesOut(BaseModel):
+    name: str
+    data: list[float]
+
+
+class RevenueChartOut(BaseModel):
+    bucket: str  # "day" | "week" | "month" | "year"
+    labels: list[str]
+    series: list[RevenueSeriesOut]

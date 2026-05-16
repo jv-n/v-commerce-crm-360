@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 
-from sqlalchemy import select, func, distinct
+from sqlalchemy import select, func, distinct, and_
 from sqlalchemy.orm import Session
 
 from app.models.contactModel import GoldCliente360
@@ -195,6 +195,112 @@ class DashboardService:
                 "yoy_value": tick_yoy, "yoy_pct": self._trend(tick_cur, tick_yoy),
             },
         }
+
+    # ------------------------------------------------------------------
+    # Revenue chart
+    # ------------------------------------------------------------------
+
+    _BUCKET_FOR_PERIOD: dict[str, str] = {
+        "2weeks":   "day",
+        "month":    "week",
+        "3months":  "month",
+        "semester": "month",
+        "year":     "month",
+    }
+
+    def _bucket_for_period(self, period_type: str, start: str, end: str) -> str:
+        if period_type == "custom":
+            days = (date.fromisoformat(end) - date.fromisoformat(start)).days
+            if days <= 14:
+                return "day"
+            if days <= 60:
+                return "week"
+            if days <= 730:
+                return "month"
+            return "year"
+        return self._BUCKET_FOR_PERIOD.get(period_type, "month")
+
+    def _bucket_col(self, bucket: str):
+        if bucket == "day":
+            return func.strftime("%Y-%m-%d", GoldPedidoDetalhado.data_pedido)
+        if bucket == "week":
+            return func.strftime("%Y-W%W", GoldPedidoDetalhado.data_pedido)
+        if bucket == "year":
+            return func.strftime("%Y", GoldPedidoDetalhado.data_pedido)
+        return func.strftime("%Y-%m", GoldPedidoDetalhado.data_pedido)
+
+    def get_revenue_chart(
+        self,
+        period_type: str,
+        start_date: str | None,
+        end_date: str | None,
+        granularity: str,
+        categories: list[str],
+        product_ids: list[str],
+    ) -> dict:
+        cur_s, cur_e, *_ = self._resolve_dates(period_type, start_date, end_date)
+        bucket = self._bucket_for_period(period_type, cur_s, cur_e)
+        bucket_col = self._bucket_col(bucket)
+
+        base = [
+            GoldPedidoDetalhado.data_pedido >= cur_s,
+            GoldPedidoDetalhado.data_pedido <= cur_e,
+            GoldPedidoDetalhado.status == "Aprovado",
+            GoldPedidoDetalhado.receita_bruta.isnot(None),
+        ]
+
+        use_category = granularity == "category"
+        use_product = granularity == "product" and len(product_ids) > 0
+
+        if use_category and categories:
+            base.append(GoldPedidoDetalhado.categoria.in_(categories))
+        if use_product:
+            base.append(GoldPedidoDetalhado.id_produto.in_(product_ids))
+
+        if use_category or use_product:
+            group_col = (
+                GoldPedidoDetalhado.categoria
+                if use_category
+                else GoldPedidoDetalhado.nome_produto
+            )
+            rows = self.db.execute(
+                select(
+                    bucket_col.label("bk"),
+                    group_col.label("gk"),
+                    func.sum(GoldPedidoDetalhado.receita_bruta).label("total"),
+                )
+                .where(and_(*base))
+                .where(group_col.isnot(None))
+                .group_by(bucket_col, group_col)
+                .order_by(bucket_col)
+            ).all()
+
+            labels = sorted({r.bk for r in rows if r.bk})
+            groups = sorted({r.gk for r in rows if r.gk})
+            pivot: dict[str, dict[str, float]] = {g: {} for g in groups}
+            for r in rows:
+                if r.bk and r.gk:
+                    pivot[r.gk][r.bk] = round(float(r.total or 0), 2)
+            series = [
+                {"name": g, "data": [pivot[g].get(lbl, 0.0) for lbl in labels]}
+                for g in groups
+            ]
+        else:
+            rows = self.db.execute(
+                select(
+                    bucket_col.label("bk"),
+                    func.sum(GoldPedidoDetalhado.receita_bruta).label("total"),
+                )
+                .where(and_(*base))
+                .group_by(bucket_col)
+                .order_by(bucket_col)
+            ).all()
+            labels = [r.bk for r in rows if r.bk]
+            series = [
+                {"name": "Total", "data": [round(float(r.total or 0), 2) for r in rows if r.bk]}
+            ]
+
+        return {"bucket": bucket, "labels": labels, "series": series}
 
     def get_map_data(
         self,

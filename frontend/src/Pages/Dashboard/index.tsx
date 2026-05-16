@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { MetricCard } from "@/components/molecules/MetricCard"
 import type { MetricCardData } from "@/components/molecules/MetricCard"
 import { ModuleBarChart } from "@/components/molecules/ModuleBarChart"
@@ -48,17 +48,21 @@ function fmtYoyLabel(yoyStart: string, yoyEnd: string): string {
 export default function Dashboard() {
   const [period, setPeriod] = useState<PeriodFilter>({ type: "month" })
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
 
-  const loadMetrics = useCallback((p: PeriodFilter) => {
-    setIsLoading(true)
-    fetchDashboardMetrics(p)
-      .then(setMetrics)
+  const isLoading = metrics === null
+
+  const handlePeriodChange = (p: PeriodFilter) => {
+    setMetrics(null)
+    setPeriod(p)
+  }
+
+  useEffect(() => {
+    let alive = true
+    fetchDashboardMetrics(period)
+      .then(data => { if (alive) setMetrics(data) })
       .catch(console.error)
-      .finally(() => setIsLoading(false))
-  }, [])
-
-  useEffect(() => { loadMetrics(period) }, [period, loadMetrics])
+    return () => { alive = false }
+  }, [period])
 
   // ------------------------------------------------------------------
   // Build MetricCardData for each real metric
@@ -147,7 +151,7 @@ export default function Dashboard() {
       {/* Page header */}
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-secondary-foreground">Dashboard</h1>
-        <PeriodSelector value={period} onChange={setPeriod} />
+        <PeriodSelector value={period} onChange={handlePeriodChange} />
       </div>
 
       {/* Metric cards: 3 cols × 2 rows */}
@@ -160,10 +164,8 @@ export default function Dashboard() {
       {/* Chart cards: fill remaining vertical space */}
       <div className="flex flex-row w-full h-full gap-6">
         <ModuleBarChart
-            title="Receita mensal" 
-            type="pedidos"
-            serial_data={[145678, 215256, 175478, 310251]}
-            xAxis_data={["Jan", "Fev", "Mar", "Apr"]}
+            title="Receita mensal"
+            period={period}
         />
         <BrazilMapCard period={period} />
       </div>

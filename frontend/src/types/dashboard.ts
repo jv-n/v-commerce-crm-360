@@ -41,3 +41,16 @@ export interface MapData {
   view: string
   items: MapItem[]
 }
+
+export type RevenueBucket = "day" | "week" | "month" | "year"
+
+export interface RevenueSeries {
+  name: string
+  data: number[]
+}
+
+export interface RevenueChartData {
+  bucket: RevenueBucket
+  labels: string[]
+  series: RevenueSeries[]
+}
