@@ -98,12 +98,12 @@ export default function Home() {
 
       <div className="w-full py-4">
         <div className="flex items-center gap-2 mb-1">
-          <img src="/v_ai.svg" alt="Assistente de IA" className="w-6 h-6" />
-          <span className="text-[36px] font-bold text-gray-900">
+          <img src="/v_ai.svg" alt="Assistente de IA" className="w-8 h-8" />
+          <span className="text-[24px] font-bold text-gray-900">
             Assistente de IA
           </span>
         </div>
-        <p className="text-[12px] text-gray-400 mb-3 leading-relaxed">
+        <p className="text-[12px] text-gray-900 mb-3 leading-relaxed">
           Agente para assistência e informações sobre dados com o sistema.
           Realize a interação através de textos no campo abaixo ou acesse o
           botão no menu lateral para expandir o assistente.
@@ -119,7 +119,7 @@ export default function Home() {
         />
       </div>
       <div className="flex items-center gap-2 mb-1">
-        <FlagOutlined sx={{ width: 22.5, height: 25.5, color: "#374151" }} />
+        <FlagOutlined sx={{ width: 30, height: 30, color: "#374151" }} />
         <h2 className="text-[24px] font-bold text-gray-900">Funções do sistema</h2>
       </div>
       <div className="grid grid-cols-3 gap-4">
