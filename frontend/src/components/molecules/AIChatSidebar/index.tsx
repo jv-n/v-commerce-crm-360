@@ -33,6 +33,8 @@ interface AIChatSidebarProps {
   userName?: string;
   pendingMention?: MentionItem | null;
   onMentionInserted?: () => void;
+  initialMessage?: string;                    
+  onInitialMessageSent?: () => void;
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -56,6 +58,9 @@ export default function AIChatSidebar({
   userName = "você",
   pendingMention,
   onMentionInserted,
+  initialMessage,
+  onInitialMessageSent,
+
 }: AIChatSidebarProps) {
   const navigate = useNavigate();
   const { pathname } = useLocation();
@@ -88,6 +93,15 @@ export default function AIChatSidebar({
     }, 60);
     return () => clearTimeout(t);
   }, [open, pendingMention]);
+
+  useEffect(() => {
+  if (!open || !initialMessage?.trim()) return;
+  const t = setTimeout(() => {
+    handleSend(initialMessage);
+    onInitialMessageSent?.();
+  }, 100);
+  return () => clearTimeout(t);
+}, [open, initialMessage]);
 
   // ── Carregar histórico do backend ─────────────────────────────────────────
 

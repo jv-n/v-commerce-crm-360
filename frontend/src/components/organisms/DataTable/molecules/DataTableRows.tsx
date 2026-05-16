@@ -214,7 +214,7 @@ export function DataTableRows<T,>({
                           rowClassName,
                           isExpanded && expandedRowClassName,
                           isExpanded && "bg-purple-50/",
-                          isSelected && "bg-blue-50/60",
+                          isSelected && "bg-[#F7EBFF]",
                           onRowClick && "cursor-pointer"
                         )}
                         onClick={() => onRowClick?.(row)}
