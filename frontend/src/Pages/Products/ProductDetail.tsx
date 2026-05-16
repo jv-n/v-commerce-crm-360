@@ -166,7 +166,7 @@ export default function ProductDetail() {
     if (!id) return
     setLoading(true)
     setError(false)
-    Promise.all([
+    Promise.allSettled([
       fetchProductById(id),
       fetchProductOrders(id),
       fetchProductTickets(id),
@@ -174,13 +174,13 @@ export default function ProductDetail() {
       fetchProductActivities(id),
     ])
       .then(([p, o, t, r, a]) => {
-        setProduct(p)
-        setOrders(o)
-        setTickets(t)
-        setRevenue(r)
-        setActivities(a)
+        if (p.status === "rejected") { setError(true); return }
+        setProduct(p.value)
+        setOrders(o.status === "fulfilled" ? o.value : [])
+        setTickets(t.status === "fulfilled" ? t.value : [])
+        setRevenue(r.status === "fulfilled" ? r.value : [])
+        setActivities(a.status === "fulfilled" ? a.value : [])
       })
-      .catch(() => setError(true))
       .finally(() => setLoading(false))
   }, [id])
 

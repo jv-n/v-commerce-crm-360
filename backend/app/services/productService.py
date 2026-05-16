@@ -2,7 +2,7 @@ from datetime import date, datetime, timezone, timedelta
 
 _BRT = timezone(timedelta(hours=-3))
 
-from sqlalchemy import asc, desc, select, func
+from sqlalchemy import asc, desc, func
 from sqlalchemy.orm import Session
 
 from app.models.productModel import DimProduto, GoldDesempenhoProduto, ProductActivity
@@ -20,6 +20,8 @@ def _to_product_out(
     peso_kg: float | None = None,
     data_cadastro: str | None = None,
 ) -> ProductSchema:
+    peso_kg = peso_kg if peso_kg is not None else gold.peso_kg
+    data_cadastro = data_cadastro or gold.data_cadastro_produto
     raw_date = data_cadastro or ""
     if raw_date and "-" in raw_date:
         y, m, d = raw_date[:10].split("-")
@@ -132,22 +134,18 @@ class ProductService:
         if sales_max is not None:
             query = query.filter(GoldDesempenhoProduto.qtd_vendida <= sales_max)
 
-        # date_from / date_to: buscados no dim_produtos via subquery
-        if date_from or date_to:
-            dim_q = select(DimProduto.id_produto)
-            if date_from:
-                try:
-                    d, m, y = date_from.strip().split("/")
-                    dim_q = dim_q.where(DimProduto.data_cadastro_produto >= f"{y}-{m.zfill(2)}-{d.zfill(2)}")
-                except ValueError:
-                    pass
-            if date_to:
-                try:
-                    d, m, y = date_to.strip().split("/")
-                    dim_q = dim_q.where(DimProduto.data_cadastro_produto <= f"{y}-{m.zfill(2)}-{d.zfill(2)}")
-                except ValueError:
-                    pass
-            query = query.filter(GoldDesempenhoProduto.id_produto.in_(dim_q))
+        if date_from:
+            try:
+                d, m, y = date_from.strip().split("/")
+                query = query.filter(GoldDesempenhoProduto.data_cadastro_produto >= f"{y}-{m.zfill(2)}-{d.zfill(2)}")
+            except ValueError:
+                pass
+        if date_to:
+            try:
+                d, m, y = date_to.strip().split("/")
+                query = query.filter(GoldDesempenhoProduto.data_cadastro_produto <= f"{y}-{m.zfill(2)}-{d.zfill(2)}")
+            except ValueError:
+                pass
 
         col_fn = self._SORT_COLUMNS.get(sort_by or "")
         if col_fn:
@@ -177,12 +175,7 @@ class ProductService:
         ).first()
         if not gold:
             return None
-        dim = self.db.query(DimProduto).filter(DimProduto.id_produto == product_id).first()
-        return _to_product_out(
-            gold,
-            peso_kg=dim.peso_kg if dim else None,
-            data_cadastro=dim.data_cadastro_produto if dim else None,
-        )
+        return _to_product_out(gold)
 
     def get_product_orders(self, product_id: str, limit: int = 10) -> list[ProductOrderOut]:
         rows = (
@@ -221,8 +214,8 @@ class ProductService:
                 id_pedido=r.id_pedido,
                 tipo_problema=r.tipo_problema,
                 data_abertura=r.data_abertura,
-                data_resolucao=r.data_resolucao,
-                resolvido=str(r.resolvido or "").lower() == "true",
+                data_resolucao=None,
+                resolvido=str(r.status_atendimento or "").lower() == "finalizado",
                 agente_suporte=r.agente_suporte,
                 nota_avaliacao=r.nota_avaliacao,
             )
