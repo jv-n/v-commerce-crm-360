@@ -20,14 +20,14 @@ export default function Products() {
         <div className="flex items-center gap-2">
           <button
             onClick={() => tableRef.current?.openExport()}
-            className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors"
+            className="flex items-center gap-2 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-[#F0DDFD] transition-colors"
           >
             <IosShareOutlinedIcon sx={{ fontSize: 16 }} />
             Exportar
           </button>
           <button
             onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 bg-[#F7EBFF] border border-[#D1B1E5] rounded-lg px-4 py-2 text-sm font-medium text-gray-900 hover:bg-gray-50 shadow-sm transition-colors"
+            className="flex items-center gap-2 bg-[#F7EBFF] border border-[#D1B1E5] rounded-lg px-4 py-2 text-sm font-medium text-gray-900 hover:bg-[#F0DDFD] shadow-sm transition-colors"
           >
             <IoMdAddCircleOutline />
             Adicionar produto

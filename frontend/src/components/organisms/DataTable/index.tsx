@@ -56,6 +56,7 @@ export function DataTable<T,>({
   onSearchChange,
   headerClassName,
   rowClassName,
+  getRowClassName,
   expandedRowClassName,
   dividersClassName,
   expandedRowIds,
@@ -370,6 +371,7 @@ export function DataTable<T,>({
           onToggleRow={selection.toggleRow}
           headerClassName={headerClassName}
           rowClassName={rowClassName}
+          getRowClassName={getRowClassName}
           expandedRowClassName={expandedRowClassName}
           dividersClassName={dividersClassName}
           expandedRowIds={expandedRowIds}
