@@ -57,7 +57,6 @@ export default function AppFrame() {
 
     const sidebarItems1 = [
         { name: "Home", nav: true, path: "/" },
-        { name: "Bookmarks", nav: true, path: "/bookmarks" },
     ];
 
     const sidebarItems2 = [

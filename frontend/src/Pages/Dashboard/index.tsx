@@ -6,6 +6,7 @@ import PeopleAltOutlinedIcon from "@mui/icons-material/PeopleAltOutlined"
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined"
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
 import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined"
+import { ModuleBarChart } from "@/components/molecules/ModuleBarChart"
 
 const METRIC_CARDS: MetricCardData[] = [
   {
@@ -60,13 +61,24 @@ const METRIC_CARDS: MetricCardData[] = [
 
 export default function Dashboard() {
   return (
-    <div className="flex flex-col gap-6 h-full w-full rounded-xl bg-secondary p-6">
+    <div className="flex flex-col items-start gap-6 h-full w-full rounded-xl bg-secondary p-6 overflow-auto">
       <h1 className="text-2xl font-bold text-secondary-foreground">Dashboard</h1>
 
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="grid grid-cols-1 w-full gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {METRIC_CARDS.map((card) => (
           <MetricCard key={card.title} {...card} />
         ))}
+      </div>
+
+      <div className="flex justify-start">
+        <ModuleBarChart
+            title="Receita mensal" 
+            type="pedidos"
+            serial_data={[3, 4, 7, 9]}
+            xAxis_data={["Jan", "Fev", "Mar", "Apr"]}
+        />
+        <div>
+        </div>
       </div>
     </div>
   )
