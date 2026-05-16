@@ -20,6 +20,7 @@ interface DataTableRowsProps<T> {
   emptyMessage?: string
   headerClassName?: string
   rowClassName?: string
+  getRowClassName?: (row: T) => string
   expandedRowClassName?: string
   dividersClassName?: string
   expandedRowIds?: Set<string>
@@ -42,6 +43,7 @@ export function DataTableRows<T,>({
   emptyMessage = "Nenhum item encontrado.",
   headerClassName = "bg-[#F0DDFD]",
   rowClassName = "hover:bg-[#F7EBFF]",
+  getRowClassName,
   expandedRowClassName = "bg-[#F7EBFF]",
   dividersClassName = "divide-[#9F83B2]",
   expandedRowIds,
@@ -215,7 +217,8 @@ export function DataTableRows<T,>({
                           isExpanded && expandedRowClassName,
                           isExpanded && "bg-purple-50/",
                           isSelected && "bg-[#F7EBFF]",
-                          onRowClick && "cursor-pointer"
+                          onRowClick && "cursor-pointer",
+                          getRowClassName?.(row)
                         )}
                         onClick={() => onRowClick?.(row)}
                       >
