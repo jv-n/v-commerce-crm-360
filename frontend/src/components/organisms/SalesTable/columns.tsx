@@ -112,7 +112,6 @@ export function getSaleColumns(
       render: (c) =>
         c.date ? (
           <div className="flex items-center gap-1.5 text-gray-600">
-            <AccessTimeOutlinedIcon sx={{ fontSize: 13, color: "#9CA3AF" }} />
             <CellText value={c.date} variant="primary" />
           </div>
         ) : (
