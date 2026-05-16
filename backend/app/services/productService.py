@@ -74,12 +74,6 @@ class ProductService:
         ("status",   "ativo",       "Status"),
     ]
 
-    def _build_dim_map(self, ids: list[str]) -> dict[str, DimProduto]:
-        if not ids:
-            return {}
-        rows = self.db.query(DimProduto).filter(DimProduto.id_produto.in_(ids)).all()
-        return {r.id_produto: r for r in rows}
-
     def get_products(
         self,
         page: int = 1,
@@ -157,17 +151,7 @@ class ProductService:
             query.offset((page - 1) * page_size).limit(page_size).all()
         )
 
-        ids = [g.id_produto for g in gold_rows]
-        dim_map = self._build_dim_map(ids)
-
-        return [
-            _to_product_out(
-                g,
-                peso_kg=dim_map[g.id_produto].peso_kg if g.id_produto in dim_map else None,
-                data_cadastro=dim_map[g.id_produto].data_cadastro_produto if g.id_produto in dim_map else None,
-            )
-            for g in gold_rows
-        ], total
+        return [_to_product_out(g) for g in gold_rows], total
 
     def get_product_by_id(self, product_id: str) -> ProductSchema | None:
         gold = self.db.query(GoldDesempenhoProduto).filter(
@@ -285,14 +269,16 @@ class ProductService:
             categoria=body.category,
             preco=body.price,
             fornecedor=body.supplier,
+            peso_kg=body.weight_kg,
             estoque_disponivel=float(body.stock),
             ativo=ativo,
+            data_cadastro_produto=today,
         )
         self.db.add(gold)
         self.db.commit()
         self.db.refresh(dim)
 
-        return _to_product_out(gold, peso_kg=dim.peso_kg, data_cadastro=dim.data_cadastro_produto)
+        return _to_product_out(gold)
 
     def update_product(
         self,
@@ -346,11 +332,11 @@ class ProductService:
                     changed_at=now,
                 ))
 
-        # weight_kg vem do DimProduto
-        if body.weight_kg is not None and dim:
-            old_w = f"{dim.peso_kg} kg" if dim.peso_kg is not None else "—"
+        if body.weight_kg is not None:
+            current_peso = gold.peso_kg if gold.peso_kg is not None else (dim.peso_kg if dim else None)
+            old_w = f"{current_peso} kg" if current_peso is not None else "—"
             new_w = f"{body.weight_kg} kg"
-            if dim.peso_kg != body.weight_kg:
+            if current_peso != body.weight_kg:
                 activities.append(ProductActivity(
                     id_produto=product_id,
                     user_name=user_name,
@@ -362,12 +348,13 @@ class ProductService:
                 ))
 
         # ── aplica as alterações ──
-        if body.name     is not None: gold.nome_produto       = body.name
-        if body.category is not None: gold.categoria          = body.category
-        if body.price    is not None: gold.preco              = body.price
-        if body.supplier is not None: gold.fornecedor         = body.supplier
-        if body.stock    is not None: gold.estoque_disponivel = float(body.stock)
-        if body.status   is not None: gold.ativo              = "True" if body.status == "Ativo" else "False"
+        if body.name      is not None: gold.nome_produto       = body.name
+        if body.category  is not None: gold.categoria          = body.category
+        if body.price     is not None: gold.preco              = body.price
+        if body.supplier  is not None: gold.fornecedor         = body.supplier
+        if body.stock     is not None: gold.estoque_disponivel = float(body.stock)
+        if body.status    is not None: gold.ativo              = "True" if body.status == "Ativo" else "False"
+        if body.weight_kg is not None: gold.peso_kg            = body.weight_kg
 
         if dim:
             if body.name      is not None: dim.nome_produto       = body.name
@@ -393,11 +380,7 @@ class ProductService:
         if dim:
             self.db.refresh(dim)
 
-        return _to_product_out(
-            gold,
-            peso_kg=dim.peso_kg if dim else None,
-            data_cadastro=dim.data_cadastro_produto if dim else None,
-        )
+        return _to_product_out(gold)
 
     def get_product_resumo(self, product_id: str) -> ProductResumoOut | None:
         gold = self.db.query(GoldDesempenhoProduto).filter(
