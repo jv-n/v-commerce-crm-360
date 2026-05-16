@@ -9,60 +9,31 @@ import {
 } from "react"
 
 import { DataTable } from "@/components/organisms/DataTable"
-import { ExportPopover, type ExportPill } from "@/components/molecules/ExportPopover"
+import { ExportPopover } from "@/components/molecules/ExportPopover"
 import { getTicketColumns } from "./columns"
 import { fetchTicketResponsibles, fetchTickets } from "@/lib/api/tickets"
 import type { Ticket } from "@/types/ticket"
-import type { ActiveFilters, Tab } from "@/components/organisms/DataTable/types"
+import type { ActiveFilters } from "@/components/organisms/DataTable/types"
 import { useAuth } from "@/contexts/auth/useAuth"
 import { TicketExpandedRow } from "./TicketExpandedRow"
 import { cn } from "@/lib/utils"
 
-const TABS: Tab[] = [
-  { id: "all", label: "Todos os Tickets" },
-  { id: "my-attending", label: "Meus Tickets em Atendimento" },
-  { id: "waiting", label: "Tickets Aguardando..." },
-]
-
-const DEFAULT_PAGE_SIZE = 10
-const EXPORT_PAGE_SIZE = 500000
-
-interface ServerFilters {
-  responsible: string[]
-  status: string[]
-  problem: string[]
-  score: string[]
-}
-
-interface DateFilters {
-  openedFrom: string
-  openedTo: string
-}
-
-type TicketSort = {
-  key: string
-  direction: "asc" | "desc"
-} | null
-
-const EMPTY_FILTERS: ServerFilters = {
-  responsible: [],
-  status: [],
-  problem: [],
-  score: [],
-}
-
-const EMPTY_DATE_FILTERS: DateFilters = {
-  openedFrom: "",
-  openedTo: "",
-}
-
-type FilterSnapshot = {
-  tab: string
-  page: number
-  serverFilters: ServerFilters
-  dateFilters: DateFilters
-  sort: TicketSort
-}
+import {
+  DEFAULT_PAGE_SIZE,
+  EMPTY_DATE_FILTERS,
+  EMPTY_FILTERS,
+  EXPORT_PAGE_SIZE,
+  TABS,
+  type DateFilters,
+  type FilterSnapshot,
+  type ServerFilters,
+  type TicketSort,
+} from "./ticketConstants"
+import { buildTicketsCsv, downloadCsv } from "./ticketExport"
+import {
+  buildTicketExportPills,
+  getTicketRequestFilters,
+} from "./ticketFilters"
 
 export type TicketsTableHandle = {
   undo: () => void
@@ -73,67 +44,6 @@ export type TicketsTableHandle = {
 
 type TicketsTableProps = {
   onCanUndoChange?: (can: boolean) => void
-}
-
-function escapeCsvValue(value: unknown) {
-  return `"${String(value ?? "").replace(/"/g, '""')}"`
-}
-
-function buildTicketsCsv(rows: Ticket[]) {
-  const headers = [
-    "ID Ticket",
-    "Cliente",
-    "ID Cliente",
-    "ID Pedido",
-    "Data de abertura",
-    "Responsável",
-    "Problema",
-    "Status",
-    "Nota",
-  ]
-
-  const lines = rows.map(ticket => [
-    ticket.id,
-    ticket.client,
-    ticket.clientId,
-    ticket.orderId,
-    ticket.openedAt,
-    ticket.responsible.name,
-    ticket.problem,
-    ticket.status,
-    ticket.score ?? "Sem avaliação",
-  ])
-
-  return [headers, ...lines]
-    .map(row => row.map(escapeCsvValue).join(","))
-    .join("\n")
-}
-
-function downloadCsv(csv: string, filename: string) {
-  const blob = new Blob([`\uFEFF${csv}`], {
-    type: "text/csv;charset=utf-8;",
-  })
-
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement("a")
-
-  link.href = url
-  link.download = filename
-  link.click()
-
-  URL.revokeObjectURL(url)
-}
-
-function formatDateForPill(value: string) {
-  if (!value) return ""
-
-  const [year, month, day] = value.split("-")
-
-  if (!year || !month || !day) {
-    return value
-  }
-
-  return `${day}/${month}/${year}`
 }
 
 export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
@@ -154,13 +64,14 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
     const [dateFilters, setDateFilters] =
       useState<DateFilters>(EMPTY_DATE_FILTERS)
     const [sort, setSort] = useState<TicketSort>(null)
+    const [searchQuery, setSearchQuery] = useState("")
     const [filterHistory, setFilterHistory] = useState<FilterSnapshot[]>([])
     const [exportOpen, setExportOpen] = useState(false)
-
     const [exportLoading, setExportLoading] = useState(false)
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
 
-    const openedFromIso = dateFilters.openedFrom
-    const openedToIso = dateFilters.openedTo
+    const ticketsRef = useRef<Ticket[]>([])
+    const selectedCache = useRef<Map<string, Ticket>>(new Map())
 
     const dateFilterCount =
       Number(Boolean(dateFilters.openedFrom)) +
@@ -172,7 +83,35 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
       serverFilters: EMPTY_FILTERS,
       dateFilters: EMPTY_DATE_FILTERS,
       sort: null,
+      searchQuery: "",
     })
+
+    useEffect(() => {
+      ticketsRef.current = tickets
+    }, [tickets])
+
+    const clearSelection = useCallback(() => {
+      selectedCache.current.clear()
+      setSelectedIds(new Set())
+    }, [])
+
+    const handleSelectionChange = useCallback((ids: Set<string>) => {
+      const cache = selectedCache.current
+
+      for (const id of Array.from(cache.keys())) {
+        if (!ids.has(id)) {
+          cache.delete(id)
+        }
+      }
+
+      for (const ticket of ticketsRef.current) {
+        if (ids.has(ticket.id)) {
+          cache.set(ticket.id, ticket)
+        }
+      }
+
+      setSelectedIds(new Set(ids))
+    }, [])
 
     const handleToggleExpand = useCallback((id: string) => {
       setExpandedRowIds(prev => {
@@ -201,8 +140,9 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
         serverFilters,
         dateFilters,
         sort,
+        searchQuery,
       }
-    }, [activeTab, page, serverFilters, dateFilters, sort])
+    }, [activeTab, page, serverFilters, dateFilters, sort, searchQuery])
 
     useEffect(() => {
       let cancelled = false
@@ -238,38 +178,31 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
       onCanUndoChange?.(filterHistory.length > 0)
     }, [filterHistory.length, onCanUndoChange])
 
-    const getRequestFilters = useCallback(() => {
-      const requestResponsible =
-        activeTab === "my-attending"
-          ? loggedUserName
-            ? [loggedUserName]
-            : ["__usuario_nao_encontrado__"]
-          : serverFilters.responsible
+    const requestFilters = useMemo(
+      () =>
+        getTicketRequestFilters(activeTab, loggedUserName, serverFilters),
+      [activeTab, loggedUserName, serverFilters]
+    )
 
-      const requestStatus =
-        activeTab === "my-attending"
-          ? ["Em atendimento"]
-          : activeTab === "waiting"
-            ? ["Aguardando"]
-            : serverFilters.status
-
-      return {
-        responsible: requestResponsible,
-        status: requestStatus,
-        problem: serverFilters.problem,
-        score: serverFilters.score,
-      }
-    }, [activeTab, loggedUserName, serverFilters])
+    const exportPills = useMemo(
+      () =>
+        buildTicketExportPills(
+          activeTab,
+          searchQuery,
+          serverFilters,
+          dateFilters
+        ),
+      [activeTab, searchQuery, serverFilters, dateFilters]
+    )
 
     const handleExportCsv = useCallback(async () => {
       setExportLoading(true)
 
       try {
-        const requestFilters = getRequestFilters()
-
         const response = await fetchTickets({
           page: 1,
           pageSize: EXPORT_PAGE_SIZE,
+          search: searchQuery,
           responsible: requestFilters.responsible,
           status: requestFilters.status,
           problem: requestFilters.problem,
@@ -290,15 +223,20 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
       } finally {
         setExportLoading(false)
       }
-    }, [dateFilters.openedFrom, dateFilters.openedTo, getRequestFilters, sort])
+    }, [dateFilters, requestFilters, searchQuery, sort])
 
     const handleExportSelected = useCallback(async () => {
       setExportLoading(true)
 
       try {
+        const selectedTickets = Array.from(selectedCache.current.values())
         const today = new Date().toISOString().slice(0, 10)
 
-        downloadCsv(buildTicketsCsv([]), `tickets_selecionados_${today}.csv`)
+        downloadCsv(
+          buildTicketsCsv(selectedTickets),
+          `tickets_selecionados_${today}.csv`
+        )
+
         setExportOpen(false)
       } catch (error) {
         console.error(error)
@@ -306,74 +244,6 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
         setExportLoading(false)
       }
     }, [])
-
-    const exportPills: ExportPill[] = useMemo(
-      () => [
-        ...(activeTab === "my-attending"
-          ? [{ label: "Aba", value: "Meus Tickets" }]
-          : []),
-        ...(activeTab === "waiting"
-          ? [{ label: "Aba", value: "Aguardando" }]
-          : []),
-        ...(serverFilters.responsible.length
-          ? [
-              {
-                label: "Responsável",
-                value: serverFilters.responsible.join(", "),
-              },
-            ]
-          : []),
-        ...(serverFilters.status.length
-          ? [
-              {
-                label: "Status",
-                value: serverFilters.status.join(", "),
-              },
-            ]
-          : []),
-        ...(serverFilters.problem.length
-          ? [
-              {
-                label: "Problema",
-                value: serverFilters.problem.join(", "),
-              },
-            ]
-          : []),
-        ...(serverFilters.score.length
-          ? [
-              {
-                label: "Nota",
-                value: serverFilters.score.join(", "),
-              },
-            ]
-          : []),
-        ...(dateFilters.openedFrom
-          ? [
-              {
-                label: "Data início",
-                value: formatDateForPill(dateFilters.openedFrom),
-              },
-            ]
-          : []),
-        ...(dateFilters.openedTo
-          ? [
-              {
-                label: "Data fim",
-                value: formatDateForPill(dateFilters.openedTo),
-              },
-            ]
-          : []),
-      ],
-      [
-        activeTab,
-        serverFilters.responsible,
-        serverFilters.status,
-        serverFilters.problem,
-        serverFilters.score,
-        dateFilters.openedFrom,
-        dateFilters.openedTo,
-      ]
-    )
 
     useImperativeHandle(
       ref,
@@ -391,6 +261,8 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
             setServerFilters(prev.serverFilters)
             setDateFilters(prev.dateFilters)
             setSort(prev.sort)
+            setSearchQuery(prev.searchQuery)
+            clearSelection()
 
             return history.slice(0, -1)
           })
@@ -404,34 +276,30 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
           setServerFilters(EMPTY_FILTERS)
           setDateFilters(EMPTY_DATE_FILTERS)
           setSort(null)
+          setSearchQuery("")
+          clearSelection()
         },
         openExport: () => setExportOpen(true),
         openAdd: () => {
-          // Mantém o botão disponível sem interferir na exportação.
-          // Caso exista modal/fluxo de criação de ticket no projeto,
-          // conecte a abertura dele aqui.
           console.info("Abrir fluxo de criação de ticket")
         },
       }),
-      [pushHistory]
+      [clearSelection, pushHistory]
     )
-
-    const { responsible, status, problem, score } = serverFilters
 
     useEffect(() => {
       let cancelled = false
 
-      const requestFilters = getRequestFilters()
-
       fetchTickets({
         page,
         pageSize,
+        search: searchQuery,
         responsible: requestFilters.responsible,
         status: requestFilters.status,
-        problem,
-        score,
-        openedFrom: openedFromIso,
-        openedTo: openedToIso,
+        problem: requestFilters.problem,
+        score: requestFilters.score,
+        openedFrom: dateFilters.openedFrom,
+        openedTo: dateFilters.openedTo,
         sortKey: sort?.key,
         sortDir: sort?.direction,
       })
@@ -449,20 +317,7 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
       return () => {
         cancelled = true
       }
-    }, [
-      page,
-      pageSize,
-      activeTab,
-      loggedUserName,
-      responsible,
-      status,
-      problem,
-      score,
-      openedFromIso,
-      openedToIso,
-      sort,
-      getRequestFilters,
-    ])
+    }, [page, pageSize, searchQuery, requestFilters, dateFilters, sort])
 
     const handleTabChange = (tabId: string) => {
       pushHistory()
@@ -473,6 +328,8 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
       setServerFilters(EMPTY_FILTERS)
       setDateFilters(EMPTY_DATE_FILTERS)
       setSort(null)
+      setSearchQuery("")
+      clearSelection()
     }
 
     const handlePageChange = (newPage: number) => {
@@ -501,6 +358,7 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
       pushHistory()
       setExpandedRowIds(new Set())
       setLoading(true)
+      clearSelection()
 
       setServerFilters({
         responsible: getMultiSelectValues(responsibleFilter),
@@ -513,9 +371,11 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
     }
 
     const handleDateFilterChange = (key: keyof DateFilters, value: string) => {
+      pushHistory()
       setExpandedRowIds(new Set())
       setLoading(true)
       setPage(1)
+      clearSelection()
 
       setDateFilters(prev => ({
         ...prev,
@@ -524,10 +384,20 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
     }
 
     const handleClearDateFilters = () => {
+      pushHistory()
       setExpandedRowIds(new Set())
       setLoading(true)
       setPage(1)
+      clearSelection()
       setDateFilters(EMPTY_DATE_FILTERS)
+    }
+
+    const handleSearchChange = (query: string) => {
+      setExpandedRowIds(new Set())
+      setLoading(true)
+      setPage(1)
+      clearSelection()
+      setSearchQuery(query)
     }
 
     const handleSortChange = (
@@ -560,7 +430,7 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
           pills={exportPills}
           exportLoading={exportLoading}
           onExport={handleExportCsv}
-          selectedCount={0}
+          selectedCount={selectedIds.size}
           onExportSelected={handleExportSelected}
         />
 
@@ -573,7 +443,9 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
           activeTab={activeTab}
           onTabChange={handleTabChange}
           onFiltersChange={handleFiltersChange}
+          onSelectionChange={handleSelectionChange}
           onSortChange={handleSortChange}
+          onSearchChange={handleSearchChange}
           headerClassName="
             bg-[#F0DDFD]
             [&_th:not(:first-child)_button_svg]:!text-[#9F83B2]

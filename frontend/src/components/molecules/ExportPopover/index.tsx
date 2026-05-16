@@ -40,7 +40,7 @@ export function ExportPopover({
 
   return (
     <div
-      className="fixed inset-0 bg-black/20 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/20 flex items-center justify-center z-60"
       onMouseDown={onClose}
     >
       <div
