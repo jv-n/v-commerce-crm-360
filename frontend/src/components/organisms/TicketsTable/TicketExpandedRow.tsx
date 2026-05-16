@@ -42,6 +42,14 @@ type TimelineEntry = {
   time: string
 }
 
+function hasResponsible(ticket: Ticket) {
+  return (
+    ticket.responsible.name &&
+    ticket.responsible.name.trim() !== "" &&
+    ticket.responsible.name !== "Não informado"
+  )
+}
+
 function getTimeline(ticket: Ticket): TimelineEntry[] {
   const timeline: TimelineEntry[] = []
 
@@ -52,10 +60,12 @@ function getTimeline(ticket: Ticket): TimelineEntry[] {
     })
   }
 
-  timeline.push({
-    type: "linked",
-    time: ticket.openedAt,
-  })
+  if (hasResponsible(ticket)) {
+    timeline.push({
+      type: "linked",
+      time: ticket.openedAt,
+    })
+  }
 
   timeline.push({
     type: "created",
