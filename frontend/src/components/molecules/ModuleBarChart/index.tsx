@@ -26,9 +26,8 @@ const GRANULARITY_OPTIONS: { value: GranularityOption; label: string }[] = [
 ]
 
 export function ModuleBarChart(props: ModuleBarChartProps) {
-
     return(
-        <div className="flex flex-col gap-3 items-start justify-center bg-white rounded-md shadow-sm p-4">
+        <div className="flex flex-col h-full gap-3 items-start justify-center bg-white rounded-md shadow-sm p-4">
             <span className="text-md font-bold text-secondary-foreground">{props.title}</span>
             <div className="flex flex-row gap-2 items-start justify-center">
                 <FilterSelectType Options={GRANULARITY_OPTIONS} />
@@ -39,7 +38,6 @@ export function ModuleBarChart(props: ModuleBarChartProps) {
                     {
                         id: "barCategory",
                         data: props.xAxis_data,
-                        height: 26,
                         barGapRatio: 0.5
                     }
                 ]}

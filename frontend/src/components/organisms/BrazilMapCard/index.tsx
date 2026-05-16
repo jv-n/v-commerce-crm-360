@@ -80,7 +80,7 @@ export function BrazilMapCard({ period }: BrazilMapCardProps) {
     }))
 
   return (
-    <div className="flex flex-col gap-2 rounded-xl bg-card p-4 shadow-sm h-full">
+    <div className="flex flex-col gap-2 rounded-xl bg-card p-4 shadow-sm h-full w-full">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-sm font-medium text-muted-foreground">
