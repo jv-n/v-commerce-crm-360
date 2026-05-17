@@ -132,8 +132,8 @@ class DashboardService:
         return (
             self.db.execute(
                 select(func.count(GoldTicket360.ticket_id))
-                .where(GoldTicket360.data_fechamento >= start)
-                .where(GoldTicket360.data_fechamento <= end)
+                .where(GoldTicket360.data_abertura >= start)
+                .where(GoldTicket360.data_abertura <= end)
                 .where(func.lower(GoldTicket360.status_atendimento) == "finalizado")
             ).scalar()
             or 0
