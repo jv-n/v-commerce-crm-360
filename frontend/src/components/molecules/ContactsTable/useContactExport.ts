@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react"
-import { fetchContacts } from "@/lib/api/contacts"
+import { exportContactsCSV } from "@/lib/api/contacts"
 import type { ExportPill } from "@/components/molecules/ExportPopover"
 import type { Contact } from "@/types/contact"
 import type { ContactAdvancedFilters } from "./AdvancedFiltersDrawer"
@@ -34,13 +34,11 @@ function downloadCSV(csv: string, filename: string) {
 interface Params {
   activeTab: string
   serverFilters: ServerFilters
-  sortBy: string | null
-  sortDir: "asc" | "desc"
   advanced: ContactAdvancedFilters
   contacts: Contact[]
 }
 
-export function useContactExport({ activeTab, serverFilters, sortBy, sortDir, advanced, contacts }: Params) {
+export function useContactExport({ activeTab, serverFilters, advanced, contacts }: Params) {
   const [exportOpen,    setExportOpen]    = useState(false)
   const [exportLoading, setExportLoading] = useState(false)
   const [selectedIds,   setSelectedIds]   = useState<Set<string>>(new Set())
@@ -61,31 +59,50 @@ export function useContactExport({ activeTab, serverFilters, sortBy, sortDir, ad
   const handleExportCSV = async () => {
     setExportLoading(true)
     try {
-      const res = await fetchContacts({
-        page: 1, pageSize: 500000, tab: activeTab,
-        purchasesMin, purchasesMax, createdYear, engagement, clientStatuses,
-        sortBy, sortDir,
-        regioes:            advanced.regioes,
-        origens:            advanced.origens,
-        pagamentos:         advanced.pagamentos,
-        receitaMin:         num(advanced.receitaMin),
-        receitaMax:         num(advanced.receitaMax),
-        ticketMedioMin:     num(advanced.ticketMedioMin),
-        ticketMedioMax:     num(advanced.ticketMedioMax),
-        primeiraCompraFrom: advanced.primeiraCompraFrom || undefined,
-        primeiraCompraTo:   advanced.primeiraCompraTo   || undefined,
-        ultimaCompraFrom:   advanced.ultimaCompraFrom   || undefined,
-        ultimaCompraTo:     advanced.ultimaCompraTo     || undefined,
-        ticketsSuporteMin:  num(advanced.ticketsSuporteMin),
-        ticketsSuporteMax:  num(advanced.ticketsSuporteMax),
-        notaAtendMin:       num(advanced.notaAtendMin),
-        notaAtendMax:       num(advanced.notaAtendMax),
-        npsMin:             num(advanced.npsMin),
-        npsMax:             num(advanced.npsMax),
-        notaProdMin:        num(advanced.notaProdMin),
-        notaProdMax:        num(advanced.notaProdMax),
+      await exportContactsCSV({
+        tab:            activeTab,
+        purchasesMin:   purchasesMin ?? undefined,
+        purchasesMax:   purchasesMax ?? undefined,
+        createdYear,
+        engagement,
+        clientStatuses,
+        regioes:                advanced.regioes,
+        origens:                advanced.origens,
+        pagamentos:             advanced.pagamentos,
+        receitaMin:             num(advanced.receitaMin),
+        receitaMax:             num(advanced.receitaMax),
+        ticketMedioMin:         num(advanced.ticketMedioMin),
+        ticketMedioMax:         num(advanced.ticketMedioMax),
+        primeiraCompraFrom:     advanced.primeiraCompraFrom || undefined,
+        primeiraCompraTo:       advanced.primeiraCompraTo   || undefined,
+        ultimaCompraFrom:       advanced.ultimaCompraFrom   || undefined,
+        ultimaCompraTo:         advanced.ultimaCompraTo     || undefined,
+        ticketsSuporteMin:      num(advanced.ticketsSuporteMin),
+        ticketsSuporteMax:      num(advanced.ticketsSuporteMax),
+        notaAtendMin:           num(advanced.notaAtendMin),
+        notaAtendMax:           num(advanced.notaAtendMax),
+        npsMin:                 num(advanced.npsMin),
+        npsMax:                 num(advanced.npsMax),
+        notaProdMin:            num(advanced.notaProdMin),
+        notaProdMax:            num(advanced.notaProdMax),
+        generos:                advanced.generos,
+        faixasEtarias:          advanced.faixasEtarias,
+        estados:                advanced.estados,
+        canaisPreferidos:       advanced.canaisPreferidos,
+        dispositivos:           advanced.dispositivos,
+        origensSessao:          advanced.origensSessao,
+        periodosDia:            advanced.periodosDia,
+        diasSemana:             advanced.diasSemana,
+        categoriasVisualizadas: advanced.categoriasVisualizadas,
+        taxaConversaoMin:       num(advanced.taxaConversaoMin),
+        taxaConversaoMax:       num(advanced.taxaConversaoMax),
+        totalSessoesMin:        num(advanced.totalSessoesMin),
+        totalSessoesMax:        num(advanced.totalSessoesMax),
+        abandonoCarrinhoMin:    num(advanced.abandonoCarrinhoMin),
+        abandonoCarrinhoMax:    num(advanced.abandonoCarrinhoMax),
+        npsRecenteMin:          num(advanced.npsRecenteMin),
+        npsRecenteMax:          num(advanced.npsRecenteMax),
       })
-      downloadCSV(buildCSV(res.data), `contatos_${new Date().toISOString().slice(0, 10)}.csv`)
       setExportOpen(false)
     } finally { setExportLoading(false) }
   }

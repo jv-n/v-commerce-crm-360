@@ -240,7 +240,7 @@ class ContactService:
         self.db.add(gold)
         self.db.commit()
         self.db.refresh(gold)
-        return _to_contact_out(gold, phone=None)
+        return _to_contact_out(gold)
 
     def update_contact(self, contact_id: str, data: ContactUpdate) -> ContactOut | None:
         gold = self.db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.contactModel import GoldCliente360
 from app.models.productModel import GoldEngajamentoProdutoDigital
 from app.models.saleModel import GoldPedidoDetalhado
-from app.models.ticketModel import FtTicketSuporte
+from app.models.ticketModel import GoldTicket360
 
 # Only valid Brazilian state names → 2-letter sigla
 _ESTADO_SIGLA: dict[str, str] = {
@@ -131,10 +131,10 @@ class DashboardService:
     def _tickets(self, start: str, end: str) -> int:
         return (
             self.db.execute(
-                select(func.count(FtTicketSuporte.ticket_id))
-                .where(FtTicketSuporte.data_abertura >= start)
-                .where(FtTicketSuporte.data_abertura <= end)
-                .where(FtTicketSuporte.resolvido == "True")
+                select(func.count(GoldTicket360.ticket_id))
+                .where(GoldTicket360.data_fechamento >= start)
+                .where(GoldTicket360.data_fechamento <= end)
+                .where(func.lower(GoldTicket360.status_atendimento) == "finalizado")
             ).scalar()
             or 0
         )

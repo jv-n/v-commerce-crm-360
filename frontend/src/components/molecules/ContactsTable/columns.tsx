@@ -17,7 +17,7 @@ const ENGAGEMENT_COLORS: Record<EngagementType, string> = {
 
 export function makeContactColumns(
   expandedRowId: string | null,
-  onToggle: (id: string) => void,
+  _onToggle: (id: string) => void,
   onNavigate: (id: string) => void,
 ): Column<Contact>[] {
   return [
