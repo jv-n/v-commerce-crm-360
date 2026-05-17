@@ -120,6 +120,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
   const [total,          setTotal]          = useState(0)
   const [loading,        setLoading]        = useState(true)
   const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(new Set())
+  const [activeRowId,    setActiveRowId]    = useState<string | null>(null)
 
   const [advanced,       setAdvanced]       = useState<AdvancedFilters>(EMPTY_ADVANCED)
   const [drawerOpen,     setDrawerOpen]     = useState(false)
@@ -252,12 +253,21 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
     resetPage()
   }
 
-  const onToggleExpand = (id: string) =>
+  const onToggleExpand = (id: string) => {
     setExpandedRowIds(prev => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) {
+        next.delete(id)
+        if (activeRowId === id) {
+          setActiveRowId(null)
+        }
+      } else {
+        next.add(id)
+        setActiveRowId(id)
+      }
       return next
     })
+  }
 
   const onToggleAllExpand = () =>
     setExpandedRowIds(prev =>
@@ -331,6 +341,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
         columns={makeProductColumns(expandedRowIds, onToggleExpand, products.map(p => p.id), onToggleAllExpand, (id) => navigate(`/products/${id}`)
         )}
         getRowId={(p) => p.id}
+        getRowClassName={(p) => (p.id === activeRowId ? "bg-[#F0DDFD] hover:bg-[#F0DDFD]" : "")}
         tabs={TABS}
         activeTab={activeTab}
         onTabChange={handleTabChange}

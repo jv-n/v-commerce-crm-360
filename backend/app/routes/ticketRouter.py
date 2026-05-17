@@ -22,11 +22,12 @@ def get_tickets(
     search: str = Query(""),
     responsible: Annotated[list[str] | None, Query()] = None,
     problem: Annotated[list[str] | None, Query()] = None,
-    resolved: str = Query(""),
     status: Annotated[list[str] | None, Query()] = None,
     score: Annotated[list[str] | None, Query()] = None,
     openedFrom: str = Query(""),
     openedTo: str = Query(""),
+    sortKey: str = Query(""),
+    sortDir: str = Query("asc"),
     db: Session = Depends(get_db),
 ):
     return TicketService.get_tickets(
@@ -36,11 +37,12 @@ def get_tickets(
         search=search,
         responsible=responsible,
         problem=problem,
-        resolved=resolved,
         status=status,
         score=score,
         opened_from=openedFrom,
         opened_to=openedTo,
+        sort_key=sortKey,
+        sort_dir=sortDir,
     )
 
 

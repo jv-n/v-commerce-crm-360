@@ -48,7 +48,7 @@ export function DateRangeDropdown({ current, onApply, onClear }: DateRangeDropdo
         <button
           disabled={isInvalid}
           onClick={() => onApply(from || null, to || null)}
-          className="flex-1 bg-[#EACAFF] border border-[#B899CC] text-black rounded-md py-1.5 text-xs font-medium hover:bg-[#d9adff] hover:border-[#9e72b8] active:bg-[#c99aee] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#EACAFF] disabled:hover:border-[#B899CC]"
+          className="flex-1 bg-[#F7EBFF] border border-[#D1B1E5] text-black rounded-md py-1.5 text-xs font-medium hover:bg-[#d9adff] hover:border-[#9e72b8] active:bg-[#c99aee] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#EACAFF] disabled:hover:border-[#B899CC]"
         >
           Aplicar
         </button>

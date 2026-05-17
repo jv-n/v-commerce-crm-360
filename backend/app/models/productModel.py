@@ -30,6 +30,8 @@ class GoldDesempenhoProduto(Base):
     fornecedor: Mapped[str | None] = mapped_column(String, nullable=True)
     estoque_disponivel: Mapped[float | None] = mapped_column(Float, nullable=True)
     ativo: Mapped[str | None] = mapped_column(String, nullable=True)
+    peso_kg: Mapped[float | None] = mapped_column(Float, nullable=True)
+    data_cadastro_produto: Mapped[str | None] = mapped_column(String, nullable=True)
     nota_media_avaliacao: Mapped[float | None] = mapped_column(Float, nullable=True)
     qtd_vendida: Mapped[float | None] = mapped_column(Float, nullable=True)
     receita_total: Mapped[float | None] = mapped_column(Float, nullable=True)

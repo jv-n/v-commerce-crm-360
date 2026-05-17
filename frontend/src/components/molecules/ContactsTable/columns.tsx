@@ -4,7 +4,7 @@ import { CellText }        from "@/components/organisms/DataTable/atoms/CellText
 import { CellDouble }      from "@/components/organisms/DataTable/atoms/CellDouble"
 import { CellTag }         from "@/components/organisms/DataTable/atoms/CellTag"
 import AccessTimeOutlinedIcon  from "@mui/icons-material/AccessTimeOutlined"
-import ArrowForwardIosIcon     from "@mui/icons-material/ArrowForwardIos"
+import ArrowForwardIcon         from "@mui/icons-material/ArrowForward"
 import { ClientStatusBadge, ALL_CLIENT_STATUSES } from "./ClientStatusBadge"
 import type { Contact, EngagementType, ClientStatusType } from "@/types/contact"
 
@@ -121,19 +121,6 @@ export function makeContactColumns(
     render: () => null,
   },
 
-  // ── Telefone (filtro oculto) ───────────────────────────────────────────────
-  {
-    key: "phone",
-    header: "",
-    visible: false,
-    filter: {
-      type: "toggle",
-      label: "Com telefone",
-      filterFn: (c) => c.phone != null,
-    },
-    render: () => null,
-  },
-
   // ── Engajamento ────────────────────────────────────────────────────────────
   {
     key: "engagement",
@@ -160,13 +147,13 @@ export function makeContactColumns(
     key: "navigate",
     header: "",
     render: (c) => (
-      <button
+      <div
         onClick={(e) => { e.stopPropagation(); onNavigate(c.id) }}
-        className="p-1.5 rounded-md hover:bg-purple-50 text-gray-400 hover:text-purple-600 transition-colors"
+        className="flex justify-center items-center w-[2.2rem] h-[2.2rem] rounded-md bg-[#F7EBFF] border border-[#D1B1E5] hover:bg-[#F0D4FF] cursor-pointer transition-colors"
         title="Ver detalhe do contato"
       >
-        <ArrowForwardIosIcon sx={{ fontSize: 13 }} />
-      </button>
+        <ArrowForwardIcon sx={{ color: "#06121C" }} />
+      </div>
     ),
   },
   ]

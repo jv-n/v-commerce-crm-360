@@ -84,13 +84,30 @@ export interface SaleUpdateData {
   data_pedido?:      string
 }
 
-export async function updateSale(id: string, data: SaleUpdateData): Promise<void> {
+export async function updateSale(id: string, data: SaleUpdateData, userName = "Sistema"): Promise<void> {
   const res = await fetch(`/api/sales/${id}`, {
     method:  "PATCH",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", "X-User-Name": userName },
     body:    JSON.stringify(data),
   })
   if (!res.ok) throw new Error(`Erro ao atualizar pedido: ${res.status}`)
+}
+
+export interface SaleActivity {
+  id:            number
+  id_pedido:     string
+  user_name:     string
+  field_name:    string
+  old_value:     string | null
+  new_value:     string | null
+  change_method: string
+  changed_at:    string
+}
+
+export async function fetchSaleActivities(id: string, limit = 50): Promise<SaleActivity[]> {
+  const res = await fetch(`/api/sales/${id}/activities?limit=${limit}`)
+  if (!res.ok) throw new Error(`Erro ao buscar histórico: ${res.status}`)
+  return res.json()
 }
 
 export async function createSale(data: SaleFormData): Promise<void> {

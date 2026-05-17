@@ -4,10 +4,10 @@ import { ProductEditModal } from "./ProductEditModal"
 import { ProductResumoCard } from "./ProductResumoCard"
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew"
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined"
-import ReceiptLongOutlinedIcon from "@mui/icons-material/ReceiptLongOutlined"
 import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined"
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined"
 import AutorenewOutlinedIcon from "@mui/icons-material/AutorenewOutlined"
+import { MdOutlineRequestQuote } from "react-icons/md"
 import {
   fetchProductById,
   fetchProductOrders,
@@ -18,6 +18,7 @@ import {
 import type { Product, ProductCategory } from "@/types/product"
 import type { ProductOrder, ProductTicket, MonthlyRevenue, ProductActivity } from "@/lib/api/products"
 import { cn } from "@/lib/utils"
+import { CustomScrollArea } from "@/components/atoms/CustomScrollArea"
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -249,7 +250,7 @@ export default function ProductDetail() {
         {/* ── Painel esquerdo: informações ── */}
         <div className="flex flex-col gap-4">
           {/* Card cabeçalho */}
-          <div className="rounded-xl border border-[#9F83B2] flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.10)] overflow-hidden">
+          <div className="rounded-xl border border-[#E5E5E5] shadow-[0_0_4px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden">
             <div className="flex items-center gap-2 px-4 py-3">
               <button
                 onClick={() => navigate("/products")}
@@ -259,7 +260,7 @@ export default function ProductDetail() {
                 Catálogo
               </button>
             </div>
-            <hr className="border-[#9F83B2]" />
+            <hr className="border-[#E5E5E5]" />
             <div className="px-4 py-4 flex flex-col gap-1">
               <span className="font-bold text-gray-900 text-lg leading-tight">{product.name}</span>
               <span className="text-xs text-purple-500 truncate cursor-default" title={product.id}>
@@ -269,7 +270,7 @@ export default function ProductDetail() {
           </div>
 
           {/* Card informações importantes */}
-          <div className="rounded-xl border border-[#9F83B2] flex flex-col shadow-[0_2px_8px_rgba(0,0,0,0.10)] flex-1 overflow-hidden">
+          <div className="rounded-xl border border-[#E5E5E5] shadow-[0_0_4px_rgba(0,0,0,0.35)] flex flex-col flex-1 overflow-hidden">
             {/* Header do card */}
             <div className="flex items-center justify-between px-5 py-4">
               <span className="flex-1 text-center text-base font-bold text-gray-900">Informações importantes</span>
@@ -280,7 +281,7 @@ export default function ProductDetail() {
                 <EditOutlinedIcon sx={{ fontSize: 18 }} />
               </button>
             </div>
-            <hr className="border-[#9F83B2]" />
+            <hr className="border-[#E5E5E5] mx-5" />
 
             <div className="flex flex-col gap-5 px-5 py-5">
               <InfoRow label="ID produto">
@@ -330,7 +331,7 @@ export default function ProductDetail() {
         {/* ── Painel central: tabs ── */}
         <div className="flex flex-col gap-4 min-h-0">
           {/* Tabs */}
-          <div className="grid grid-cols-2 rounded-xl overflow-hidden border border-[#9F83B2] shadow-[0_2px_8px_rgba(0,0,0,0.10)]">
+          <div className="grid grid-cols-2 rounded-xl overflow-hidden border border-[#E5E5E5] shadow-[0_0_4px_rgba(0,0,0,0.35)]">
             {(["informacoes", "atividades"] as const).map(t => (
               <button
                 key={t}
@@ -348,25 +349,32 @@ export default function ProductDetail() {
           </div>
 
           {tab === "informacoes" && (
-            <div className="flex flex-col gap-4 overflow-y-auto">
+            <div className="flex flex-col gap-4 overflow-y-auto px-1 py-1">
               {/* Resumo IA */}
-              <div className="rounded-xl border border-[#9F83B2] shadow-[0_2px_8px_rgba(0,0,0,0.10)] flex flex-col overflow-hidden">
+              <div className="rounded-xl border border-[#E5E5E5] shadow-[0_0_4px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden">
                 <div className="flex items-center justify-center gap-2 px-5 py-4">
                   <span className="text-base font-bold text-gray-900">Resumo da</span>
                   <span
-                    className="text-sm font-bold px-3 py-0.5 rounded-full text-white"
-                    style={{ background: "linear-gradient(to right, #a855f7, #22c55e)" }}
+                    className="text-sm font-Regular text-black inline-flex items-center justify-center"
+                    style={{
+                      width: "46px",
+                      height: "21px",
+                      borderRadius: "15px",
+                      background: "linear-gradient(135deg, #B2C6E3 0%, #EACAFF 50%, #74FF60 100%)",
+                    }}
                   >
                     V.IA
                   </span>
                 </div>
-                <hr className="border-[#9F83B2]" />
+                <hr className="border-[#E5E5E5] mx-5" />
                 <div className="p-4">
                   <div
-                    className="rounded-xl p-4 flex flex-col gap-3"
+                    className="p-2 flex flex-col gap-2"
                     style={{
-                      background: "linear-gradient(white, white) padding-box, linear-gradient(135deg, #a855f7 0%, #22c55e 100%) border-box",
-                      border: "2px solid transparent",
+                      borderRadius: "7.75px",
+                      border: "5px solid transparent",
+                      background: "linear-gradient(white, white) padding-box, linear-gradient(135deg, #8BA9D5 0%, #D594FF 50%, #3FFF24 100%) border-box",
+                      boxShadow: "0 0 3.8px rgba(0,0,0,0.25)",
                     }}
                   >
                     <ProductResumoCard productId={product.id} data={resumoData} />
@@ -382,18 +390,7 @@ export default function ProductDetail() {
                       }))}
                       className="flex items-center justify-end gap-1.5 mt-2 w-full hover:opacity-70 transition-opacity"
                     >
-                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
-                        <defs>
-                          <linearGradient id="sparkle-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                            <stop offset="0%" stopColor="#a855f7" />
-                            <stop offset="100%" stopColor="#22c55e" />
-                          </linearGradient>
-                        </defs>
-                        <path
-                          d="M12 2 C12.5 7 17 9.5 22 12 C17 14.5 12.5 17 12 22 C11.5 17 7 14.5 2 12 C7 9.5 11.5 7 12 2 Z"
-                          fill="url(#sparkle-grad)"
-                        />
-                      </svg>
+                      <img src="/v_ai.svg" alt="Chat Icon" height={32} width={32} />
                       <span className="text-sm text-gray-600">Faça uma pergunta</span>
                     </button>
                   </div>
@@ -401,11 +398,11 @@ export default function ProductDetail() {
               </div>
 
               {/* Métricas */}
-              <div className="rounded-xl border border-[#9F83B2] shadow-[0_2px_8px_rgba(0,0,0,0.10)] flex flex-col overflow-hidden">
+              <div className="rounded-xl border border-[#E5E5E5] shadow-[0_0_4px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden">
                 <div className="flex items-center justify-center px-5 py-4">
                   <span className="text-base font-bold text-gray-900">Métricas do produto</span>
                 </div>
-                <hr className="border-[#9F83B2]" />
+                <hr className="border-[#E5E5E5] mx-5" />
                 <div className="p-4">
                   <div className="rounded-xl border border-gray-200 p-4 flex flex-col gap-3">
                     <div className="flex items-center gap-2">
@@ -420,15 +417,207 @@ export default function ProductDetail() {
           )}
 
           {tab === "atividades" && (
-            <div className="rounded-xl border border-[#9F83B2] shadow-[0_2px_8px_rgba(0,0,0,0.10)] flex flex-col overflow-hidden">
+            <div className="flex flex-col gap-4 overflow-y-auto px-1 py-1 flex-1 min-h-0">
+              {/* Pedidos */}
+              <div className="flex-1 min-h-0 rounded-xl border border-[#E5E5E5] shadow-[0_0_4px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden">
+                <div className="flex items-center justify-center px-5 py-4 shrink-0">
+                  <span className="text-base font-bold text-gray-900">Pedidos do produto</span>
+                </div>
+                <hr className="border-[#E5E5E5] shrink-0 mx-5" />
+                <CustomScrollArea className="flex-1"><div className="p-3 flex flex-col gap-3">
+                  {orders.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-4">Nenhum pedido encontrado.</p>
+                  ) : orders.map(o => {
+                    const time = fmtTime(o.data_pedido)
+                    return (
+                      <div key={o.id_pedido} className="rounded-xl border border-gray-200 p-4 flex flex-col gap-3 bg-white">
+                        <div className="flex items-center gap-2">
+                          <MdOutlineRequestQuote size={28} color="#6b7280" />
+                          <span className="text-sm font-medium text-gray-900 underline truncate">{o.id_pedido}</span>
+                        </div>
+                        <span className="text-sm text-gray-700">
+                          Data de abertura:{" "}
+                          <span className="text-purple-600">{fmtDate(o.data_pedido)}</span>
+                          {time && <span className="text-gray-500"> - {time}</span>}
+                        </span>
+                        {o.quantidade != null && (
+                          <span className="text-sm text-gray-700">
+                            Produtos: <span className="text-purple-600 font-bold">{o.quantidade}x</span> {product.name}
+                          </span>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-700">Status Pedido:</span>
+                          <StatusBadge status={o.status} />
+                        </div>
+                        {o.valor_pedido != null && (
+                          <span className="text-sm text-gray-700">
+                            Valor: <span className="text-purple-600">{fmtCurrency(o.valor_pedido)}</span>
+                          </span>
+                        )}
+                        {o.metodo_pagamento && (
+                          <span className="text-sm text-gray-700">
+                            Método de pagamento: <span className="text-purple-600">{o.metodo_pagamento}</span>
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div></CustomScrollArea>
+              </div>
+
+              {/* Tickets */}
+              <div className="flex-1 min-h-0 rounded-xl border border-[#E5E5E5] shadow-[0_0_4px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden">
+                <div className="flex items-center justify-center px-5 py-4 shrink-0">
+                  <span className="text-base font-bold text-gray-900">Tickets do produto</span>
+                </div>
+                <hr className="border-[#E5E5E5] shrink-0 mx-5" />
+                <CustomScrollArea className="flex-1"><div className="p-3 flex flex-col gap-3">
+                  {tickets.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-4">Nenhum ticket encontrado.</p>
+                  ) : tickets.map(t => (
+                    <div key={t.ticket_id} className="rounded-xl border border-gray-200 p-4 flex flex-col gap-3 bg-white">
+                      <div className="flex items-center gap-2">
+                        <ConfirmationNumberOutlinedIcon sx={{ fontSize: 26, color: "#6b7280" }} />
+                        <span className="text-sm font-bold text-gray-900 underline truncate">{t.tipo_problema ?? "Ticket"}</span>
+                      </div>
+                      <span className="text-sm text-gray-700">
+                        Data de abertura:{" "}
+                        <span className="text-purple-600">{fmtDate(t.data_abertura)}</span>
+                        {fmtTime(t.data_abertura) && <span className="text-gray-500"> - {fmtTime(t.data_abertura)}</span>}
+                      </span>
+                      <span className="text-sm text-gray-700">
+                        ID Ticket: <span className="text-purple-600">{t.ticket_id}</span>
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-700">Status Ticket:</span>
+                        <span className={cn(
+                          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium",
+                          t.resolvido ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                        )}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                          {t.resolvido ? "Finalizado" : "Em aberto"}
+                        </span>
+                      </div>
+                      {t.tipo_problema && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm text-gray-700">Problema:</span>
+                          <AutorenewOutlinedIcon sx={{ fontSize: 20, color: "#7c3aed" }} />
+                          <span className="text-sm text-gray-700">{t.tipo_problema}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div></CustomScrollArea>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* ── Painel direito ── */}
+        <div className="flex flex-col gap-4 min-h-0 h-full">
+          {tab === "informacoes" && (
+            <>
+              {/* Pedidos */}
+              <div className="flex-1 min-h-0 rounded-xl border border-[#E5E5E5] shadow-[0_0_4px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden">
+                <div className="flex items-center justify-center px-5 py-4 shrink-0">
+                  <span className="text-base font-bold text-gray-900">Pedidos do produto</span>
+                </div>
+                <hr className="border-[#E5E5E5] shrink-0 mx-5" />
+                <CustomScrollArea className="flex-1"><div className="p-3 flex flex-col gap-3">
+                  {orders.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-4">Nenhum pedido encontrado.</p>
+                  ) : orders.map(o => {
+                    const time = fmtTime(o.data_pedido)
+                    return (
+                      <div key={o.id_pedido} className="rounded-xl border border-gray-200 p-4 flex flex-col gap-3 bg-white">
+                        <div className="flex items-center gap-2">
+                          <MdOutlineRequestQuote size={28} color="#6b7280" />
+                          <span className="text-sm font-medium text-gray-900 underline truncate">{o.id_pedido}</span>
+                        </div>
+                        <span className="text-sm text-gray-700">
+                          Data de abertura:{" "}
+                          <span className="text-purple-600">{fmtDate(o.data_pedido)}</span>
+                          {time && <span className="text-gray-500"> - {time}</span>}
+                        </span>
+                        {o.quantidade != null && (
+                          <span className="text-sm text-gray-700">
+                            Produtos: <span className="text-purple-600 font-bold">{o.quantidade}x</span> {product.name}
+                          </span>
+                        )}
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm text-gray-700">Status Pedido:</span>
+                          <StatusBadge status={o.status} />
+                        </div>
+                        {o.valor_pedido != null && (
+                          <span className="text-sm text-gray-700">
+                            Valor: <span className="text-purple-600">{fmtCurrency(o.valor_pedido)}</span>
+                          </span>
+                        )}
+                        {o.metodo_pagamento && (
+                          <span className="text-sm text-gray-700">
+                            Método de pagamento: <span className="text-purple-600">{o.metodo_pagamento}</span>
+                          </span>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div></CustomScrollArea>
+              </div>
+
+              {/* Tickets */}
+              <div className="flex-1 min-h-0 rounded-xl border border-[#E5E5E5] shadow-[0_0_4px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden">
+                <div className="flex items-center justify-center px-5 py-4 shrink-0">
+                  <span className="text-base font-bold text-gray-900">Tickets do produto</span>
+                </div>
+                <hr className="border-[#E5E5E5] shrink-0 mx-5" />
+                <CustomScrollArea className="flex-1"><div className="p-3 flex flex-col gap-3">
+                  {tickets.length === 0 ? (
+                    <p className="text-xs text-gray-400 text-center py-4">Nenhum ticket encontrado.</p>
+                  ) : tickets.map(t => (
+                    <div key={t.ticket_id} className="rounded-xl border border-gray-200 p-4 flex flex-col gap-3 bg-white">
+                      <div className="flex items-center gap-2">
+                        <ConfirmationNumberOutlinedIcon sx={{ fontSize: 26, color: "#6b7280" }} />
+                        <span className="text-sm font-bold text-gray-900 underline truncate">{t.tipo_problema ?? "Ticket"}</span>
+                      </div>
+                      <span className="text-sm text-gray-700">
+                        Data de abertura:{" "}
+                        <span className="text-purple-600">{fmtDate(t.data_abertura)}</span>
+                        {fmtTime(t.data_abertura) && <span className="text-gray-500"> - {fmtTime(t.data_abertura)}</span>}
+                      </span>
+                      <span className="text-sm text-gray-700">
+                        ID Ticket: <span className="text-purple-600">{t.ticket_id}</span>
+                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-700">Status Ticket:</span>
+                        <span className={cn(
+                          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium",
+                          t.resolvido ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
+                        )}>
+                          <span className="w-1.5 h-1.5 rounded-full bg-current" />
+                          {t.resolvido ? "Finalizado" : "Em aberto"}
+                        </span>
+                      </div>
+                      {t.tipo_problema && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-sm text-gray-700">Problema:</span>
+                          <AutorenewOutlinedIcon sx={{ fontSize: 20, color: "#7c3aed" }} />
+                          <span className="text-sm text-gray-700">{t.tipo_problema}</span>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div></CustomScrollArea>
+              </div>
+            </>
+          )}
+
+          {tab === "atividades" && (
+            <div className="h-full rounded-xl border border-[#E5E5E5] shadow-[0_0_4px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden">
               <div className="flex items-center justify-center gap-2 px-5 py-4 shrink-0">
                 <span className="text-base font-bold text-gray-900">Atividades</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                  <path d="M6 9l6 6 6-6" stroke="#374151" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                </svg>
               </div>
-              <hr className="border-[#9F83B2] shrink-0" />
-              <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
+              <hr className="border-[#E5E5E5] shrink-0 mx-5" />
+              <CustomScrollArea className="flex-1"><div className="p-3 flex flex-col gap-3">
                 {activities.length === 0 ? (
                   <p className="text-xs text-gray-400 text-center py-4">Sem atividades registradas.</p>
                 ) : activities.map(act => {
@@ -464,100 +653,9 @@ export default function ProductDetail() {
                     </div>
                   )
                 })}
-              </div>
+              </div></CustomScrollArea>
             </div>
           )}
-        </div>
-
-        {/* ── Painel direito: pedidos + tickets ── */}
-        <div className="flex flex-col gap-4 min-h-0 h-full">
-          {/* Pedidos */}
-          <div className="flex-1 min-h-0 rounded-xl border border-[#9F83B2] shadow-[0_2px_8px_rgba(0,0,0,0.10)] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-center px-5 py-4 shrink-0">
-              <span className="text-base font-bold text-gray-900">Pedidos do produto</span>
-            </div>
-            <hr className="border-[#9F83B2] shrink-0" />
-            <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
-              {orders.length === 0 ? (
-                <p className="text-xs text-gray-400 text-center py-4">Nenhum pedido encontrado.</p>
-              ) : orders.map(o => {
-                const time = fmtTime(o.data_pedido)
-                return (
-                  <div key={o.id_pedido} className="rounded-xl border border-gray-200 p-4 flex flex-col gap-2 bg-white">
-                    <div className="flex items-center gap-2">
-                      <ReceiptLongOutlinedIcon sx={{ fontSize: 20, color: "#22c55e" }} />
-                      <span className="text-sm font-medium text-purple-600 underline truncate">
-                        {o.id_pedido}
-                      </span>
-                    </div>
-                    <span className="text-sm text-gray-600">
-                      Data de abertura: {fmtDate(o.data_pedido)}
-                      {time && <> - <span className="text-purple-400">{time}</span></>}
-                    </span>
-                    {o.quantidade != null && (
-                      <span className="text-sm text-gray-600">
-                        Produtos: <span className="text-purple-600 font-medium">{o.quantidade}x</span> {product.name}
-                      </span>
-                    )}
-                    <div className="flex items-center gap-2">
-                      <span className="text-sm text-gray-600">Status Pedido:</span>
-                      <StatusBadge status={o.status} />
-                    </div>
-                    {o.valor_pedido != null && (
-                      <span className="text-sm text-gray-600">Valor: {fmtCurrency(o.valor_pedido)}</span>
-                    )}
-                    {o.metodo_pagamento && (
-                      <span className="text-sm text-gray-600">Método de pagamento: {o.metodo_pagamento}</span>
-                    )}
-                  </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Tickets */}
-          <div className="flex-1 min-h-0 rounded-xl border border-[#9F83B2] shadow-[0_2px_8px_rgba(0,0,0,0.10)] flex flex-col overflow-hidden">
-            <div className="flex items-center justify-center px-5 py-4 shrink-0">
-              <span className="text-base font-bold text-gray-900">Tickets do produto</span>
-            </div>
-            <hr className="border-[#9F83B2] shrink-0" />
-            <div className="flex-1 overflow-y-auto p-3 flex flex-col gap-3">
-              {tickets.length === 0 ? (
-                <p className="text-xs text-gray-400 text-center py-4">Nenhum ticket encontrado.</p>
-              ) : tickets.map(t => (
-                <div key={t.ticket_id} className="rounded-xl border border-gray-200 p-4 flex flex-col gap-2 bg-white">
-                  <div className="flex items-center gap-2">
-                    <ConfirmationNumberOutlinedIcon sx={{ fontSize: 20, color: "#9F83B2" }} />
-                    <span className="text-sm font-bold text-purple-600 underline truncate">
-                      {t.tipo_problema ?? "Ticket"}
-                    </span>
-                  </div>
-                  <span className="text-sm text-gray-600">
-                    Data de abertura: {fmtDate(t.data_abertura)}
-                    {fmtTime(t.data_abertura) && <> - <span className="text-purple-400">{fmtTime(t.data_abertura)}</span></>}
-                  </span>
-                  <span className="text-sm text-gray-600">ID Ticket: {t.ticket_id}</span>
-                  <div className="flex items-center gap-2">
-                    <span className="text-sm text-gray-600">Status Ticket:</span>
-                    <span className={cn(
-                      "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium",
-                      t.resolvido ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
-                    )}>
-                      <span className="w-1.5 h-1.5 rounded-full bg-current" />
-                      {t.resolvido ? "Finalizado" : "Em aberto"}
-                    </span>
-                  </div>
-                  {t.tipo_problema && (
-                    <div className="flex items-center gap-1.5">
-                      <span className="text-sm text-gray-600">Problema:</span>
-                      <AutorenewOutlinedIcon sx={{ fontSize: 18, color: "#9F83B2" }} />
-                      <span className="text-sm text-gray-600">{t.tipo_problema}</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
     </div>

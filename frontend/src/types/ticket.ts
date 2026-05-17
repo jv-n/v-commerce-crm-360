@@ -8,11 +8,19 @@ export interface Ticket {
   clientId: string
   orderId: string
   openedAt: string
+
   responsible: {
     initials: string
     name: string
   }
+
   problem: TicketProblem
   status: TicketStatus
   score: number | null
+
+  region?: string
+  state?: string
+  ageRange?: string
+  resolutionTimeHours?: number | null
+  ingestionTimestamp?: string
 }

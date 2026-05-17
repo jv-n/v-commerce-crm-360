@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Outlet, NavLink, useLocation } from "react-router-dom";
+import { Outlet, NavLink, useLocation, useOutletContext } from "react-router-dom";
 import AppNavbar from "@/components/molecules/AppNavbar";
 import AIChatSidebar from "@/components/molecules/AIChatSidebar";
 import type { MentionItem } from "@/lib/api/mentions";
@@ -15,9 +15,8 @@ import {
     SidebarMenuItem,
     SidebarProvider,
     SidebarSeparator,
- } from "@/components/molecules/Sidebar/sidebar";
+} from "@/components/molecules/Sidebar/sidebar";
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
-import BookmarkBorderOutlinedIcon from '@mui/icons-material/BookmarkBorderOutlined';
 import ContactPageOutlinedIcon from '@mui/icons-material/ContactPageOutlined';
 import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined';
 import Inventory2OutlinedIcon from '@mui/icons-material/Inventory2Outlined';
@@ -29,11 +28,12 @@ import ConfirmationNumberOutlinedIcon from '@mui/icons-material/ConfirmationNumb
 export default function AppFrame() {
     const { pathname, state: locationState } = useLocation();
     const isOnChat = pathname === "/chat";
+    const isOnHome = pathname === "/";
     const [isAIOpen, setIsAIOpen] = useState(false);
     const { user } = useAuth()
     const [pendingMention, setPendingMention] = useState<MentionItem | null>(null);
+    const [initialMessage, setInitialMessage] = useState("")
 
-    // Fecha a sidebar ao entrar em /chat; reabre ao minimizar de volta
     useEffect(() => {
         if (isOnChat) {
             setIsAIOpen(false);
@@ -42,7 +42,6 @@ export default function AppFrame() {
         }
     }, [isOnChat, locationState]);
 
-    // Escuta evento global para abrir o chat com menção pré-inserida
     useEffect(() => {
         const handler = (e: Event) => {
             const item = (e as CustomEvent<MentionItem>).detail;
@@ -59,18 +58,25 @@ export default function AppFrame() {
         { name: "Home", nav: true, path: "/" },
     ];
 
-    const sidebarItems2 = [
-        { name: "Contacts", nav: true, path: "/contacts" },
-        { name: "Sales", nav: true, path: "/sales" },
-        { name: "Products", nav: true, path: "/products" },
-        { name: "Dashboard", nav: true, path: "/dashboard" },
-        { name: "Tickets", nav: true, path: "/tickets" },
+    const allSidebarItems2 = [
+        { name: "Contacts",  nav: true,  path: "/contacts",  roles: ["admin", "sales"] },
+        { name: "Sales",     nav: true,  path: "/sales",     roles: ["admin"] },
+        { name: "Products",  nav: true,  path: "/products",  roles: [] },
+        { name: "Dashboard", nav: true,  path: "/dashboard", roles: ["admin"] },
+        { name: "Tickets",   nav: true,  path: "/tickets",   roles: ["admin", "support"] },
     ];
 
-    const sidebarItems3 = [
-        { name: "Book", nav: true, path: "/book" },
-        { name: "Chat", nav: false, path: "" },
+    const sidebarItems2 = allSidebarItems2.filter(
+        (item) => item.roles.length === 0 || (user?.role && item.roles.includes(user.role))
+    );
+
+    const allSidebarItems3 = [
+        { name: "Chat", nav: false, path: "", roles: ["admin"] },
     ];
+
+    const sidebarItems3 = allSidebarItems3.filter(
+        (item) => item.roles.length === 0 || (user?.role && item.roles.includes(user.role))
+    );
 
     const iconColor = (path: string) => {
         return path === pathname ? "#000" : "#74FF60";
@@ -80,8 +86,6 @@ export default function AppFrame() {
         switch (title) {
             case "Home":
                 return <HomeOutlinedIcon sx={{ color: iconColor("/")} }/>;
-            case "Bookmarks":
-                return <BookmarkBorderOutlinedIcon sx={{ color: iconColor("/bookmarks")} }/>;
             case "Contacts":
                 return <ContactPageOutlinedIcon sx={{ color: iconColor("/contacts")} }/>;
             case "Sales":
@@ -103,85 +107,98 @@ export default function AppFrame() {
 
     return (
         <SidebarProvider defaultOpen={true} className="!h-svh overflow-hidden">
-            <Sidebar variant="inset" >
-                <SidebarHeader className="w-full align-center justify-center">
-                    <img src="vcom360_icon.svg" alt="CRM Icon" height={80} width={80}/>
-                </SidebarHeader>
-                <SidebarContent>
-                    <SidebarGroup>
-                        <SidebarGroupContent>
-                            <SidebarMenu className="gap-3">
-                                {sidebarItems1.map((item) => (
-                                    <SidebarMenuItem key={item.name} className="flex align-center justify-center">
-                                        <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
-                                            <NavLink to={item.path}>
-                                                {setIcon(item.name)}
-                                            </NavLink>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                ))}
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                    <SidebarSeparator className="bg-foreground/30" />
-                    <SidebarGroup>
-                        <SidebarGroupContent>
-                            <SidebarMenu className="gap-3">
-                                {sidebarItems2.map((item) => (
-                                    <SidebarMenuItem key={item.name} className="flex align-center justify-center">
-                                        <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
-                                            <NavLink to={item.path}>
-                                                {setIcon(item.name)}
-                                            </NavLink>
-                                        </SidebarMenuButton>
-                                    </SidebarMenuItem>
-                                ))}
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                    <SidebarSeparator className="bg-foreground/30"/>
-                    <SidebarGroup>
-                        <SidebarGroupContent>
-                            <SidebarMenu className="gap-3">
-                                {sidebarItems3.map((item) => (
-                                    <SidebarMenuItem key={item.name} className="flex align-center justify-center">
-                                        {item.nav ? (
-                                            <SidebarMenuButton
-                                                className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-background hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
-                                                asChild
-                                            >
+            {!isOnHome && ( 
+                <Sidebar variant="inset" >
+                    <SidebarHeader className="w-full align-center justify-center">
+                        <img src="vcom360_icon.svg" alt="CRM Icon" height={80} width={80}/> 
+                    </SidebarHeader>
+                    <SidebarContent>
+                        <SidebarGroup>
+                            <SidebarGroupContent>
+                                <SidebarMenu className="gap-2">
+                                    {sidebarItems1.map((item) => (
+                                        <SidebarMenuItem key={item.name} className="flex align-center justify-center">
+                                            <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
                                                 <NavLink to={item.path}>
                                                     {setIcon(item.name)}
                                                 </NavLink>
                                             </SidebarMenuButton>
-                                        ) : (
-                                            <SidebarMenuButton
-                                                className={`${isAIOpen ? "ring ring-primary" : ""} bg-background !w-11 !h-11 transition duration-400 hover:bg-background hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
-                                                onClick={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }}
-                                                title="Abrir assistente V.IA"
-                                            >
-                                                {setIcon(item.name)}
+                                        </SidebarMenuItem>
+                                    ))}
+                                </SidebarMenu>
+                            </SidebarGroupContent>
+                        </SidebarGroup>
+                        <SidebarSeparator className="bg-foreground/30" />
+                        <SidebarGroup>
+                            <SidebarGroupContent>
+                                <SidebarMenu className="gap-2">
+                                    {sidebarItems2.map((item) => (
+                                        <SidebarMenuItem key={item.name} className="flex align-center justify-center">
+                                            <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
+                                                <NavLink to={item.path}>
+                                                    {setIcon(item.name)}
+                                                </NavLink>
                                             </SidebarMenuButton>
-                                        )}
-                                    </SidebarMenuItem>
-                                ))}
-                            </SidebarMenu>
-                        </SidebarGroupContent>
-                    </SidebarGroup>
-                </SidebarContent>
-            </Sidebar>
+                                        </SidebarMenuItem>
+                                    ))}
+                                </SidebarMenu>
+                            </SidebarGroupContent>
+                        </SidebarGroup>
+                        <SidebarSeparator className="bg-foreground/30"/>
+                        <SidebarGroup>
+                            <SidebarGroupContent>
+                                <SidebarMenu className="gap-2">
+                                    {sidebarItems3.map((item) => (
+                                        <SidebarMenuItem key={item.name} className="flex align-center justify-center">
+                                            {item.nav ? (
+                                                <SidebarMenuButton
+                                                    className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-background hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
+                                                    asChild
+                                                >
+                                                    <NavLink to={item.path}>
+                                                        {setIcon(item.name)}
+                                                    </NavLink>
+                                                </SidebarMenuButton>
+                                            ) : (
+                                                <SidebarMenuButton
+                                                    className={`${isAIOpen ? "ring ring-primary" : ""} bg-background !w-11 !h-11 transition duration-400 hover:bg-background hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
+                                                    onClick={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }}
+                                                    title="Abrir assistente V.IA"
+                                                >
+                                                    {setIcon(item.name)}
+                                                </SidebarMenuButton>
+                                            )}
+                                        </SidebarMenuItem>
+                                    ))}
+                                </SidebarMenu>
+                            </SidebarGroupContent>
+                        </SidebarGroup>
+                    </SidebarContent>
+                </Sidebar>
+            )}
             <SidebarInset className="m-2 ml-0 rounded-xl overflow-hidden flex flex-col transition-all duration-300">
-                <AppNavbar onOpenAI={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }} />
+                <div className="flex items-center">
+                    {isOnHome && ( 
+                        <img src="vcom360_icon.svg" alt="Logo" className="w-8 h-8 ml-3 flex-shrink-0" />
+                    )}
+                    <div className="flex-1">
+                        <AppNavbar onOpenAI={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }} />
+                    </div>
+                </div>
                 <div className="flex flex-1 min-h-0">
-                    <div className="flex-1 min-h-0 overflow-hidden">
-                        <Outlet />
+                    <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                        <Outlet context={{ onOpenAI: (message?: string) => { if (!isOnChat) {
+                            if (message) setInitialMessage(message)
+                                setIsAIOpen((prev) => !prev); } }}} />
                     </div>
                     <AIChatSidebar
-                        open={isAIOpen}
-                        onClose={() => setIsAIOpen(false)}
-                        userName= {user?.name ?? "Deslogado"}
-                        pendingMention={pendingMention}
-                        onMentionInserted={() => setPendingMention(null)}
+                    open={isAIOpen}
+                    onClose={() => setIsAIOpen(false)}
+                    userName= {user?.name ?? "Deslogado"}
+                    pendingMention={pendingMention}
+                    onMentionInserted={() => setPendingMention(null)}
+                    initialMessage={initialMessage}   
+                    onInitialMessageSent={() => setInitialMessage("")}
                     />
                 </div>
             </SidebarInset>

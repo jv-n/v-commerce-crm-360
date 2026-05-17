@@ -132,6 +132,7 @@ export interface DataTableProps<T> {
   noBorder?: boolean
   headerClassName?: string
   rowClassName?: string
+  getRowClassName?: (row: T) => string
   expandedRowClassName?: string
   dividersClassName?: string
   expandedRowIds?: Set<string>
