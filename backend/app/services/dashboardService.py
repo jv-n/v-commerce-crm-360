@@ -1,0 +1,473 @@
+from datetime import date, timedelta
+
+from sqlalchemy import select, func, distinct, and_
+from sqlalchemy.orm import Session
+
+from app.models.contactModel import GoldCliente360
+from app.models.productModel import GoldEngajamentoProdutoDigital
+from app.models.saleModel import GoldPedidoDetalhado
+from app.models.ticketModel import FtTicketSuporte
+
+# Only valid Brazilian state names → 2-letter sigla
+_ESTADO_SIGLA: dict[str, str] = {
+    "Acre": "AC", "Alagoas": "AL", "Amapá": "AP", "Amazonas": "AM",
+    "Bahia": "BA", "Ceará": "CE", "Distrito Federal": "DF", "Espírito Santo": "ES",
+    "Goiás": "GO", "Maranhão": "MA", "Mato Grosso": "MT", "Mato Grosso do Sul": "MS",
+    "Minas Gerais": "MG", "Pará": "PA", "Paraíba": "PB", "Paraná": "PR",
+    "Pernambuco": "PE", "Piauí": "PI", "Rio Grande do Norte": "RN",
+    "Rio Grande do Sul": "RS", "Rio de Janeiro": "RJ", "Rondônia": "RO",
+    "Roraima": "RR", "Santa Catarina": "SC", "São Paulo": "SP",
+    "Sergipe": "SE", "Tocantins": "TO",
+}
+
+_PERIOD_DAYS: dict[str, int] = {
+    "2weeks": 14,
+    "month": 30,
+    "3months": 90,
+    "semester": 180,
+    "year": 365,
+}
+
+
+class DashboardService:
+    def __init__(self, db: Session):
+        self.db = db
+
+    # ------------------------------------------------------------------
+    # Date helpers
+    # ------------------------------------------------------------------
+
+    def _resolve_dates(
+        self,
+        period_type: str,
+        start_date: str | None,
+        end_date: str | None,
+    ) -> tuple[str, str, str, str, str, str]:
+        today = date.today()
+
+        if period_type == "custom" and start_date and end_date:
+            start = date.fromisoformat(start_date)
+            end = date.fromisoformat(end_date)
+        else:
+            days = _PERIOD_DAYS.get(period_type, 30)
+            end = today
+            start = today - timedelta(days=days)
+
+        duration = (end - start).days
+
+        prev_end = start - timedelta(days=1)
+        prev_start = prev_end - timedelta(days=duration)
+
+        yoy_start = start - timedelta(days=365)
+        yoy_end = end - timedelta(days=365)
+
+        return (
+            start.isoformat(),
+            end.isoformat(),
+            prev_start.isoformat(),
+            prev_end.isoformat(),
+            yoy_start.isoformat(),
+            yoy_end.isoformat(),
+        )
+
+    @staticmethod
+    def _trend(current: float, previous: float) -> float:
+        if previous == 0:
+            return 100.0 if current > 0 else 0.0
+        return round((current - previous) / abs(previous) * 100, 1)
+
+    # ------------------------------------------------------------------
+    # Metric calculators
+    # ------------------------------------------------------------------
+
+    def _nps(self, start: str, end: str) -> float:
+        rows = self.db.execute(
+            select(
+                GoldCliente360.categoria_nps_recente,
+                func.count(GoldCliente360.id_cliente).label("cnt"),
+            )
+            .where(GoldCliente360.data_ultimo_pedido >= start)
+            .where(GoldCliente360.data_ultimo_pedido <= end)
+            .where(GoldCliente360.categoria_nps_recente.notin_(["Não avaliou"]))
+            .group_by(GoldCliente360.categoria_nps_recente)
+        ).all()
+
+        counts = {row[0]: row[1] for row in rows}
+        total = sum(counts.values())
+        if total == 0:
+            return 0.0
+
+        promotores = counts.get("Promotor", 0)
+        detratores = counts.get("Detrator", 0)
+        return round((promotores / total - detratores / total) * 100, 1)
+
+    def _vendas(self, start: str, end: str) -> float:
+        aprovado = self.db.execute(
+            select(func.sum(GoldPedidoDetalhado.receita_bruta))
+            .where(GoldPedidoDetalhado.data_pedido >= start)
+            .where(GoldPedidoDetalhado.data_pedido <= end)
+            .where(GoldPedidoDetalhado.status == "Aprovado")
+        ).scalar() or 0.0
+
+        reembolsado = self.db.execute(
+            select(func.sum(GoldPedidoDetalhado.valor_reembolsado))
+            .where(GoldPedidoDetalhado.data_pedido >= start)
+            .where(GoldPedidoDetalhado.data_pedido <= end)
+            .where(GoldPedidoDetalhado.status == "Reembolsado")
+        ).scalar() or 0.0
+
+        return round(float(aprovado) - float(reembolsado), 2)
+
+    def _clientes(self, start: str, end: str) -> int:
+        return (
+            self.db.execute(
+                select(func.count(distinct(GoldPedidoDetalhado.id_cliente)))
+                .where(GoldPedidoDetalhado.data_pedido >= start)
+                .where(GoldPedidoDetalhado.data_pedido <= end)
+            ).scalar()
+            or 0
+        )
+
+    def _tickets(self, start: str, end: str) -> int:
+        return (
+            self.db.execute(
+                select(func.count(FtTicketSuporte.ticket_id))
+                .where(FtTicketSuporte.data_abertura >= start)
+                .where(FtTicketSuporte.data_abertura <= end)
+                .where(FtTicketSuporte.resolvido == "True")
+            ).scalar()
+            or 0
+        )
+
+    # ------------------------------------------------------------------
+    # Public endpoints
+    # ------------------------------------------------------------------
+
+    def get_metrics(
+        self,
+        period_type: str,
+        start_date: str | None,
+        end_date: str | None,
+    ) -> dict:
+        cur_s, cur_e, prev_s, prev_e, yoy_s, yoy_e = self._resolve_dates(
+            period_type, start_date, end_date
+        )
+
+        nps_cur  = self._nps(cur_s, cur_e)
+        nps_prev = self._nps(prev_s, prev_e)
+        nps_yoy  = self._nps(yoy_s, yoy_e)
+
+        vendas_cur  = self._vendas(cur_s, cur_e)
+        vendas_prev = self._vendas(prev_s, prev_e)
+        vendas_yoy  = self._vendas(yoy_s, yoy_e)
+
+        cli_cur  = float(self._clientes(cur_s, cur_e))
+        cli_prev = float(self._clientes(prev_s, prev_e))
+        cli_yoy  = float(self._clientes(yoy_s, yoy_e))
+
+        tick_cur  = float(self._tickets(cur_s, cur_e))
+        tick_prev = float(self._tickets(prev_s, prev_e))
+        tick_yoy  = float(self._tickets(yoy_s, yoy_e))
+
+        return {
+            "period": {
+                "start": cur_s, "end": cur_e,
+                "prev_start": prev_s, "prev_end": prev_e,
+                "yoy_start": yoy_s, "yoy_end": yoy_e,
+            },
+            "nps": {
+                "value": nps_cur, "prev_value": nps_prev,
+                "trend_pct": self._trend(nps_cur, nps_prev),
+                "yoy_value": nps_yoy, "yoy_pct": self._trend(nps_cur, nps_yoy),
+            },
+            "vendas": {
+                "value": vendas_cur, "prev_value": vendas_prev,
+                "trend_pct": self._trend(vendas_cur, vendas_prev),
+                "yoy_value": vendas_yoy, "yoy_pct": self._trend(vendas_cur, vendas_yoy),
+            },
+            "clientes": {
+                "value": cli_cur, "prev_value": cli_prev,
+                "trend_pct": self._trend(cli_cur, cli_prev),
+                "yoy_value": cli_yoy, "yoy_pct": self._trend(cli_cur, cli_yoy),
+            },
+            "tickets": {
+                "value": tick_cur, "prev_value": tick_prev,
+                "trend_pct": self._trend(tick_cur, tick_prev),
+                "yoy_value": tick_yoy, "yoy_pct": self._trend(tick_cur, tick_yoy),
+            },
+        }
+
+    # ------------------------------------------------------------------
+    # Revenue chart
+    # ------------------------------------------------------------------
+
+    _BUCKET_FOR_PERIOD: dict[str, str] = {
+        "2weeks":   "day",
+        "month":    "week",
+        "3months":  "month",
+        "semester": "month",
+        "year":     "month",
+    }
+
+    def _bucket_for_period(self, period_type: str, start: str, end: str) -> str:
+        if period_type == "custom":
+            days = (date.fromisoformat(end) - date.fromisoformat(start)).days
+            if days <= 14:
+                return "day"
+            if days <= 60:
+                return "week"
+            if days <= 730:
+                return "month"
+            return "year"
+        return self._BUCKET_FOR_PERIOD.get(period_type, "month")
+
+    def _bucket_col(self, bucket: str):
+        if bucket == "day":
+            return func.strftime("%Y-%m-%d", GoldPedidoDetalhado.data_pedido)
+        if bucket == "week":
+            return func.strftime("%Y-W%W", GoldPedidoDetalhado.data_pedido)
+        if bucket == "year":
+            return func.strftime("%Y", GoldPedidoDetalhado.data_pedido)
+        return func.strftime("%Y-%m", GoldPedidoDetalhado.data_pedido)
+
+    def get_revenue_chart(
+        self,
+        period_type: str,
+        start_date: str | None,
+        end_date: str | None,
+        granularity: str,
+        categories: list[str],
+        product_ids: list[str],
+    ) -> dict:
+        cur_s, cur_e, *_ = self._resolve_dates(period_type, start_date, end_date)
+        bucket = self._bucket_for_period(period_type, cur_s, cur_e)
+        bucket_col = self._bucket_col(bucket)
+
+        base = [
+            GoldPedidoDetalhado.data_pedido >= cur_s,
+            GoldPedidoDetalhado.data_pedido <= cur_e,
+            GoldPedidoDetalhado.status == "Aprovado",
+            GoldPedidoDetalhado.receita_bruta.isnot(None),
+        ]
+
+        use_category = granularity == "category"
+        use_product = granularity == "product" and len(product_ids) > 0
+
+        if use_category and categories:
+            base.append(GoldPedidoDetalhado.categoria.in_(categories))
+        if use_product:
+            base.append(GoldPedidoDetalhado.id_produto.in_(product_ids))
+
+        if use_category or use_product:
+            group_col = (
+                GoldPedidoDetalhado.categoria
+                if use_category
+                else GoldPedidoDetalhado.nome_produto
+            )
+            rows = self.db.execute(
+                select(
+                    bucket_col.label("bk"),
+                    group_col.label("gk"),
+                    func.sum(GoldPedidoDetalhado.receita_bruta).label("total"),
+                )
+                .where(and_(*base))
+                .where(group_col.isnot(None))
+                .group_by(bucket_col, group_col)
+                .order_by(bucket_col)
+            ).all()
+
+            labels = sorted({r.bk for r in rows if r.bk})
+            groups = sorted({r.gk for r in rows if r.gk})
+            pivot: dict[str, dict[str, float]] = {g: {} for g in groups}
+            for r in rows:
+                if r.bk and r.gk:
+                    pivot[r.gk][r.bk] = round(float(r.total or 0), 2)
+            series = [
+                {"name": g, "data": [pivot[g].get(lbl, 0.0) for lbl in labels]}
+                for g in groups
+            ]
+        else:
+            rows = self.db.execute(
+                select(
+                    bucket_col.label("bk"),
+                    func.sum(GoldPedidoDetalhado.receita_bruta).label("total"),
+                )
+                .where(and_(*base))
+                .group_by(bucket_col)
+                .order_by(bucket_col)
+            ).all()
+            labels = [r.bk for r in rows if r.bk]
+            series = [
+                {"name": "Total", "data": [round(float(r.total or 0), 2) for r in rows if r.bk]}
+            ]
+
+        return {"bucket": bucket, "labels": labels, "series": series}
+
+    # ------------------------------------------------------------------
+    # Orders card
+    # ------------------------------------------------------------------
+
+    def get_orders_card(
+        self,
+        period_type: str,
+        start_date: str | None,
+        end_date: str | None,
+    ) -> dict:
+        cur_s, cur_e, prev_s, prev_e, *_ = self._resolve_dates(period_type, start_date, end_date)
+
+        rows = self.db.execute(
+            select(
+                GoldPedidoDetalhado.status.label("s"),
+                func.count(GoldPedidoDetalhado.id_pedido).label("cnt"),
+            )
+            .where(GoldPedidoDetalhado.data_pedido >= cur_s)
+            .where(GoldPedidoDetalhado.data_pedido <= cur_e)
+            .where(GoldPedidoDetalhado.status.isnot(None))
+            .group_by(GoldPedidoDetalhado.status)
+        ).all()
+
+        counts = {r.s: r.cnt for r in rows}
+        total = sum(counts.values())
+
+        prev_total = int(
+            self.db.execute(
+                select(func.count(GoldPedidoDetalhado.id_pedido))
+                .where(GoldPedidoDetalhado.data_pedido >= prev_s)
+                .where(GoldPedidoDetalhado.data_pedido <= prev_e)
+            ).scalar() or 0
+        )
+
+        def pct(key: str) -> float:
+            return round(counts.get(key, 0) / total * 100, 1) if total > 0 else 0.0
+
+        return {
+            "total": total,
+            "prev_total": prev_total,
+            "trend_pct": self._trend(float(total), float(prev_total)),
+            "aprovados_pct": pct("Aprovado"),
+            "processando_pct": pct("Processando"),
+            "recusados_pct": pct("Recusado"),
+            "reembolsados_pct": pct("Reembolsado"),
+        }
+
+    # ------------------------------------------------------------------
+    # Top categories chart
+    # ------------------------------------------------------------------
+
+    def get_top_categories(
+        self,
+        period_type: str,
+        start_date: str | None,
+        end_date: str | None,
+        metric: str,
+        top_n: int,
+        order: str,
+    ) -> dict:
+        # Engagement metrics come from a separate table with no date column
+        if metric in ("visualizacoes", "abandono"):
+            value_col = (
+                func.sum(GoldEngajamentoProdutoDigital.total_visualizacoes)
+                if metric == "visualizacoes"
+                else func.avg(GoldEngajamentoProdutoDigital.taxa_abandono)
+            ).label("value")
+
+            sort_dir = value_col.asc() if order == "asc" else value_col.desc()
+
+            rows = self.db.execute(
+                select(GoldEngajamentoProdutoDigital.categoria.label("name"), value_col)
+                .where(GoldEngajamentoProdutoDigital.categoria.isnot(None))
+                .group_by(GoldEngajamentoProdutoDigital.categoria)
+                .order_by(sort_dir)
+                .limit(top_n)
+            ).all()
+
+            precision = 4 if metric == "abandono" else 0
+            return {
+                "metric": metric,
+                "order": order,
+                "items": [
+                    {"name": r.name, "value": round(float(r.value or 0), precision)}
+                    for r in rows
+                ],
+            }
+
+        # Sales metrics from GoldPedidoDetalhado (period-filtered)
+        cur_s, cur_e, *_ = self._resolve_dates(period_type, start_date, end_date)
+
+        value_col = (
+            func.sum(GoldPedidoDetalhado.receita_bruta)
+            if metric == "receita"
+            else func.sum(GoldPedidoDetalhado.quantidade)
+        ).label("value")
+
+        sort_dir = value_col.asc() if order == "asc" else value_col.desc()
+
+        rows = self.db.execute(
+            select(
+                GoldPedidoDetalhado.categoria.label("name"),
+                value_col,
+            )
+            .where(GoldPedidoDetalhado.data_pedido >= cur_s)
+            .where(GoldPedidoDetalhado.data_pedido <= cur_e)
+            .where(GoldPedidoDetalhado.status == "Aprovado")
+            .where(GoldPedidoDetalhado.categoria.isnot(None))
+            .group_by(GoldPedidoDetalhado.categoria)
+            .order_by(sort_dir)
+            .limit(top_n)
+        ).all()
+
+        return {
+            "metric": metric,
+            "order": order,
+            "items": [
+                {"name": r.name, "value": round(float(r.value or 0), 2)}
+                for r in rows
+            ],
+        }
+
+    def get_map_data(
+        self,
+        view: str,
+        period_type: str,
+        start_date: str | None,
+        end_date: str | None,
+    ) -> list[dict]:
+        cur_s, cur_e, *_ = self._resolve_dates(period_type, start_date, end_date)
+
+        is_estados = view == "estados"
+        group_col = GoldCliente360.estado if is_estados else GoldCliente360.regiao
+
+        rows = self.db.execute(
+            select(
+                group_col.label("key"),
+                func.count(GoldPedidoDetalhado.id_pedido).label("total_pedidos"),
+                func.sum(GoldPedidoDetalhado.valor_pedido).label("total_valor"),
+            )
+            .select_from(GoldPedidoDetalhado)
+            .join(
+                GoldCliente360,
+                GoldPedidoDetalhado.id_cliente == GoldCliente360.id_cliente,
+            )
+            .where(GoldPedidoDetalhado.data_pedido >= cur_s)
+            .where(GoldPedidoDetalhado.data_pedido <= cur_e)
+            .where(group_col.isnot(None))
+            .group_by(group_col)
+        ).all()
+
+        result = []
+        for row in rows:
+            if is_estados:
+                sigla = _ESTADO_SIGLA.get(row.key)
+                if not sigla:
+                    continue  # skip city-level entries in the estado column
+                key = sigla
+            else:
+                key = row.key
+
+            result.append({
+                "key": key,
+                "total_pedidos": int(row.total_pedidos),
+                "total_valor": float(row.total_valor or 0),
+            })
+
+        return result

@@ -77,6 +77,7 @@ GOLD_TABLES = [
     ("gold_pedidos_detalhado",          "gold_pedidos_detalhado"),
     ("gold_pedidos_por_status",         "gold_pedidos_por_status"),
     ("gold_vendas_mensais",             "gold_vendas_mensais"),
+    ("gold_engajamento_produto_digital","gold_engajamento_produto_digital"),
     ("gold_tickets_360",                "gold_tickets_360"),
 ]
 
@@ -172,6 +173,9 @@ INDEXES = [
     # gold_satisfacao_nps
     "CREATE INDEX IF NOT EXISTS idx_gnps_ano_mes          ON gold_satisfacao_nps(ano_mes)",
     "CREATE INDEX IF NOT EXISTS idx_gnps_categoria        ON gold_satisfacao_nps(categoria)",
+    # gold_engajamento_produto_digital
+    "CREATE INDEX IF NOT EXISTS idx_gengaj_categoria      ON gold_engajamento_produto_digital(categoria)",
+    "CREATE INDEX IF NOT EXISTS idx_gengaj_id_produto     ON gold_engajamento_produto_digital(id_produto)",
 ]
 
 

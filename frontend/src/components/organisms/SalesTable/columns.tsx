@@ -132,7 +132,7 @@ export function getSaleColumns(
     },
     {
       key: "paymentMethod",
-      header: "Método de pagamento",
+      header: "Tipo de pagamento",
       minWidth: "130px",
       filter: {
         type: "select",

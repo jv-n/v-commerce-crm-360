@@ -1,22 +1,20 @@
-import { useState, useEffect, useRef, useCallback } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { makeContactColumns } from "./columns"
 import { fetchContacts, exportContactsCSV } from "@/lib/api/contacts"
 import { ContactFormSheet } from "./ContactFormSheet"
-import {
-  ContactAdvancedFiltersDrawer,
-  EMPTY_CONTACT_ADVANCED,
-  contactAdvancedActiveCount,
-} from "./AdvancedFiltersDrawer"
-import { ExportPopover, type ExportPill } from "@/components/molecules/ExportPopover"
+import { ContactExpandedRow } from "./ContactExpandedRow"
+import { ContactAdvancedFiltersDrawer, EMPTY_CONTACT_ADVANCED, contactAdvancedActiveCount } from "./AdvancedFiltersDrawer"
+import { ExportPopover } from "@/components/molecules/ExportPopover"
+import { useContactsFetch } from "./useContactsFetch"
+import { useContactExport } from "./useContactExport"
+import { TABS, DEFAULT_PAGE_SIZE, EMPTY_FILTERS } from "./types"
+import type { ServerFilters } from "./types"
 import type { ContactAdvancedFilters } from "./AdvancedFiltersDrawer"
 import type { Contact } from "@/types/contact"
-import type { Tab, ActiveFilters } from "@/components/organisms/DataTable/types"
+import type { ActiveFilters } from "@/components/organisms/DataTable/types"
 import { cn } from "@/lib/utils"
-import AddIcon from "@mui/icons-material/Add"
-import EditOutlinedIcon from "@mui/icons-material/EditOutlined"
-import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
 import TuneIcon from "@mui/icons-material/Tune"
 
 const TABS: Tab[] = [
@@ -306,7 +304,7 @@ export function ContactsTable({
   const openEdit    = (c: Contact) => { setEditingContact(c); setFormOpen(true) }
   const switchLeads = () => { setActiveTab("leads"); setPage(1) }
 
-  useEffect(() => { onOpenAdd?.(openAdd) }, [])
+  useEffect(() => { onOpenAdd?.(openAdd) },         [])
   useEffect(() => { onOpenExport?.(() => setExportOpen(true)) }, [])
   useEffect(() => { onSwitchToLeads?.(switchLeads) }, [])
 
@@ -346,9 +344,7 @@ export function ContactsTable({
 
   const filterBarExtra = (
     <div className="flex items-center gap-3">
-      {fetchError && (
-        <span className="text-xs text-red-500">Erro ao carregar contatos</span>
-      )}
+      {fetchError && <span className="text-xs text-red-500">Erro ao carregar contatos</span>}
       <button
         onClick={() => setDrawerOpen(true)}
         className={cn(
@@ -392,28 +388,25 @@ export function ContactsTable({
       <DataTable
         data={contacts}
         loading={loading}
-        columns={makeContactColumns(expandedRowId, onToggleExpand, (id) => navigate(`/contacts/${id}`))}
-
+        columns={makeContactColumns(expandedRowId, (id) => setExpandedRowId(prev => prev === id ? null : id), (id) => navigate(`/contacts/${id}`))}
         getRowId={(c) => c.id}
         tabs={TABS}
         activeTab={activeTab}
         onTabChange={(tabId) => { setActiveTab(tabId); setPage(1) }}
         onFiltersChange={handleFiltersChange}
-        onSearchChange={handleSearchChange}
+        onSearchChange={(v) => { setNameSearch(v); setPage(1) }}
         searchPlaceholder="Pesquisar por nome..."
-        onSortChange={handleSortChange}
+        onSortChange={(sort) => { setSortBy(sort?.key ?? null); setSortDir(sort?.direction ?? "asc"); setPage(1) }}
         onSelectionChange={handleSelectionChange}
         filterBarExtra={filterBarExtra}
         rowsPerPageOptions={[10, 25, 50]}
         expandedRowIds={expandedRowId ? new Set([expandedRowId]) : undefined}
         renderExpandedRow={(c) => <ContactExpandedRow contact={c} onEdit={() => openEdit(c)} />}
-        onRowClick={(c) => onToggleExpand(c.id)}
+        onRowClick={(c) => setExpandedRowId(prev => prev === c.id ? null : c.id)}
         serverPagination={{
-          total,
-          page,
-          pageSize,
-          onPageChange: handlePageChange,
-          onPageSizeChange: handlePageSizeChange,
+          total, page, pageSize,
+          onPageChange: (p) => setPage(p),
+          onPageSizeChange: (s) => { setPageSize(s); setPage(1) },
         }}
       />
 
