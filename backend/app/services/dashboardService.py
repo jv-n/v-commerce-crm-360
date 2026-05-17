@@ -139,6 +139,17 @@ class DashboardService:
             or 0
         )
 
+    def _leads_convertidos(self, start: str, end: str) -> int:
+        """Clientes cujo primeiro pedido caiu no período (lead → cliente)."""
+        return (
+            self.db.execute(
+                select(func.count(GoldCliente360.id_cliente))
+                .where(GoldCliente360.data_primeiro_pedido >= start)
+                .where(GoldCliente360.data_primeiro_pedido <= end)
+            ).scalar()
+            or 0
+        )
+
     # ------------------------------------------------------------------
     # Public endpoints
     # ------------------------------------------------------------------
@@ -169,6 +180,10 @@ class DashboardService:
         tick_prev = float(self._tickets(prev_s, prev_e))
         tick_yoy  = float(self._tickets(yoy_s, yoy_e))
 
+        leads_cur  = float(self._leads_convertidos(cur_s, cur_e))
+        leads_prev = float(self._leads_convertidos(prev_s, prev_e))
+        leads_yoy  = float(self._leads_convertidos(yoy_s, yoy_e))
+
         return {
             "period": {
                 "start": cur_s, "end": cur_e,
@@ -194,6 +209,11 @@ class DashboardService:
                 "value": tick_cur, "prev_value": tick_prev,
                 "trend_pct": self._trend(tick_cur, tick_prev),
                 "yoy_value": tick_yoy, "yoy_pct": self._trend(tick_cur, tick_yoy),
+            },
+            "leads_convertidos": {
+                "value": leads_cur, "prev_value": leads_prev,
+                "trend_pct": self._trend(leads_cur, leads_prev),
+                "yoy_value": leads_yoy, "yoy_pct": self._trend(leads_cur, leads_yoy),
             },
         }
 

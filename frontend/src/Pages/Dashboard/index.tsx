@@ -14,7 +14,7 @@ import AttachMoneyOutlinedIcon        from "@mui/icons-material/AttachMoneyOutli
 import PeopleAltOutlinedIcon          from "@mui/icons-material/PeopleAltOutlined"
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined"
 import ShoppingCartOutlinedIcon       from "@mui/icons-material/ShoppingCartOutlined"
-import ReceiptLongOutlinedIcon        from "@mui/icons-material/ReceiptLongOutlined"
+import PersonAddAltOutlinedIcon       from "@mui/icons-material/PersonAddAltOutlined"
 
 // -----------------------------------------------------------------------
 // Formatting helpers
@@ -87,15 +87,18 @@ export default function Dashboard() {
       yoyPercent:      metrics?.nps.yoy_pct ?? 0,
       isLoading,
     },
-    // ---- A definir ----
+    // ---- Leads Convertidos ----
     {
-      title: "A definir",
-      icon:  <ReceiptLongOutlinedIcon />,
-      currentValue:    "—",
-      trendPercent:    0,
-      comparisonLabel: "—",
-      comparisonValue: "—",
-      isMock: true,
+      title: "Leads Convertidos",
+      icon:  <PersonAddAltOutlinedIcon />,
+      currentValue:    isLoading || !metrics?.leads_convertidos ? "—" : fmtCount(metrics.leads_convertidos.value),
+      trendPercent:    metrics?.leads_convertidos?.trend_pct ?? 0,
+      comparisonLabel: "Período anterior",
+      comparisonValue: isLoading || !metrics?.leads_convertidos ? "—" : fmtCount(metrics.leads_convertidos.prev_value),
+      yoyLabel,
+      yoyValue:        isLoading || !metrics?.leads_convertidos ? "—" : fmtCount(metrics.leads_convertidos.yoy_value),
+      yoyPercent:      metrics?.leads_convertidos?.yoy_pct ?? 0,
+      isLoading,
     },
     // ---- A definir ----
     {
