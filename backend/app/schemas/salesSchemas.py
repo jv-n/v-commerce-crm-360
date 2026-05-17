@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, field_validator
 
 
@@ -72,3 +74,16 @@ class SalesPageOut(BaseModel):
     total: int
     page: int
     pageSize: int
+
+
+class SaleActivityOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id:            int
+    id_pedido:     str
+    user_name:     str
+    field_name:    str
+    old_value:     str | None = None
+    new_value:     str | None = None
+    change_method: str
+    changed_at:    datetime

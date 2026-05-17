@@ -7,6 +7,8 @@ import type { Sale } from "@/types/sale"
 import type { Tab, ActiveFilters } from "@/components/organisms/DataTable/types"
 import { SaleFormSheet } from "./SaleForms"
 import { SaleExpandedRow } from "./SaleExpandedRow"
+import { cn } from "@/lib/utils"
+import { MdKeyboardArrowDown } from "react-icons/md"
 
 const TABS: Tab[] = [
   { id: "all",       label: "Todos os pedidos"    },
@@ -56,6 +58,7 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
     const [searchScope,    setSearchScope]    = useState<"all" | "client" | "product">("all")
     const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(new Set())
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+    const searchRef   = useRef("")
 
     const currentSnapshot = useRef<FilterSnapshot>({ tab: "all", page: 1, serverFilters: EMPTY_FILTERS })
     useEffect(() => {
@@ -223,6 +226,8 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
     const handleSearchChange = (q: string) => {
       if (searchTimer.current) clearTimeout(searchTimer.current)
       searchTimer.current = setTimeout(() => {
+        if (searchRef.current === q) return
+        searchRef.current = q
         setSearch(q)
         setPage(1)
         setLoading(true)
@@ -269,15 +274,21 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
           onSearchChange={handleSearchChange}
           searchPlaceholder={searchScope === "client" ? "Buscar por cliente..." : searchScope === "product" ? "Buscar por produto..." : "Buscar por cliente ou produto..."}
           searchPrefix={
-            <select
-              value={searchScope}
-              onChange={e => { setSearchScope(e.target.value as typeof searchScope); setPage(1) }}
-              className="text-xs text-gray-600 bg-transparent border-r border-gray-200 pr-1.5 mr-0.5 outline-none cursor-pointer"
-            >
-              <option value="all">Todos</option>
-              <option value="client">Cliente</option>
-              <option value="product">Produto</option>
-            </select>
+            <div className="relative flex items-center border-r border-gray-200 mr-0.5">
+              <select
+                value={searchScope}
+                onChange={e => { setSearchScope(e.target.value as typeof searchScope); setPage(1) }}
+                className={cn(
+                  "appearance-none text-xs bg-transparent pl-2 pr-5 py-0.5 rounded cursor-pointer outline-none transition-colors hover:bg-[#F7EBFF]",
+                  searchScope !== "all" ? "text-purple-700 font-medium" : "text-gray-700"
+                )}
+              >
+                <option value="all">Todos</option>
+                <option value="client">Cliente</option>
+                <option value="product">Produto</option>
+              </select>
+              <MdKeyboardArrowDown size={12} className="absolute right-0.5 pointer-events-none text-gray-500" />
+            </div>
           }
           headerClassName="bg-[#F0DDFD]"
           dividersClassName="divide-[#9F83B2]"

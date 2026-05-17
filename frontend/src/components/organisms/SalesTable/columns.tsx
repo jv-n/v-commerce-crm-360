@@ -4,7 +4,7 @@ import { CellTag }  from "@/components/organisms/DataTable/atoms/CellTag"
 import { StatusBadge } from "./tableComponents/badge"
 import { OpenCircleButton } from "@/components/atoms/open-circle-button"
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward"
-import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined"
+
 import type { Sale, SaleStatus } from "@/types/sale"
 import type { ProductCategory } from "@/types/product"
 
@@ -112,7 +112,6 @@ export function getSaleColumns(
       render: (c) =>
         c.date ? (
           <div className="flex items-center gap-1.5 text-gray-600">
-            <AccessTimeOutlinedIcon sx={{ fontSize: 13, color: "#9CA3AF" }} />
             <CellText value={c.date} variant="primary" />
           </div>
         ) : (
