@@ -7,7 +7,7 @@ export interface Contact {
   id: string
   name: string | null
   email: string | null
-  phone: string | null        // sempre null — não existe em gold_cliente_360
+  phone: string | null
 
   // Segmentação
   clientStatus: ClientStatusType | null
@@ -33,6 +33,6 @@ export interface Contact {
   engagementScore: number
   productRating: number | null
 
-  // Compat. (aponta para firstPurchase)
+  // Compat. com a tabela atual
   createdAt: string | null
 }
