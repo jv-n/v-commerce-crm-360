@@ -19,6 +19,7 @@ import {
 
   FlagOutlined,
 } from "@mui/icons-material"
+import { useAuth } from "@/contexts/auth/useAuth"
 
 //ícones 
 
@@ -82,8 +83,15 @@ export default function Home() {
   const navigate = useNavigate()
   const { onOpenAI } = useOutletContext<{ onOpenAI: (message?: string) => void }>()
 
+  const { user } = useAuth()
   const today = new Date()
   const mentionInputRef = useRef<MentionInputHandle>(null)
+
+const userFirstName = () => {
+  if(!user) return "Usuário Não Identificado"
+  const index = user.name.indexOf(" ")
+  return user.name.slice(0, index)
+}
 
   return (
     <div className="relative px-6 py-5 h-full flex flex-col gap-5 bg-white min-h-full rounded-xl overflow-y-auto">
@@ -92,7 +100,7 @@ export default function Home() {
       <div>
         <p className="text-[12px] text-gray-500">{formatDate(today)}</p>
         <h1 className="text-[40px] font-bold text-gray-900 mt-0.5 leading-tight">
-          Bem-vindo ao V-Commerce CRM 360, Sérgio.
+          Bem-vindo ao V-Commerce CRM 360, {userFirstName()}.
         </h1>
       </div>
 
