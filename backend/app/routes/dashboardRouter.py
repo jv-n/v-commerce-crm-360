@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.schemas.dashboardSchemas import DashboardMetricsOut, MapDataOut, RevenueChartOut
+from app.schemas.dashboardSchemas import DashboardMetricsOut, MapDataOut, RevenueChartOut, TopCategoriesOut
 from app.services.dashboardService import DashboardService
 from database.database import get_db
 
@@ -39,6 +39,26 @@ def get_revenue_chart(
         granularity=granularity,
         categories=[c for c in categories.split(",") if c],
         product_ids=[p for p in product_ids.split(",") if p],
+    )
+
+
+@router.get("/top-categories", response_model=TopCategoriesOut)
+def get_top_categories(
+    period_type: str = Query("month"),
+    start_date: str = Query(""),
+    end_date: str = Query(""),
+    metric: str = Query("vendidos", description="vendidos | receita"),
+    top_n: int = Query(5, ge=1, le=20),
+    order: str = Query("desc", description="desc | asc"),
+    db: Session = Depends(get_db),
+):
+    return DashboardService(db).get_top_categories(
+        period_type=period_type,
+        start_date=start_date or None,
+        end_date=end_date or None,
+        metric=metric,
+        top_n=top_n,
+        order=order,
     )
 
 

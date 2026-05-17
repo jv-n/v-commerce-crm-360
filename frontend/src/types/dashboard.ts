@@ -42,6 +42,17 @@ export interface MapData {
   items: MapItem[]
 }
 
+export interface TopCategoryItem {
+  name: string
+  value: number
+}
+
+export interface TopCategoriesData {
+  metric: string
+  order: string
+  items: TopCategoryItem[]
+}
+
 export type RevenueBucket = "day" | "week" | "month" | "year"
 
 export interface RevenueSeries {

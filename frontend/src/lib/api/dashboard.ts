@@ -1,4 +1,4 @@
-import type { DashboardMetrics, MapData, PeriodFilter, RevenueChartData } from "@/types/dashboard"
+import type { DashboardMetrics, MapData, PeriodFilter, RevenueChartData, TopCategoriesData } from "@/types/dashboard"
 
 function periodParams(period: PeriodFilter): URLSearchParams {
   const p = new URLSearchParams({ period_type: period.type })
@@ -29,6 +29,23 @@ export async function fetchRevenueChart(params: RevenueChartParams): Promise<Rev
   if (params.productIds?.length) p.set("product_ids", params.productIds.join(","))
   const res = await fetch(`/api/dashboard/revenue?${p}`)
   if (!res.ok) throw new Error("Erro ao buscar dados do gráfico de receita")
+  return res.json()
+}
+
+export interface TopCategoriesParams {
+  period: PeriodFilter
+  metric: "vendidos" | "receita" | "visualizacoes" | "abandono"
+  topN: number
+  order: "desc" | "asc"
+}
+
+export async function fetchTopCategories(params: TopCategoriesParams): Promise<TopCategoriesData> {
+  const p = periodParams(params.period)
+  p.set("metric", params.metric)
+  p.set("top_n", String(params.topN))
+  p.set("order", params.order)
+  const res = await fetch(`/api/dashboard/top-categories?${p}`)
+  if (!res.ok) throw new Error("Erro ao buscar top categorias")
   return res.json()
 }
 

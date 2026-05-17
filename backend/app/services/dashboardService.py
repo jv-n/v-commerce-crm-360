@@ -4,6 +4,7 @@ from sqlalchemy import select, func, distinct, and_
 from sqlalchemy.orm import Session
 
 from app.models.contactModel import GoldCliente360
+from app.models.productModel import GoldEngajamentoProdutoDigital
 from app.models.saleModel import GoldPedidoDetalhado
 from app.models.ticketModel import FtTicketSuporte
 
@@ -301,6 +302,81 @@ class DashboardService:
             ]
 
         return {"bucket": bucket, "labels": labels, "series": series}
+
+    # ------------------------------------------------------------------
+    # Top categories chart
+    # ------------------------------------------------------------------
+
+    def get_top_categories(
+        self,
+        period_type: str,
+        start_date: str | None,
+        end_date: str | None,
+        metric: str,
+        top_n: int,
+        order: str,
+    ) -> dict:
+        # Engagement metrics come from a separate table with no date column
+        if metric in ("visualizacoes", "abandono"):
+            value_col = (
+                func.sum(GoldEngajamentoProdutoDigital.total_visualizacoes)
+                if metric == "visualizacoes"
+                else func.avg(GoldEngajamentoProdutoDigital.taxa_abandono)
+            ).label("value")
+
+            sort_dir = value_col.asc() if order == "asc" else value_col.desc()
+
+            rows = self.db.execute(
+                select(GoldEngajamentoProdutoDigital.categoria.label("name"), value_col)
+                .where(GoldEngajamentoProdutoDigital.categoria.isnot(None))
+                .group_by(GoldEngajamentoProdutoDigital.categoria)
+                .order_by(sort_dir)
+                .limit(top_n)
+            ).all()
+
+            precision = 4 if metric == "abandono" else 0
+            return {
+                "metric": metric,
+                "order": order,
+                "items": [
+                    {"name": r.name, "value": round(float(r.value or 0), precision)}
+                    for r in rows
+                ],
+            }
+
+        # Sales metrics from GoldPedidoDetalhado (period-filtered)
+        cur_s, cur_e, *_ = self._resolve_dates(period_type, start_date, end_date)
+
+        value_col = (
+            func.sum(GoldPedidoDetalhado.receita_bruta)
+            if metric == "receita"
+            else func.sum(GoldPedidoDetalhado.quantidade)
+        ).label("value")
+
+        sort_dir = value_col.asc() if order == "asc" else value_col.desc()
+
+        rows = self.db.execute(
+            select(
+                GoldPedidoDetalhado.categoria.label("name"),
+                value_col,
+            )
+            .where(GoldPedidoDetalhado.data_pedido >= cur_s)
+            .where(GoldPedidoDetalhado.data_pedido <= cur_e)
+            .where(GoldPedidoDetalhado.status == "Aprovado")
+            .where(GoldPedidoDetalhado.categoria.isnot(None))
+            .group_by(GoldPedidoDetalhado.categoria)
+            .order_by(sort_dir)
+            .limit(top_n)
+        ).all()
+
+        return {
+            "metric": metric,
+            "order": order,
+            "items": [
+                {"name": r.name, "value": round(float(r.value or 0), 2)}
+                for r in rows
+            ],
+        }
 
     def get_map_data(
         self,

@@ -3,6 +3,7 @@ import { MetricCard } from "@/components/molecules/MetricCard"
 import type { MetricCardData } from "@/components/molecules/MetricCard"
 import { ModuleBarChart } from "@/components/molecules/ModuleBarChart"
 import { BrazilMapCard } from "@/components/organisms/BrazilMapCard"
+import { TopCategoriesChart } from "@/components/molecules/TopCategoriesChart"
 import { PeriodSelector } from "@/components/molecules/PeriodSelector"
 import { fetchDashboardMetrics } from "@/lib/api/dashboard"
 import type { DashboardMetrics, PeriodFilter } from "@/types/dashboard"
@@ -154,15 +155,18 @@ export default function Dashboard() {
         <PeriodSelector value={period} onChange={handlePeriodChange} />
       </div>
 
-      {/* Metric cards: 3 cols × 2 rows */}
-      <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-        {cards.map((card, i) => (
-          <MetricCard key={`${card.title}-${i}`} {...card} />
-        ))}
+      {/* Top section: metric cards + categories chart side by side */}
+      <div className="flex flex-row gap-6 items-stretch">
+        <div className="grid grid-cols-3 gap-4 flex-1">
+          {cards.map((card, i) => (
+            <MetricCard key={`${card.title}-${i}`} {...card} />
+          ))}
+        </div>
+        <TopCategoriesChart period={period} />
       </div>
 
       {/* Chart cards: fill remaining vertical space */}
-      <div className="flex flex-row w-full h-full gap-6">
+      <div className="flex flex-row w-full flex-1 min-h-0 gap-6">
         <ModuleBarChart
             title="Receita no período"
             period={period}

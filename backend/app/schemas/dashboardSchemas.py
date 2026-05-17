@@ -46,3 +46,14 @@ class RevenueChartOut(BaseModel):
     bucket: str  # "day" | "week" | "month" | "year"
     labels: list[str]
     series: list[RevenueSeriesOut]
+
+
+class TopCategoryItemOut(BaseModel):
+    name: str
+    value: float
+
+
+class TopCategoriesOut(BaseModel):
+    metric: str
+    order: str
+    items: list[TopCategoryItemOut]

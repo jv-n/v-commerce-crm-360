@@ -93,9 +93,8 @@ export function BrazilMapCard({ period }: BrazilMapCardProps) {
         </div>
       </div>
 
-      {/* Content: ranking + map + legend */}
-      <div className="flex items-stretch gap-2 flex-1 min-h-0">
-        <StateRankingList items={topItems} isLoading={isLoading} />
+      {/* Content: map + legend, ranking overlaid at bottom-left */}
+      <div className="relative flex items-stretch gap-2 flex-1 min-h-0">
         <BrazilSvgMap
           stateValues={stateValues}
           statePedidos={statePedidos}
@@ -105,6 +104,9 @@ export function BrazilMapCard({ period }: BrazilMapCardProps) {
           isLoading={isLoading}
         />
         <MapLegend min={min} max={max} />
+        <div className="absolute bottom-2 left-2 rounded-lg bg-card/80 backdrop-blur-sm p-2">
+          <StateRankingList items={topItems} isLoading={isLoading} />
+        </div>
       </div>
     </div>
   )

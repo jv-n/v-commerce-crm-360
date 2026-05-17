@@ -41,6 +41,21 @@ class GoldDesempenhoProduto(Base):
     ratio_ticket_por_venda: Mapped[float | None] = mapped_column(Float, nullable=True)
 
 
+class GoldEngajamentoProdutoDigital(Base):
+    __tablename__ = "gold_engajamento_produto_digital"
+
+    id_produto: Mapped[str] = mapped_column(String, primary_key=True)
+    nome_produto: Mapped[str | None] = mapped_column(String, nullable=True)
+    categoria: Mapped[str | None] = mapped_column(String, nullable=True)
+    preco: Mapped[float | None] = mapped_column(Float, nullable=True)
+    total_visualizacoes: Mapped[float | None] = mapped_column(Float, nullable=True)
+    total_adicionados_carrinho: Mapped[float | None] = mapped_column(Float, nullable=True)
+    total_compras: Mapped[float | None] = mapped_column(Float, nullable=True)
+    total_abandonos_carrinho: Mapped[float | None] = mapped_column(Float, nullable=True)
+    taxa_abandono: Mapped[float | None] = mapped_column(Float, nullable=True)
+    timestamp_ingestion: Mapped[str | None] = mapped_column(String, nullable=True)
+
+
 class ProductActivity(Base):
     __tablename__ = "ft_product_activities"
 
