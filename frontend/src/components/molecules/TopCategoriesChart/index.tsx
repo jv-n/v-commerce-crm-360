@@ -40,15 +40,13 @@ interface Props {
 export function TopCategoriesChart({ period }: Props) {
   const [filter, setFilter] = useState<FilterState>({
     metric: "vendidos",
-    topN: 5,
-    order: "desc",
   })
   const [data, setData] = useState<TopCategoriesData | null>(null)
   const chartContainerRef = useRef<HTMLDivElement>(null)
   const [chartHeight, setChartHeight] = useState(150)
 
   const requestKey = useMemo(
-    () => JSON.stringify({ period, ...filter }),
+    () => JSON.stringify({ period, metric: filter.metric }),
     [period, filter],
   )
   const [loadedKey, setLoadedKey] = useState<string | null>(null)
@@ -59,8 +57,8 @@ export function TopCategoriesChart({ period }: Props) {
     fetchTopCategories({
       period,
       metric: filter.metric,
-      topN: filter.topN,
-      order: filter.order,
+      topN: 20,
+      order: "desc",
     })
       .then(d => {
         if (!alive) return
@@ -87,20 +85,19 @@ export function TopCategoriesChart({ period }: Props) {
 
   return (
     <div className="flex flex-col gap-2 rounded-xl bg-card p-4 shadow-sm h-full w-[440px] flex-shrink-0">
-      {/* Header — same structure as ModuleBarChart */}
-      <div className="flex flex-row items-center gap-1.5 text-[#A195A9] text-[1rem] font-bold">
-        <LeaderboardOutlinedIcon style={{ fontSize: 18 }} />
-        Categorias de produtos
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-[#A195A9] text-[1rem] font-bold">
+          <LeaderboardOutlinedIcon style={{ fontSize: 18 }} />
+          Categorias de produtos
+        </div>
+        <div className="flex items-center gap-2">
+          {isLoading && (
+            <span className="text-xs text-muted-foreground animate-pulse">Carregando...</span>
+          )}
+          <TopCategoriesFilterSelect state={filter} onChange={setFilter} />
+        </div>
       </div>
-
-      {/* Filters */}
-      <TopCategoriesFilterSelect state={filter} onChange={setFilter} />
-
-      {isLoading && (
-        <span className="text-xs text-muted-foreground animate-pulse -mt-1">
-          Carregando...
-        </span>
-      )}
 
       {/* Chart + legend grouped so legend sits immediately below bars */}
       <div className="flex flex-col flex-1 min-h-0 gap-1 -ml-3">

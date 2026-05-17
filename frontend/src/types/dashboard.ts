@@ -42,6 +42,16 @@ export interface MapData {
   items: MapItem[]
 }
 
+export interface OrdersCardData {
+  total: number
+  prev_total: number
+  trend_pct: number
+  aprovados_pct: number
+  processando_pct: number
+  recusados_pct: number
+  reembolsados_pct: number
+}
+
 export interface TopCategoryItem {
   name: string
   value: number

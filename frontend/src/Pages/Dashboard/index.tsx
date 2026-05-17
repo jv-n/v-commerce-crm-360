@@ -4,6 +4,7 @@ import type { MetricCardData } from "@/components/molecules/MetricCard"
 import { ModuleBarChart } from "@/components/molecules/ModuleBarChart"
 import { BrazilMapCard } from "@/components/organisms/BrazilMapCard"
 import { TopCategoriesChart } from "@/components/molecules/TopCategoriesChart"
+import { OrdersCard } from "@/components/molecules/OrdersCard"
 import { PeriodSelector } from "@/components/molecules/PeriodSelector"
 import { fetchDashboardMetrics } from "@/lib/api/dashboard"
 import type { DashboardMetrics, PeriodFilter } from "@/types/dashboard"
@@ -155,13 +156,14 @@ export default function Dashboard() {
         <PeriodSelector value={period} onChange={handlePeriodChange} />
       </div>
 
-      {/* Top section: metric cards + categories chart side by side */}
-      <div className="flex flex-row gap-6 items-stretch">
-        <div className="grid grid-cols-3 gap-4 flex-1">
+      {/* Top section: metric cards + orders card + categories chart */}
+      <div className="flex flex-row gap-4 items-stretch">
+        <div className="grid grid-cols-3 gap-3 flex-1 min-w-0">
           {cards.map((card, i) => (
             <MetricCard key={`${card.title}-${i}`} {...card} />
           ))}
         </div>
+        <OrdersCard period={period} />
         <TopCategoriesChart period={period} />
       </div>
 

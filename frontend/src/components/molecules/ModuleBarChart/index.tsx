@@ -80,17 +80,18 @@ export function ModuleBarChart({ title, period }: ModuleBarChartProps) {
 
     return (
         <div className="flex flex-col gap-2 rounded-xl bg-card p-4 shadow-sm h-full w-full">
-            <div className="flex flex-row items-center gap-1.5 text-md text-[#A195A9] text-[1rem] font-bold">
-                <PaymentsRoundedIcon style={{ fontSize: 22 }}/>
-                {title}
-            </div>
-            <div className="flex flex-row gap-2 items-center">
-                <FilterSelectType onChange={setGranularityState} />
-                {isLoading && (
-                    <span className="text-xs text-muted-foreground animate-pulse">
-                        Carregando...
-                    </span>
-                )}
+            {/* Header */}
+            <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 text-[#A195A9] text-[1rem] font-bold">
+                    <PaymentsRoundedIcon style={{ fontSize: 22 }}/>
+                    {title}
+                </div>
+                <div className="flex items-center gap-2">
+                    {isLoading && (
+                        <span className="text-xs text-muted-foreground animate-pulse">Carregando...</span>
+                    )}
+                    <FilterSelectType onChange={setGranularityState} />
+                </div>
             </div>
             <div ref={containerRef} className="w-full h-full flex flex-row justify-start">
                 {chartData && formattedLabels.length > 0 ? (

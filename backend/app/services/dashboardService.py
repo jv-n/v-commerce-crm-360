@@ -304,6 +304,53 @@ class DashboardService:
         return {"bucket": bucket, "labels": labels, "series": series}
 
     # ------------------------------------------------------------------
+    # Orders card
+    # ------------------------------------------------------------------
+
+    def get_orders_card(
+        self,
+        period_type: str,
+        start_date: str | None,
+        end_date: str | None,
+    ) -> dict:
+        cur_s, cur_e, prev_s, prev_e, *_ = self._resolve_dates(period_type, start_date, end_date)
+
+        rows = self.db.execute(
+            select(
+                GoldPedidoDetalhado.status.label("s"),
+                func.count(GoldPedidoDetalhado.id_pedido).label("cnt"),
+            )
+            .where(GoldPedidoDetalhado.data_pedido >= cur_s)
+            .where(GoldPedidoDetalhado.data_pedido <= cur_e)
+            .where(GoldPedidoDetalhado.status.isnot(None))
+            .group_by(GoldPedidoDetalhado.status)
+        ).all()
+
+        counts = {r.s: r.cnt for r in rows}
+        total = sum(counts.values())
+
+        prev_total = int(
+            self.db.execute(
+                select(func.count(GoldPedidoDetalhado.id_pedido))
+                .where(GoldPedidoDetalhado.data_pedido >= prev_s)
+                .where(GoldPedidoDetalhado.data_pedido <= prev_e)
+            ).scalar() or 0
+        )
+
+        def pct(key: str) -> float:
+            return round(counts.get(key, 0) / total * 100, 1) if total > 0 else 0.0
+
+        return {
+            "total": total,
+            "prev_total": prev_total,
+            "trend_pct": self._trend(float(total), float(prev_total)),
+            "aprovados_pct": pct("Aprovado"),
+            "processando_pct": pct("Processando"),
+            "recusados_pct": pct("Recusado"),
+            "reembolsados_pct": pct("Reembolsado"),
+        }
+
+    # ------------------------------------------------------------------
     # Top categories chart
     # ------------------------------------------------------------------
 

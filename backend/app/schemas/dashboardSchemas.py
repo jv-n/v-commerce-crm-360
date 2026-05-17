@@ -48,6 +48,16 @@ class RevenueChartOut(BaseModel):
     series: list[RevenueSeriesOut]
 
 
+class OrdersCardOut(BaseModel):
+    total: int
+    prev_total: int
+    trend_pct: float
+    aprovados_pct: float
+    processando_pct: float
+    recusados_pct: float
+    reembolsados_pct: float
+
+
 class TopCategoryItemOut(BaseModel):
     name: str
     value: float

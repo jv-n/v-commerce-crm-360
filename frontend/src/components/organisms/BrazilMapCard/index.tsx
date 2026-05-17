@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react"
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined"
-import InfoOutlinedIcon from "@mui/icons-material/InfoOutlined"
-import { ViewToggle } from "./atoms/PeriodToggle"
+import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDownOutlined"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuGroup,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/atoms/dropdown-menu"
 import type { MapView } from "./atoms/PeriodToggle"
 import { MapLegend } from "./atoms/MapLegend"
 import { StateRankingList } from "./molecules/StateRankingList"
@@ -83,14 +89,31 @@ export function BrazilMapCard({ period }: BrazilMapCardProps) {
     <div className="flex flex-col gap-2 rounded-xl bg-card p-4 shadow-sm h-full w-full">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-[1rem] font-bold text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-[#A195A9] text-[1rem] font-bold">
           <LocationOnOutlinedIcon style={{ fontSize: 16 }} />
           Estados com mais vendas
         </div>
-        <div className="flex items-center gap-2">
-          <ViewToggle view={view} onChange={setView} />
-          <InfoOutlinedIcon className="text-muted-foreground cursor-default" style={{ fontSize: 16 }} />
-        </div>
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <button className="bg-[#E7DEED] rounded-md transition hover:bg-[#D0C5D6] p-1.5 text-black text-xs flex items-center gap-1 whitespace-nowrap">
+              {view === "estados" ? "Estados" : "Regiões"}
+              <KeyboardArrowDownOutlinedIcon fontSize="small" />
+            </button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end">
+            <DropdownMenuGroup>
+              {(["estados", "regioes"] as MapView[]).map(v => (
+                <DropdownMenuItem
+                  key={v}
+                  className={view === v ? "font-semibold bg-[#EDE5F2]" : ""}
+                  onSelect={() => setView(v)}
+                >
+                  {v === "estados" ? "Estados" : "Regiões"}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
 
       {/* Content: map + legend, ranking overlaid at bottom-left */}

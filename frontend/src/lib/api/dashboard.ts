@@ -1,4 +1,4 @@
-import type { DashboardMetrics, MapData, PeriodFilter, RevenueChartData, TopCategoriesData } from "@/types/dashboard"
+import type { DashboardMetrics, MapData, OrdersCardData, PeriodFilter, RevenueChartData, TopCategoriesData } from "@/types/dashboard"
 
 function periodParams(period: PeriodFilter): URLSearchParams {
   const p = new URLSearchParams({ period_type: period.type })
@@ -7,6 +7,12 @@ function periodParams(period: PeriodFilter): URLSearchParams {
     p.set("end_date", period.endDate)
   }
   return p
+}
+
+export async function fetchOrdersCard(period: PeriodFilter): Promise<OrdersCardData> {
+  const res = await fetch(`/api/dashboard/orders?${periodParams(period)}`)
+  if (!res.ok) throw new Error("Erro ao buscar dados de pedidos")
+  return res.json()
 }
 
 export async function fetchDashboardMetrics(period: PeriodFilter): Promise<DashboardMetrics> {

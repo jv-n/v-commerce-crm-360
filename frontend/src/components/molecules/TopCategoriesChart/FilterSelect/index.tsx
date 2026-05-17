@@ -1,6 +1,4 @@
 import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDownOutlined"
-import ArrowDownwardOutlinedIcon from "@mui/icons-material/ArrowDownwardOutlined"
-import ArrowUpwardOutlinedIcon from "@mui/icons-material/ArrowUpwardOutlined"
 import { useState } from "react"
 import {
   DropdownMenu,
@@ -13,13 +11,9 @@ import {
 } from "@/components/atoms/dropdown-menu"
 
 export type MetricOption = "vendidos" | "receita" | "visualizacoes" | "abandono"
-export type TopNOption = 5 | 10 | 15 | 20
-export type OrderOption = "desc" | "asc"
 
 export interface FilterState {
   metric: MetricOption
-  topN: TopNOption
-  order: OrderOption
 }
 
 const METRIC_LABELS: Record<MetricOption, string> = {
@@ -28,8 +22,6 @@ const METRIC_LABELS: Record<MetricOption, string> = {
   visualizacoes: "Mais visualizados",
   abandono: "Maior abandono",
 }
-
-const TOP_N_OPTIONS: TopNOption[] = [5, 10, 15, 20]
 
 function SelectDropdown<T extends string | number>({
   value,
@@ -86,32 +78,12 @@ export function TopCategoriesFilterSelect({ state, onChange }: Props) {
     label: METRIC_LABELS[k],
   }))
 
-  const topNOptions = TOP_N_OPTIONS.map(n => ({ value: n as TopNOption, label: `Top ${n}` }))
-
   return (
-    <div className="flex flex-row gap-2 items-center">
-      <SelectDropdown
-        value={state.metric}
-        options={metricOptions}
-        label="Métrica"
-        onChange={metric => onChange({ ...state, metric })}
-      />
-      <SelectDropdown
-        value={state.topN}
-        options={topNOptions}
-        label="Quantidade"
-        onChange={topN => onChange({ ...state, topN })}
-      />
-      <button
-        title={state.order === "desc" ? "Mostrando maiores primeiro" : "Mostrando menores primeiro"}
-        onClick={() => onChange({ ...state, order: state.order === "desc" ? "asc" : "desc" })}
-        className="bg-[#E7DEED] rounded-md transition hover:bg-[#D0C5D6] p-1.5 text-black flex items-center"
-      >
-        {state.order === "desc"
-          ? <ArrowDownwardOutlinedIcon style={{ fontSize: 14 }} />
-          : <ArrowUpwardOutlinedIcon style={{ fontSize: 14 }} />
-        }
-      </button>
-    </div>
+    <SelectDropdown
+      value={state.metric}
+      options={metricOptions}
+      label="Métrica"
+      onChange={metric => onChange({ metric })}
+    />
   )
 }

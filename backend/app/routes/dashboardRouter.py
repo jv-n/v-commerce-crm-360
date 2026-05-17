@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
-from app.schemas.dashboardSchemas import DashboardMetricsOut, MapDataOut, RevenueChartOut, TopCategoriesOut
+from app.schemas.dashboardSchemas import DashboardMetricsOut, MapDataOut, OrdersCardOut, RevenueChartOut, TopCategoriesOut
 from app.services.dashboardService import DashboardService
 from database.database import get_db
 
@@ -39,6 +39,20 @@ def get_revenue_chart(
         granularity=granularity,
         categories=[c for c in categories.split(",") if c],
         product_ids=[p for p in product_ids.split(",") if p],
+    )
+
+
+@router.get("/orders", response_model=OrdersCardOut)
+def get_orders_card(
+    period_type: str = Query("month"),
+    start_date: str = Query(""),
+    end_date: str = Query(""),
+    db: Session = Depends(get_db),
+):
+    return DashboardService(db).get_orders_card(
+        period_type=period_type,
+        start_date=start_date or None,
+        end_date=end_date or None,
     )
 
 
