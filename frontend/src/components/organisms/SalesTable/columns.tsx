@@ -4,7 +4,7 @@ import { CellTag }  from "@/components/organisms/DataTable/atoms/CellTag"
 import { StatusBadge } from "./tableComponents/badge"
 import { OpenCircleButton } from "@/components/atoms/open-circle-button"
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward"
-import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined"
+
 import type { Sale, SaleStatus } from "@/types/sale"
 import type { ProductCategory } from "@/types/product"
 

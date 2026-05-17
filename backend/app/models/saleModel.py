@@ -1,4 +1,6 @@
-from sqlalchemy import Float, Integer, String
+from datetime import datetime
+
+from sqlalchemy import DateTime, Float, Integer, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from database.database import Base
@@ -25,3 +27,16 @@ class GoldPedidoDetalhado(Base):
     receita_bruta: Mapped[float | None] = mapped_column(Float, nullable=True)
     valor_reembolsado: Mapped[float | None] = mapped_column(Float, nullable=True)
     timestamp_ingestion: Mapped[str | None] = mapped_column(String, nullable=True)
+
+
+class SaleActivity(Base):
+    __tablename__ = "ft_sale_activities"
+
+    id:            Mapped[int]      = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id_pedido:     Mapped[str]      = mapped_column(String, nullable=False, index=True)
+    user_name:     Mapped[str]      = mapped_column(String(255), nullable=False)
+    field_name:    Mapped[str]      = mapped_column(String(100), nullable=False)
+    old_value:     Mapped[str|None] = mapped_column(String, nullable=True)
+    new_value:     Mapped[str|None] = mapped_column(String, nullable=True)
+    change_method: Mapped[str]      = mapped_column(String(100), nullable=False, default="Edição direta")
+    changed_at:    Mapped[datetime] = mapped_column(DateTime, nullable=False)
