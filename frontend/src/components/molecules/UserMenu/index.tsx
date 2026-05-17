@@ -62,10 +62,6 @@ export default function UserMenu({ name, role, avatarSrc, onLogout }: UserMenuPr
                             {getRoleLabel(role)}
                         </DropdownMenuItem>
                     )}
-                    <DropdownMenuItem>
-                        <PersonOutlinedIcon sx={{ color: "#0a0a0a" }} />
-                        My Profile
-                    </DropdownMenuItem>
                 </DropdownMenuGroup>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem variant="destructive" onSelect={onLogout}>
