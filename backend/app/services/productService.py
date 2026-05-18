@@ -5,7 +5,7 @@ _BRT = timezone(timedelta(hours=-3))
 from sqlalchemy import asc, desc, func
 from sqlalchemy.orm import Session
 
-from app.models.productModel import DimProduto, GoldDesempenhoProduto, ProductActivity
+from app.models.productModel import GoldProdutoDetalhado, GoldDesempenhoProduto, ProductActivity
 from app.models.saleModel import GoldPedidoDetalhado
 from app.models.ticketModel import FtTicketSuporte
 from app.schemas.productSchemas import (
@@ -248,8 +248,8 @@ class ProductService:
         ativo = "True" if body.status == "Ativo" else "False"
         today = date.today().isoformat()
 
-        # Escreve na Silver (fonte do pipeline), como dim_clientes p/ contatos
-        dim = DimProduto(
+        # Escreve em gold_produtos_detalhado (catálogo) para consistência imediata
+        dim = GoldProdutoDetalhado(
             id_produto=new_id,
             nome_produto=body.name,
             categoria=body.category,
@@ -262,7 +262,7 @@ class ProductService:
         )
         self.db.add(dim)
 
-        # Cria entrada na Gold para o produto aparecer na listagem imediatamente
+        # Cria entrada na Gold de desempenho para o produto aparecer na listagem
         gold = GoldDesempenhoProduto(
             id_produto=new_id,
             nome_produto=body.name,
@@ -292,7 +292,7 @@ class ProductService:
         if not gold:
             return None
 
-        dim = self.db.query(DimProduto).filter(DimProduto.id_produto == product_id).first()
+        dim = self.db.query(GoldProdutoDetalhado).filter(GoldProdutoDetalhado.id_produto == product_id).first()
 
         # ── snapshot dos valores antigos antes de qualquer alteração ──
         now = datetime.now(_BRT).replace(tzinfo=None)
@@ -365,7 +365,7 @@ class ProductService:
             if body.status    is not None: dim.ativo              = "True" if body.status == "Ativo" else "False"
             if body.weight_kg is not None: dim.peso_kg            = body.weight_kg
         else:
-            dim = DimProduto(
+            dim = GoldProdutoDetalhado(
                 id_produto=product_id,
                 nome_produto=body.name or gold.nome_produto,
                 peso_kg=body.weight_kg,
@@ -439,7 +439,7 @@ class ProductService:
         ).first()
         if not gold:
             return False
-        dim = self.db.query(DimProduto).filter(DimProduto.id_produto == product_id).first()
+        dim = self.db.query(GoldProdutoDetalhado).filter(GoldProdutoDetalhado.id_produto == product_id).first()
         if dim:
             self.db.delete(dim)
         self.db.delete(gold)
