@@ -98,11 +98,12 @@ function formatPhone(phone: string): string {
 }
 
 const ENGAGEMENT_COLORS: Record<EngagementType, string> = {
-  "Promotor":     "bg-green-50 text-green-700",
-  "Neutro":       "bg-yellow-50 text-yellow-700",
-  "Detrator":     "bg-red-50 text-red-600",
-  "Nenhum NPS":   "bg-gray-100 text-gray-500",
+  "Promotor":   "bg-green-50 text-green-700",
+  "Neutro":     "bg-yellow-50 text-yellow-700",
+  "Detrator":   "bg-red-50 text-red-600",
+  "Nenhum NPS": "bg-gray-100 text-gray-500",
 }
+
 
 export function makeContactColumns(
   expandedRowId: string | null,
@@ -246,6 +247,7 @@ export function makeContactColumns(
       <CellTag
         label={c.engagement}
         colorClasses={ENGAGEMENT_COLORS[c.engagement]}
+        variant="badge"
       />
     ),
   },

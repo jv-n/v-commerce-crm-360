@@ -12,16 +12,17 @@ const ALL_CATEGORIES: ProductCategory[] = [
 ]
 
 const CATEGORY_COLORS: Record<ProductCategory, string> = {
-  "Automotivo":  "bg-slate-100 text-[#06121C]",
-  "Beleza":      "bg-pink-100 text-[#06121C]",
-  "Brinquedos":  "bg-violet-100 text-[#06121C]",
-  "Casa":        "bg-amber-100 text-[#06121C]",
-  "Eletronicos": "bg-blue-100 text-[#06121C]",
-  "Esportes":    "bg-green-100 text-[#06121C]",
-  "Indefinida":  "bg-gray-100 text-[#06121C]",
-  "Moveis":      "bg-orange-100 text-[#06121C]",
-  "Vestuario":   "bg-teal-100 text-[#06121C]",
+  "Automotivo":  "bg-slate-100 text-slate-700",
+  "Beleza":      "bg-pink-100 text-pink-700",
+  "Brinquedos":  "bg-violet-100 text-violet-700",
+  "Casa":        "bg-amber-100 text-amber-700",
+  "Eletronicos": "bg-blue-100 text-blue-700",
+  "Esportes":    "bg-green-100 text-green-700",
+  "Indefinida":  "bg-gray-100 text-gray-600",
+  "Moveis":      "bg-orange-100 text-orange-700",
+  "Vestuario":   "bg-teal-100 text-teal-700",
 }
+
 
 function getRatingStyles(rating: number): { dotClass: string; colorClasses: string } {
   if (rating >= 7) return { dotClass: "bg-[#257719]", colorClasses: "bg-[#D2F9BE] text-[#257719]" }
@@ -94,7 +95,7 @@ export function makeProductColumns(
         filterFn: (p, value) => p.category === (value as ProductCategory),
       },
       render: (p) => (
-        <CellTag label={p.category} colorClasses={CATEGORY_COLORS[p.category]} />
+        <CellTag label={p.category} colorClasses={CATEGORY_COLORS[p.category]} variant="badge" />
       ),
     },
 
@@ -162,6 +163,7 @@ export function makeProductColumns(
             label={p.rating.toFixed(1)}
             colorClasses={s.colorClasses}
             dotClass={s.dotClass}
+            variant="badge"
           />
         )
       },
