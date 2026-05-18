@@ -5,5 +5,7 @@ export interface ShortcutItem {
   icon: string
   /**rota de navegação ao clicar */
   route: string
+  /**indica se o atalho está desativado */
+  disabled?: boolean
 }
  

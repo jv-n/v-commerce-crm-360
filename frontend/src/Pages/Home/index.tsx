@@ -57,19 +57,25 @@ function ShortcutCard({
   return (
     <button
       onClick={onClick}
-      className="
-        flex flex-col items-center justify-center gap-3
-        border-[3px] border-[#3FFF24] rounded-xl
-        py-8 px-4
-        shadow-md
-        hover:bg-[#f0fdf4] active:scale-95
-        transition-all duration-150
-      "
+      disabled={shortcut.disabled}
+      className={`
+    flex flex-col items-center justify-center gap-3
+    border-[6px] border-[#D1B1E5]
+    bg-[#F7EBFF] rounded-xl
+    py-8 px-4
+    shadow-md
+    hover:bg-[#D1B1E5] active:scale-95
+    transition-all duration-150
+    ${shortcut.disabled 
+          ? 'border-[#D1B1E5] bg-bg-[#F7EBFF] cursor-not-allowed opacity-60' 
+          : 'border-[#D1B1E5] bg-[#F7EBFF] hover:bg-[#D1B1E5] active:scale-95'
+        }
+  `}
     >
       {IconComponent && (
-        <IconComponent sx={{ fontSize: 60, color: "#3FFF24" }} />
+        <IconComponent sx={{ fontSize: 60, color: shortcut.disabled ? "#9CA3AF" : "#2E0E55" }} />
       )}
-      <span className="text-[24px] font-semibold text-[#3FFF24]">
+      <span className={`text-[24px] font-semibold ${shortcut.disabled ? "text-gray-400" : "text-[#2E0E55]"}`}>
         {shortcut.label}
       </span>
     </button>
