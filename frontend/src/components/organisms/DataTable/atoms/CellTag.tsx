@@ -13,7 +13,7 @@ export function CellTag({ label, colorClasses, dotClass, className }: CellTagPro
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap",
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[9.8px] leading-[17.6px] font-medium whitespace-nowrap",
         colorClasses,
         className,
       )}
