@@ -6,6 +6,8 @@ from typing import Generator
 
 from fastapi import Depends
 
+from fastapi import Depends
+
 from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc, func
 
@@ -360,6 +362,7 @@ class ContactService:
             .all()
         )
 
+        # .add_columns() faz com que cada row seja (GoldCliente360, telefone)
         return ContactsPageOut(
             data=[_to_contact_out(g) for g in rows],
             total=total,
