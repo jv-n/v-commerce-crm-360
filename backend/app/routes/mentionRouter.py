@@ -35,19 +35,18 @@ def search_mentions(
     per_cat = max(1, limit // 2)  # busca menos por categoria para não estourar o total
     results: List[MentionResult] = []
 
-    # ── Clientes / Leads (dim_clientes + gold_cliente_360) ───────────────────
-    # Lead = cliente com total_pedidos = 0 ou sem registro no gold
+    # ── Clientes / Leads (gold_cliente_360) ──────────────────────────────────
+    # Lead = cliente com total_pedidos = 0
     rows = db.execute(
         text("""
             SELECT
-                c.id_cliente,
-                c.nome_completo,
-                c.email,
-                c.telefone,
-                COALESCE(g.total_pedidos, 0) AS total_pedidos
-            FROM dim_clientes c
-            LEFT JOIN gold_cliente_360 g ON g.id_cliente = c.id_cliente
-            WHERE c.nome_completo LIKE :p
+                id_cliente,
+                nome_completo,
+                email,
+                telefone,
+                COALESCE(total_pedidos, 0) AS total_pedidos
+            FROM gold_cliente_360
+            WHERE nome_completo LIKE :p
             LIMIT :lim
         """),
         {"p": name_pattern, "lim": per_cat},
@@ -65,11 +64,11 @@ def search_mentions(
             sublabel=sublabel,
         ))
 
-    # ── Produtos (dim_produtos) ───────────────────────────────────────────────
+    # ── Produtos (gold_produtos_detalhado) ───────────────────────────────────
     rows = db.execute(
         text("""
             SELECT id_produto, nome_produto, categoria
-            FROM dim_produtos
+            FROM gold_produtos_detalhado
             WHERE nome_produto LIKE :p
             LIMIT :lim
         """),
@@ -85,12 +84,13 @@ def search_mentions(
             sublabel=r.categoria or None,
         ))
 
-    # ── Pedidos (ft_pedidos) — só busca se parece com um ID (≥8 chars) ─────────
+    # ── Pedidos (gold_pedidos_detalhado) — só busca se parece com ID (≥8 chars)
     rows = db.execute(
         text("""
             SELECT id_pedido, id_cliente, status, valor_pedido, data_pedido
-            FROM ft_pedidos
+            FROM gold_pedidos_detalhado
             WHERE id_pedido LIKE :p
+            GROUP BY id_pedido
             LIMIT :lim
         """),
         {"p": id_pattern, "lim": per_cat},
@@ -112,11 +112,11 @@ def search_mentions(
             sublabel=" · ".join(sublabel_parts) or None,
         ))
 
-    # ── Agentes de suporte (dim_agentes_suporte) ──────────────────────────────
+    # ── Agentes de suporte (gold_dim_agentes_suporte) ────────────────────────
     rows = db.execute(
         text("""
             SELECT agente_suporte, qtd_tickets_resolvidos, nota_media_atendimento
-            FROM dim_agentes_suporte
+            FROM gold_dim_agentes_suporte
             WHERE agente_suporte LIKE :p
             LIMIT :lim
         """),

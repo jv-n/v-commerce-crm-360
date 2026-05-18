@@ -1,7 +1,7 @@
 from sqlalchemy import asc, desc
 from sqlalchemy.orm import Session
 
-from app.models.reviewModel import FtAvaliacao
+from app.models.reviewModel import GoldAvaliacao360 as FtAvaliacao
 from app.schemas.reviewSchemas import ReviewSchema
 
 
