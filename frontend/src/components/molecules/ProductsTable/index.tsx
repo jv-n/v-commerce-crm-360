@@ -11,7 +11,8 @@ import type { AdvancedFilters } from "./AdvancedFiltersDrawer"
 import type { ProductsParams } from "@/lib/api/products"
 import type { ActiveFilters, Tab } from "@/components/organisms/DataTable/types"
 import type { Product } from "@/types/product"
-import { MdFilterList, MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md"
+import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md"
+import TuneIcon from "@mui/icons-material/Tune"
 
 const TABS: Tab[] = [
   { id: "all", label: "Todos os produtos" },
@@ -294,11 +295,11 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
     <button
       onClick={() => setDrawerOpen(o => !o)}
       className={cn(
-        "flex items-center gap-1.5 text-sm transition-colors px-2 py-1 rounded-md",
+        "flex items-center gap-1.5 text-sm transition-colors px-2 py-1 rounded-full",
         advCount > 0 ? "text-purple-700 font-medium hover:bg-[#F7EBFF]" : "text-gray-900 hover:bg-[#F7EBFF]"
       )}
     >
-      <MdFilterList size={15} />
+      <TuneIcon sx={{ fontSize: 15 }} />
       Filtros avançados
       {advCount > 0 && (
         <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-600 text-white text-[10px] font-bold leading-none">
@@ -349,6 +350,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
         onSearchChange={handleSearchChange}
         onFiltersChange={handleFiltersChange}
         onSelectionChange={handleSelectionChange}
+        headerClassName="bg-[#EACAFF] [&_th:not(:first-child)_button_svg]:!text-[#9F83B2] [&_th:not(:first-child)_button:hover_svg]:!text-[#6F2B90]"
         searchPlaceholder="Buscar produto..."
         noBorder
         rowsPerPageOptions={[10, 25, 50]}

@@ -41,7 +41,7 @@ export function DataTableRows<T,>({
   onToggleRow,
   loading = false,
   emptyMessage = "Nenhum item encontrado.",
-  headerClassName = "bg-[#F0DDFD]",
+  headerClassName = "bg-[#EACAFF]",
   rowClassName = "hover:bg-[#F7EBFF]",
   getRowClassName,
   expandedRowClassName = "bg-[#F7EBFF]",

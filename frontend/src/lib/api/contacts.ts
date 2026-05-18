@@ -157,6 +157,21 @@ export async function fetchContactById(id: string): Promise<Contact> {
   return toContact(await res.json() as RawContact)
 }
 
+export interface ContactPedido {
+  id_pedido: string
+  nome_produto: string | null
+  quantidade: number | null
+  valor_pedido: number | null
+  metodo_pagamento: string | null
+  data_pedido: string | null
+}
+
+export async function fetchContactPedidos(id: string, limit = 3): Promise<ContactPedido[]> {
+  const res = await fetch(`/api/contacts/${id}/pedidos?limit=${limit}`)
+  if (!res.ok) throw new Error(`Erro ao buscar pedidos: ${res.status}`)
+  return res.json() as Promise<ContactPedido[]>
+}
+
 export async function fetchContactResumo(id: string): Promise<ContactResumo> {
   const res = await fetch(`/api/contacts/${id}/resumo`)
   if (!res.ok) throw new Error(`Erro ao buscar resumo: ${res.status}`)

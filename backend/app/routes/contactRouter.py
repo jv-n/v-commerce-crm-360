@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.schemas.contactSchemas import ContactsPageOut, ContactOut, ContactCreate, ContactUpdate, ContactResumoOut
+from app.schemas.contactSchemas import ContactsPageOut, ContactOut, ContactCreate, ContactUpdate, ContactResumoOut, ContactPedidoOut
 from app.services.contactService import ContactService
 from database.database import get_db
 
@@ -85,6 +85,15 @@ def export_contacts_csv(
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+@router.get("/{contact_id}/pedidos", response_model=list[ContactPedidoOut])
+def get_contact_pedidos(
+    contact_id: str,
+    limit: int = Query(3, ge=1, le=10),
+    db: Session = Depends(get_db),
+):
+    return ContactService(db).get_last_pedidos(contact_id, limit=limit)
 
 
 @router.get("/{contact_id}/resumo", response_model=ContactResumoOut)

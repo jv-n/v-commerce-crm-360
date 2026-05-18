@@ -8,6 +8,7 @@ import {
   useState,
 } from "react"
 
+import { useNavigate } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { ExportPopover } from "@/components/molecules/ExportPopover"
 import { getTicketColumns } from "./columns"
@@ -50,6 +51,7 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
   ({ onCanUndoChange }, ref) => {
     const { user } = useAuth()
     const loggedUserName = user?.name?.trim() ?? ""
+    const navigate = useNavigate()
 
     const [activeTab, setActiveTab] = useState("all")
     const [page, setPage] = useState(1)
@@ -130,7 +132,8 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
     const columns = getTicketColumns(
       responsibleOptions,
       expandedRowIds,
-      handleToggleExpand
+      handleToggleExpand,
+      (id) => navigate(`/contacts/${id}`)
     )
 
     useEffect(() => {
@@ -447,7 +450,7 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
           onSortChange={handleSortChange}
           onSearchChange={handleSearchChange}
           headerClassName="
-            bg-[#F0DDFD]
+            bg-[#EACAFF]
             [&_th:not(:first-child)_button_svg]:!text-[#9F83B2]
             [&_th:not(:first-child)_button:hover_svg]:!text-[#6F2B90]
           "
@@ -457,6 +460,7 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
           rowsPerPageOptions={[10, 25, 50]}
           expandedRowIds={expandedRowIds}
           renderExpandedRow={ticket => <TicketExpandedRow ticket={ticket} />}
+          onRowClick={(ticket) => handleToggleExpand(ticket.id)}
           extraActiveFilterCount={dateFilterCount}
           onClearExtraFilters={handleClearDateFilters}
           filterBarExtra={

@@ -71,9 +71,11 @@ export function DataTable<T,>({
   extraActiveFilterCount = 0,
   onClearExtraFilters,
   onSelectionChange,
+  initialSearchQuery = "",
+  initialSearchOpen = false,
 }: DataTableProps<T>) {
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchOpen, setSearchOpen] = useState(initialSearchOpen || !!initialSearchQuery)
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery)
 
   const handleSearchChange = (q: string) => {
     setSearchQuery(q)

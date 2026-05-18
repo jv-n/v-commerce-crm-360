@@ -43,8 +43,7 @@ export default function Products() {
 
       <ProductsTable ref={tableRef} onCanUndoChange={setCanUndo} />
 
-      <hr className="border-gray-200" />
-      <div className="self-end flex items-center gap-2">
+      <div className="fixed bottom-6 right-6 flex items-center gap-2 z-50">
         <button
           onClick={() => tableRef.current?.undo()}
           disabled={!canUndo}

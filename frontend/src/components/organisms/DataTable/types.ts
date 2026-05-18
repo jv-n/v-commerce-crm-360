@@ -157,4 +157,8 @@ export interface DataTableProps<T> {
 
   /** Disparado sempre que o conjunto de linhas selecionadas muda. */
   onSelectionChange?: (ids: Set<string>) => void
+
+  /** Pré-preenche a barra de busca ao montar o componente. */
+  initialSearchQuery?: string
+  initialSearchOpen?: boolean
 }

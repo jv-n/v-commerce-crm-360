@@ -65,6 +65,8 @@ class SaleService:
                 query = query.filter(GoldPedidoDetalhado.nome_cliente.ilike(pattern))
             elif search_field == "product":
                 query = query.filter(GoldPedidoDetalhado.nome_produto.ilike(pattern))
+            elif search_field == "client_id":
+                query = query.filter(GoldPedidoDetalhado.id_cliente == search)
             else:
                 query = query.filter(or_(
                     GoldPedidoDetalhado.nome_cliente.ilike(pattern),

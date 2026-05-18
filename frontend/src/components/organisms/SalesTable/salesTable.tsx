@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle, useMemo } from "react"
+import { useLocation } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { getSaleColumns } from "./columns"
 import { fetchSales } from "@/lib/api/sales"
@@ -43,6 +44,11 @@ export type SalesTableHandle = {
 
 export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can: boolean) => void }>(
   ({ onCanUndoChange }, ref) => {
+    const location  = useLocation()
+    const navState  = location.state as { search?: string; searchField?: string } | null
+    const initSearch = navState?.search ?? ""
+    const initField  = (navState?.searchField ?? "all") as "all" | "client" | "product" | "client_id"
+
     const [activeTab,      setActiveTab]      = useState("all")
     const [page,           setPage]           = useState(1)
     const [pageSize,       setPageSize]       = useState(DEFAULT_PAGE_SIZE)
@@ -54,8 +60,8 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
     const [formOpen,       setFormOpen]       = useState(false)
     const [editSale,       setEditSale]       = useState<Sale | undefined>(undefined)
     const [refetchKey,     setRefetchKey]     = useState(0)
-    const [search,         setSearch]         = useState("")
-    const [searchScope,    setSearchScope]    = useState<"all" | "client" | "product">("all")
+    const [search,         setSearch]         = useState(initSearch)
+    const [searchScope,    setSearchScope]    = useState<"all" | "client" | "product" | "client_id">(initField)
     const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(new Set())
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const searchRef   = useRef("")
@@ -272,7 +278,12 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
           onTabChange={handleTabChange}
           onFiltersChange={handleFiltersChange}
           onSearchChange={handleSearchChange}
-          searchPlaceholder={searchScope === "client" ? "Buscar por cliente..." : searchScope === "product" ? "Buscar por produto..." : "Buscar por cliente ou produto..."}
+          searchPlaceholder={
+            searchScope === "client"    ? "Buscar por cliente..."
+            : searchScope === "product" ? "Buscar por produto..."
+            : searchScope === "client_id" ? "ID do cliente..."
+            : "Buscar por cliente ou produto..."
+          }
           searchPrefix={
             <div className="relative flex items-center border-r border-gray-200 mr-0.5">
               <select
@@ -290,10 +301,12 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
               <MdKeyboardArrowDown size={12} className="absolute right-0.5 pointer-events-none text-gray-500" />
             </div>
           }
-          headerClassName="bg-[#F0DDFD]"
+          initialSearchQuery={initSearch}
+          headerClassName="bg-[#EACAFF] [&_th:not(:first-child)_button_svg]:!text-[#9F83B2] [&_th:not(:first-child)_button:hover_svg]:!text-[#6F2B90]"
           dividersClassName="divide-[#9F83B2]"
           expandedRowIds={expandedRowIds}
           renderExpandedRow={(sale) => <SaleExpandedRow sale={sale} onEdit={handleEditSale} />}
+          onRowClick={(sale) => handleToggleExpand(sale.id)}
           rowsPerPageOptions={[10, 25, 50]}
           serverPagination={{
             total,

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle } from "react"
 import { useNavigate } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { makeContactColumns } from "./columns"
@@ -16,33 +16,64 @@ import type { ActiveFilters } from "@/components/organisms/DataTable/types"
 import { cn } from "@/lib/utils"
 import TuneIcon from "@mui/icons-material/Tune"
 
-export interface ContactsTableHandle {
-  openAdd: () => void
+type FilterSnapshot = {
+  activeTab:     string
+  page:          number
+  serverFilters: ServerFilters
+  advanced:      ContactAdvancedFilters
+  nameSearch:    string
+  sortBy:        string | null
+  sortDir:       "asc" | "desc"
 }
 
-export function ContactsTable({
-  onOpenAdd,
-  onOpenExport,
-  onSwitchToLeads,
-}: {
-  onOpenAdd?: (fn: () => void) => void
-  onOpenExport?: (fn: () => void) => void
-  onSwitchToLeads?: (fn: () => void) => void
-}) {
+export type ContactsTableHandle = {
+  undo:          () => void
+  reset:         () => void
+  openAdd:       () => void
+  openExport:    () => void
+  switchToLeads: () => void
+}
+
+export const ContactsTable = forwardRef<ContactsTableHandle, { onCanUndoChange?: (can: boolean) => void }>(
+  ({ onCanUndoChange }, ref) => {
   const navigate = useNavigate()
-  const [activeTab, setActiveTab]         = useState("all")
-  const [page, setPage]                   = useState(1)
-  const [pageSize, setPageSize]           = useState(DEFAULT_PAGE_SIZE)
-  const [serverFilters, setServerFilters] = useState<ServerFilters>(EMPTY_FILTERS)
-  const [advanced, setAdvanced]           = useState<ContactAdvancedFilters>(EMPTY_CONTACT_ADVANCED)
-  const [drawerOpen, setDrawerOpen]       = useState(false)
-  const [expandedRowId, setExpandedRowId] = useState<string | null>(null)
-  const [sortBy,  setSortBy]  = useState<string | null>(null)
-  const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
-  const [refetchKey, setRefetchKey]         = useState(0)
-  const [formOpen, setFormOpen]             = useState(false)
-  const [editingContact, setEditingContact] = useState<Contact | null>(null)
-  const [nameSearch, setNameSearch]         = useState("")
+
+  const [activeTab,       setActiveTab]       = useState("all")
+  const [page,            setPage]            = useState(1)
+  const [pageSize,        setPageSize]        = useState(DEFAULT_PAGE_SIZE)
+  const [serverFilters,   setServerFilters]   = useState<ServerFilters>(EMPTY_FILTERS)
+  const [advanced,        setAdvanced]        = useState<ContactAdvancedFilters>(EMPTY_CONTACT_ADVANCED)
+  const [drawerOpen,      setDrawerOpen]      = useState(false)
+  const [expandedRowId,   setExpandedRowId]   = useState<string | null>(null)
+  const [sortBy,          setSortBy]          = useState<string | null>(null)
+  const [sortDir,         setSortDir]         = useState<"asc" | "desc">("asc")
+  const [refetchKey,      setRefetchKey]      = useState(0)
+  const [formOpen,        setFormOpen]        = useState(false)
+  const [editingContact,  setEditingContact]  = useState<Contact | null>(null)
+  const [nameSearch,      setNameSearch]      = useState("")
+  const [filterHistory,   setFilterHistory]   = useState<FilterSnapshot[]>([])
+
+  const currentSnapshot = useRef<FilterSnapshot>({
+    activeTab: "all", page: 1, serverFilters: EMPTY_FILTERS,
+    advanced: EMPTY_CONTACT_ADVANCED, nameSearch: "", sortBy: null, sortDir: "asc",
+  })
+
+  useEffect(() => {
+    currentSnapshot.current = { activeTab, page, serverFilters, advanced, nameSearch, sortBy, sortDir }
+  }, [activeTab, page, serverFilters, advanced, nameSearch, sortBy, sortDir])
+
+  useEffect(() => {
+    onCanUndoChange?.(filterHistory.length > 0)
+  }, [filterHistory.length, onCanUndoChange])
+
+  const pushHistory = useCallback(() => {
+    const snap = currentSnapshot.current
+    setFilterHistory(h => [...h, {
+      ...snap,
+      serverFilters: { ...snap.serverFilters },
+      advanced:      { ...snap.advanced },
+    }])
+  }, [])
 
   const { contacts, total, loading, fetchError } = useContactsFetch({
     page, pageSize, activeTab, nameSearch, serverFilters, sortBy, sortDir, refetchKey, advanced,
@@ -56,15 +87,40 @@ export function ContactsTable({
     exportPills,
   } = useContactExport({ activeTab, serverFilters, advanced, contacts })
 
-  const openAdd     = () => { setEditingContact(null); setFormOpen(true) }
-  const openEdit    = (c: Contact) => { setEditingContact(c); setFormOpen(true) }
-  const switchLeads = () => { setActiveTab("leads"); setPage(1) }
-
-  useEffect(() => { onOpenAdd?.(openAdd) },         [])
-  useEffect(() => { onOpenExport?.(() => setExportOpen(true)) }, [])
-  useEffect(() => { onSwitchToLeads?.(switchLeads) }, [])
+  useImperativeHandle(ref, () => ({
+    undo: () => {
+      setFilterHistory(h => {
+        if (h.length === 0) return h
+        const prev = h[h.length - 1]
+        setExpandedRowId(null)
+        setActiveTab(prev.activeTab)
+        setPage(prev.page)
+        setServerFilters(prev.serverFilters)
+        setAdvanced(prev.advanced)
+        setNameSearch(prev.nameSearch)
+        setSortBy(prev.sortBy)
+        setSortDir(prev.sortDir)
+        return h.slice(0, -1)
+      })
+    },
+    reset: () => {
+      pushHistory()
+      setExpandedRowId(null)
+      setActiveTab("all")
+      setPage(1)
+      setServerFilters(EMPTY_FILTERS)
+      setAdvanced(EMPTY_CONTACT_ADVANCED)
+      setNameSearch("")
+      setSortBy(null)
+      setSortDir("asc")
+    },
+    openAdd:       () => { setEditingContact(null); setFormOpen(true) },
+    openExport:    () => setExportOpen(true),
+    switchToLeads: () => { setActiveTab("leads"); setPage(1) },
+  }), [pushHistory])
 
   const handleFiltersChange = (active: ActiveFilters) => {
+    pushHistory()
     const pf = active["purchases"]
     const cf = active["createdAt"]
     const ef = active["engagement"]
@@ -87,8 +143,8 @@ export function ContactsTable({
       <button
         onClick={() => setDrawerOpen(true)}
         className={cn(
-          "flex items-center gap-1.5 text-sm transition-colors",
-          advCount > 0 ? "text-purple-700 font-medium" : "text-gray-400 hover:text-gray-600"
+          "flex items-center gap-1.5 text-sm transition-colors px-2 py-1 rounded-full",
+          advCount > 0 ? "text-purple-700 font-medium hover:bg-[#F7EBFF]" : "text-gray-900 hover:bg-[#F7EBFF]"
         )}
       >
         <TuneIcon sx={{ fontSize: 15 }} />
@@ -119,32 +175,37 @@ export function ContactsTable({
       <ContactAdvancedFiltersDrawer
         open={drawerOpen}
         filters={advanced}
-        onChange={f => { setAdvanced(f); setPage(1) }}
+        onChange={f => { pushHistory(); setAdvanced(f); setPage(1) }}
         onClose={() => setDrawerOpen(false)}
-        onClear={() => { setAdvanced(EMPTY_CONTACT_ADVANCED); setPage(1) }}
+        onClear={() => { pushHistory(); setAdvanced(EMPTY_CONTACT_ADVANCED); setPage(1) }}
       />
 
       <DataTable
         data={contacts}
         loading={loading}
-        columns={makeContactColumns(expandedRowId, (id) => setExpandedRowId(prev => prev === id ? null : id), (id) => navigate(`/contacts/${id}`))}
+        columns={makeContactColumns(
+          expandedRowId,
+          (id) => setExpandedRowId(prev => prev === id ? null : id),
+          (id) => navigate(`/contacts/${id}`)
+        )}
         getRowId={(c) => c.id}
         tabs={TABS}
         activeTab={activeTab}
-        onTabChange={(tabId) => { setActiveTab(tabId); setPage(1) }}
+        onTabChange={(tabId) => { pushHistory(); setActiveTab(tabId); setPage(1) }}
         onFiltersChange={handleFiltersChange}
         onSearchChange={(v) => { setNameSearch(v); setPage(1) }}
         searchPlaceholder="Pesquisar por nome..."
         onSortChange={(sort) => { setSortBy(sort?.key ?? null); setSortDir(sort?.direction ?? "asc"); setPage(1) }}
         onSelectionChange={handleSelectionChange}
+        headerClassName="bg-[#EACAFF] [&_th:not(:first-child)_button_svg]:!text-[#9F83B2] [&_th:not(:first-child)_button:hover_svg]:!text-[#6F2B90]"
         filterBarExtra={filterBarExtra}
         rowsPerPageOptions={[10, 25, 50]}
         expandedRowIds={expandedRowId ? new Set([expandedRowId]) : undefined}
-        renderExpandedRow={(c) => <ContactExpandedRow contact={c} onEdit={() => openEdit(c)} />}
+        renderExpandedRow={(c) => <ContactExpandedRow contact={c} onEdit={() => { setEditingContact(c); setFormOpen(true) }} />}
         onRowClick={(c) => setExpandedRowId(prev => prev === c.id ? null : c.id)}
         serverPagination={{
           total, page, pageSize,
-          onPageChange: (p) => setPage(p),
+          onPageChange:     (p) => setPage(p),
           onPageSizeChange: (s) => { setPageSize(s); setPage(1) },
         }}
       />
@@ -157,4 +218,4 @@ export function ContactsTable({
       />
     </>
   )
-}
+})

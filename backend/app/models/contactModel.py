@@ -17,6 +17,7 @@ class GoldCliente360(Base):
     id_cliente:                Mapped[str]         = mapped_column(String,  primary_key=True)
     nome_completo:             Mapped[str | None]   = mapped_column(String,  nullable=True)
     email:                     Mapped[str | None]   = mapped_column(String,  nullable=True)
+    telefone:                  Mapped[str | None]   = mapped_column(String,  nullable=True)
     genero:                    Mapped[str | None]   = mapped_column(String,  nullable=True)
     faixa_etaria:              Mapped[str | None]   = mapped_column(String,  nullable=True)
     regiao:                    Mapped[str | None]   = mapped_column(String,  nullable=True)

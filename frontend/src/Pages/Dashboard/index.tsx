@@ -40,6 +40,9 @@ function fmtYoyLabel(yoyStart: string, yoyEnd: string): string {
   if (s.getMonth() === e.getMonth() && s.getFullYear() === e.getFullYear()) {
     return `${PT_MONTHS[s.getMonth()]}/${s.getFullYear()}`
   }
+  if (s.getMonth() === e.getMonth()) {
+    return `${PT_MONTHS[s.getMonth()]}/${s.getFullYear()}-${e.getFullYear()}`
+  }
   return `${PT_MONTHS[s.getMonth()]}-${PT_MONTHS[e.getMonth()]}/${e.getFullYear()}`
 }
 
