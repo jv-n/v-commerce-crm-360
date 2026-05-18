@@ -14,7 +14,8 @@ interface ContactsParams {
   search?: string
   purchasesMin?: number | null
   purchasesMax?: number | null
-  createdYear?: string
+  createdFrom?: string
+  createdTo?:   string
   engagement?: string
   clientStatuses?: string[]
   sortBy?: string | null
@@ -186,7 +187,8 @@ export async function fetchContacts(params: ContactsParams): Promise<ContactsPag
     ...(params.search                    ? { search:           params.search                    } : {}),
     ...(params.purchasesMin != null      ? { purchases_min:    String(params.purchasesMin)      } : {}),
     ...(params.purchasesMax != null      ? { purchases_max:    String(params.purchasesMax)      } : {}),
-    ...(params.createdYear               ? { created_year:     params.createdYear               } : {}),
+    ...(params.createdFrom               ? { created_from:     params.createdFrom               } : {}),
+    ...(params.createdTo                 ? { created_to:       params.createdTo                 } : {}),
     ...(params.engagement                ? { engagement: params.engagement } : {}),
     ...(params.sortBy                    ? { sort_by:    params.sortBy    } : {}),
     ...(params.sortBy && params.sortDir  ? { sort_dir:   params.sortDir   } : {}),
@@ -248,7 +250,8 @@ export async function exportContactsCSV(params: Omit<ContactsParams, "page" | "p
     ...(params.search                    ? { search:                params.search                    } : {}),
     ...(params.purchasesMin != null      ? { purchases_min:         String(params.purchasesMin)      } : {}),
     ...(params.purchasesMax != null      ? { purchases_max:         String(params.purchasesMax)      } : {}),
-    ...(params.createdYear               ? { created_year:          params.createdYear               } : {}),
+    ...(params.createdFrom               ? { created_from:           params.createdFrom               } : {}),
+    ...(params.createdTo                 ? { created_to:             params.createdTo                 } : {}),
     ...(params.engagement                ? { engagement:            params.engagement                } : {}),
     ...(params.receitaMin != null        ? { receita_min:           String(params.receitaMin)        } : {}),
     ...(params.receitaMax != null        ? { receita_max:           String(params.receitaMax)        } : {}),
