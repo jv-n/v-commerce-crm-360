@@ -58,10 +58,16 @@ export function getSaleColumns(
       },
     },
     {
+      key: "id",
+      header: "ID do Pedido",
+      minWidth: "100px",
+      copyId: (c) => c.id,
+      render: (c) => <CellText value={c.id} truncate maxWidth="90px" />
+    },
+    {
       key: "client",
       header: "Cliente",
       minWidth: "130px",
-      copyId: (c) => c.id,
       render: (c) => <CellText value={c.client} truncate maxWidth="200px" />,
     },
     {
