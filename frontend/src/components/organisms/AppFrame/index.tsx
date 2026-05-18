@@ -60,7 +60,7 @@ export default function AppFrame() {
 
     const allSidebarItems2 = [
         { name: "Contacts",  nav: true,  path: "/contacts",  roles: ["admin", "sales"] },
-        { name: "Sales",     nav: true,  path: "/sales",     roles: ["admin"] },
+        { name: "Sales",     nav: true,  path: "/sales",     roles: ["admin", "sales"] },
         { name: "Products",  nav: true,  path: "/products",  roles: [] },
         { name: "Dashboard", nav: true,  path: "/dashboard", roles: ["admin"] },
         { name: "Tickets",   nav: true,  path: "/tickets",   roles: ["admin", "support"] },
