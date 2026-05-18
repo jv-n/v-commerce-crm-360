@@ -69,5 +69,5 @@ class ProductActivity(Base):
     field_name: Mapped[str] = mapped_column(String(100), nullable=False)
     old_value: Mapped[str | None] = mapped_column(String, nullable=True)
     new_value: Mapped[str | None] = mapped_column(String, nullable=True)
-    change_method: Mapped[str] = mapped_column(String(100), nullable=False, default="Edição direta")
+    change_method: Mapped[str] = mapped_column(String(100), nullable=False, default="Edicao direta")
     changed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
