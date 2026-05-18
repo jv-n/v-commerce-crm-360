@@ -445,3 +445,7 @@ class ProductService:
         self.db.delete(gold)
         self.db.commit()
         return True
+
+        self.db.delete(gold)
+        self.db.commit()
+        return True
