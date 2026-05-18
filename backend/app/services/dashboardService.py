@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app.models.contactModel import GoldCliente360
 from app.models.productModel import GoldEngajamentoProdutoDigital
 from app.models.saleModel import GoldPedidoDetalhado
+from app.models.sessionModel import GoldSessaoResumo
 from app.models.ticketModel import GoldTicket360
 
 # Only valid Brazilian state names → 2-letter sigla
@@ -139,6 +140,16 @@ class DashboardService:
             or 0
         )
 
+    def _sessoes(self, start: str, end: str) -> int:
+        return (
+            self.db.execute(
+                select(func.count(GoldSessaoResumo.id_sessao))
+                .where(GoldSessaoResumo.data_sessao >= start)
+                .where(GoldSessaoResumo.data_sessao <= end)
+            ).scalar()
+            or 0
+        )
+
     def _leads_convertidos(self, start: str, end: str) -> int:
         """Clientes cujo primeiro pedido caiu no período (lead → cliente)."""
         return (
@@ -184,6 +195,10 @@ class DashboardService:
         leads_prev = float(self._leads_convertidos(prev_s, prev_e))
         leads_yoy  = float(self._leads_convertidos(yoy_s, yoy_e))
 
+        sess_cur  = float(self._sessoes(cur_s, cur_e))
+        sess_prev = float(self._sessoes(prev_s, prev_e))
+        sess_yoy  = float(self._sessoes(yoy_s, yoy_e))
+
         return {
             "period": {
                 "start": cur_s, "end": cur_e,
@@ -214,6 +229,11 @@ class DashboardService:
                 "value": leads_cur, "prev_value": leads_prev,
                 "trend_pct": self._trend(leads_cur, leads_prev),
                 "yoy_value": leads_yoy, "yoy_pct": self._trend(leads_cur, leads_yoy),
+            },
+            "sessoes": {
+                "value": sess_cur, "prev_value": sess_prev,
+                "trend_pct": self._trend(sess_cur, sess_prev),
+                "yoy_value": sess_yoy, "yoy_pct": self._trend(sess_cur, sess_yoy),
             },
         }
 

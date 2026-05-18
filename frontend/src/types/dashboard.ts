@@ -30,6 +30,7 @@ export interface DashboardMetrics {
   clientes: MetricValue
   tickets: MetricValue
   leads_convertidos: MetricValue
+  sessoes: MetricValue
 }
 
 export interface MapItem {

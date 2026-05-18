@@ -10,11 +10,11 @@ import { fetchDashboardMetrics } from "@/lib/api/dashboard"
 import type { DashboardMetrics, PeriodFilter } from "@/types/dashboard"
 
 import SpeedOutlinedIcon             from "@mui/icons-material/SpeedOutlined"
-import AttachMoneyOutlinedIcon        from "@mui/icons-material/AttachMoneyOutlined"
 import PeopleAltOutlinedIcon          from "@mui/icons-material/PeopleAltOutlined"
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined"
 import ShoppingCartOutlinedIcon       from "@mui/icons-material/ShoppingCartOutlined"
 import PersonAddAltOutlinedIcon       from "@mui/icons-material/PersonAddAltOutlined"
+import LanguageOutlinedIcon           from "@mui/icons-material/LanguageOutlined"
 
 // -----------------------------------------------------------------------
 // Formatting helpers
@@ -100,15 +100,18 @@ export default function Dashboard() {
       yoyPercent:      metrics?.leads_convertidos?.yoy_pct ?? 0,
       isLoading,
     },
-    // ---- A definir ----
+    // ---- Sessões ----
     {
-      title: "A definir",
-      icon:  <AttachMoneyOutlinedIcon />,
-      currentValue:    "—",
-      trendPercent:    0,
-      comparisonLabel: "—",
-      comparisonValue: "—",
-      isMock: true,
+      title: "Sessões",
+      icon:  <LanguageOutlinedIcon />,
+      currentValue:    isLoading ? "—" : fmtCount(metrics!.sessoes.value),
+      trendPercent:    metrics?.sessoes.trend_pct ?? 0,
+      comparisonLabel: "Período anterior",
+      comparisonValue: isLoading ? "—" : fmtCount(metrics!.sessoes.prev_value),
+      yoyLabel,
+      yoyValue:        isLoading ? "—" : fmtCount(metrics!.sessoes.yoy_value),
+      yoyPercent:      metrics?.sessoes.yoy_pct ?? 0,
+      isLoading,
     },
     // ---- Clientes ----
     {

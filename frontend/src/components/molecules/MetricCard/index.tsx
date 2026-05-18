@@ -43,7 +43,7 @@ export function MetricCard({
   return (
     <div
       className={cn(
-        "flex flex-col gap-2 rounded-xl bg-card p-3 shadow-sm",
+        "flex flex-col gap-2 rounded-xl bg-card p-3 shadow-sm overflow-hidden min-w-0",
         isMock && "opacity-60",
         className,
       )}
@@ -60,11 +60,11 @@ export function MetricCard({
       </div>
 
       {/* Main value + period trend */}
-      <div className="flex items-center gap-2">
+      <div className="flex items-center gap-2 flex-wrap min-w-0">
         {isLoading ? (
           <div className="h-7 w-24 animate-pulse rounded bg-muted" />
         ) : (
-          <span className="text-2xl font-bold text-secondary-foreground leading-none">
+          <span className="text-2xl font-bold text-secondary-foreground leading-none min-w-0 truncate">
             {currentValue}
           </span>
         )}
@@ -89,15 +89,15 @@ export function MetricCard({
 
       {/* YoY comparison */}
       {(yoyLabel || isLoading) && (
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
           <span className="size-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
           {isLoading ? (
             <div className="h-3 w-32 animate-pulse rounded bg-muted" />
           ) : (
-            <span className="flex items-center gap-1">
-              {yoyLabel}: {yoyValue}
+            <span className="flex items-center gap-1 min-w-0 flex-wrap">
+              <span className="truncate">{yoyLabel}: {yoyValue}</span>
               {yoyPercent !== undefined && (
-                <TrendBadge value={yoyPercent} className="text-[10px] px-1 py-0" />
+                <TrendBadge value={yoyPercent} className="text-[10px] px-1 py-0 shrink-0" />
               )}
             </span>
           )}

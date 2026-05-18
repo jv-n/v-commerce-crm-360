@@ -79,6 +79,8 @@ GOLD_TABLES = [
     ("gold_vendas_mensais",             "gold_vendas_mensais"),
     ("gold_engajamento_produto_digital","gold_engajamento_produto_digital"),
     ("gold_tickets_360",                "gold_tickets_360"),
+    ("gold_sessao_resumo",              "gold_sessao_resumo"),
+    ("gold_sessao_funil",               "gold_sessao_funil"),
 ]
 
 # ── Tipos explícitos por tabela ───────────────────────────────────────────────

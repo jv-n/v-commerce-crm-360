@@ -24,6 +24,8 @@ class DashboardMetricsOut(BaseModel):
     vendas: MetricOut
     clientes: MetricOut
     tickets: MetricOut
+    leads_convertidos: MetricOut
+    sessoes: MetricOut
 
 
 class MapItemOut(BaseModel):
