@@ -54,7 +54,7 @@ export function useContactExport({ activeTab, serverFilters, advanced, contacts 
     setSelectedIds(new Set(ids))
   }, [])
 
-  const { purchasesMin, purchasesMax, createdYear, engagement, clientStatuses } = serverFilters
+  const { purchasesMin, purchasesMax, createdFrom, createdTo, engagement, clientStatuses } = serverFilters
 
   const handleExportCSV = async () => {
     setExportLoading(true)
@@ -63,7 +63,8 @@ export function useContactExport({ activeTab, serverFilters, advanced, contacts 
         tab:            activeTab,
         purchasesMin:   purchasesMin ?? undefined,
         purchasesMax:   purchasesMax ?? undefined,
-        createdYear,
+        createdFrom:    createdFrom  || undefined,
+        createdTo:      createdTo    || undefined,
         engagement,
         clientStatuses,
         regioes:                advanced.regioes,
@@ -123,7 +124,8 @@ export function useContactExport({ activeTab, serverFilters, advanced, contacts 
     ...(serverFilters.purchasesMin != null  ? [{ label: "Compras mín", value: String(serverFilters.purchasesMin)      }] : []),
     ...(serverFilters.purchasesMax != null  ? [{ label: "Compras máx", value: String(serverFilters.purchasesMax)      }] : []),
     ...(serverFilters.engagement            ? [{ label: "Engajamento", value: serverFilters.engagement                }] : []),
-    ...(serverFilters.createdYear           ? [{ label: "Ano criação", value: serverFilters.createdYear               }] : []),
+    ...(serverFilters.createdFrom || serverFilters.createdTo
+      ? [{ label: "Criação", value: `${serverFilters.createdFrom || "—"} – ${serverFilters.createdTo || "—"}` }] : []),
     ...(advanced.regioes.length             ? [{ label: "Regiões",     value: advanced.regioes.join(", ")             }] : []),
     ...(advanced.origens.length             ? [{ label: "Origens",     value: advanced.origens.join(", ")             }] : []),
     ...(advanced.pagamentos.length          ? [{ label: "Pagamentos",  value: advanced.pagamentos.join(", ")          }] : []),

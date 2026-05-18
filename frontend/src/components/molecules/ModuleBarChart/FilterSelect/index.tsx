@@ -1,4 +1,5 @@
-import KeyboardArrowDownOutlinedIcon from '@mui/icons-material/KeyboardArrowDownOutlined';
+import CloseIcon from "@mui/icons-material/Close"
+import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md"
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -12,6 +13,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu";
 import { useEffect, useRef, useState } from 'react';
+import { cn } from "@/lib/utils"
 import { fetchProducts } from "@/lib/api/products";
 import type { Product, ProductCategory } from "@/types/product";
 
@@ -175,15 +177,27 @@ export function FilterSelectType({ onChange }: FilterSelectTypeProps) {
             ? selectedProduct.name
             : "Total"
 
+    const isActive = granularity !== "ALL"
+
+    function clearToDefault(e: React.MouseEvent) {
+        e.stopPropagation()
+        handleSelectAll()
+    }
+
     return (
         <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
-                <button className="bg-[#E7DEED] rounded-md transition hover:bg-[#D0C5D6] p-1.5 text-black text-xs flex items-center gap-1">
+                <button className={cn(
+                    "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl border transition-colors",
+                    isActive
+                        ? "bg-purple-100 border-purple-300 text-gray-900 font-medium"
+                        : "border-transparent text-gray-900 hover:bg-purple-100 hover:border-purple-300"
+                )}>
                     {label}
-                    <KeyboardArrowDownOutlinedIcon
-                        fontSize="small"
-                        className={`transition-transform duration-200 ${open ? "rotate-180" : "rotate-0"}`}
-                    />
+                    {isActive
+                        ? <CloseIcon sx={{ fontSize: 13 }} onClick={clearToDefault} />
+                        : open ? <MdKeyboardArrowUp size={14} /> : <MdKeyboardArrowDown size={14} />
+                    }
                 </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">

@@ -51,7 +51,7 @@ function fmtYoyLabel(yoyStart: string, yoyEnd: string): string {
 // -----------------------------------------------------------------------
 
 export default function Dashboard() {
-  const [period, setPeriod] = useState<PeriodFilter>({ type: "month" })
+  const [period, setPeriod] = useState<PeriodFilter>({ type: "year" })
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
 
   const isLoading = metrics === null

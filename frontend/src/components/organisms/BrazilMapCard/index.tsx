@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined"
-import KeyboardArrowDownOutlinedIcon from "@mui/icons-material/KeyboardArrowDownOutlined"
+import CloseIcon from "@mui/icons-material/Close"
+import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -8,6 +9,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu"
+import { cn } from "@/lib/utils"
 import type { MapView } from "./atoms/PeriodToggle"
 import { MapLegend } from "./atoms/MapLegend"
 import { StateRankingList } from "./molecules/StateRankingList"
@@ -32,9 +34,10 @@ interface BrazilMapCardProps {
 }
 
 export function BrazilMapCard({ period }: BrazilMapCardProps) {
-  const [view, setView]           = useState<MapView>("estados")
-  const [items, setItems]         = useState<MapItem[]>([])
+  const [view,      setView]      = useState<MapView>("estados")
+  const [items,     setItems]     = useState<MapItem[]>([])
   const [isLoading, setIsLoading] = useState(true)
+  const [mapMenuOpen, setMapMenuOpen] = useState(false)
 
   useEffect(() => {
     setIsLoading(true)
@@ -93,11 +96,19 @@ export function BrazilMapCard({ period }: BrazilMapCardProps) {
           <LocationOnOutlinedIcon style={{ fontSize: 16 }} />
           Estados com mais vendas
         </div>
-        <DropdownMenu>
+        <DropdownMenu open={mapMenuOpen} onOpenChange={setMapMenuOpen}>
           <DropdownMenuTrigger asChild>
-            <button className="bg-[#E7DEED] rounded-md transition hover:bg-[#D0C5D6] p-1.5 text-black text-xs flex items-center gap-1 whitespace-nowrap">
+            <button className={cn(
+              "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl border transition-colors whitespace-nowrap",
+              view !== "estados"
+                ? "bg-purple-100 border-purple-300 text-gray-900 font-medium"
+                : "border-transparent text-gray-900 hover:bg-purple-100 hover:border-purple-300"
+            )}>
               {view === "estados" ? "Estados" : "Regiões"}
-              <KeyboardArrowDownOutlinedIcon fontSize="small" />
+              {view !== "estados"
+                ? <CloseIcon sx={{ fontSize: 13 }} onClick={(e) => { e.stopPropagation(); setView("estados") }} />
+                : mapMenuOpen ? <MdKeyboardArrowUp size={14} /> : <MdKeyboardArrowDown size={14} />
+              }
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

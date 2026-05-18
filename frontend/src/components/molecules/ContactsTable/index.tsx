@@ -27,11 +27,10 @@ type FilterSnapshot = {
 }
 
 export type ContactsTableHandle = {
-  undo:          () => void
-  reset:         () => void
-  openAdd:       () => void
-  openExport:    () => void
-  switchToLeads: () => void
+  undo:       () => void
+  reset:      () => void
+  openAdd:    () => void
+  openExport: () => void
 }
 
 export const ContactsTable = forwardRef<ContactsTableHandle, { onCanUndoChange?: (can: boolean) => void }>(
@@ -114,9 +113,8 @@ export const ContactsTable = forwardRef<ContactsTableHandle, { onCanUndoChange?:
       setSortBy(null)
       setSortDir("asc")
     },
-    openAdd:       () => { setEditingContact(null); setFormOpen(true) },
-    openExport:    () => setExportOpen(true),
-    switchToLeads: () => { setActiveTab("leads"); setPage(1) },
+    openAdd:    () => { setEditingContact(null); setFormOpen(true) },
+    openExport: () => setExportOpen(true),
   }), [pushHistory])
 
   const handleFiltersChange = (active: ActiveFilters) => {
@@ -126,11 +124,12 @@ export const ContactsTable = forwardRef<ContactsTableHandle, { onCanUndoChange?:
     const ef = active["engagement"]
     const sf = active["clientStatus"]
     setServerFilters({
-      purchasesMin:   pf?.type === "number-range"                      ? pf.min    : null,
-      purchasesMax:   pf?.type === "number-range"                      ? pf.max    : null,
-      createdYear:    cf?.type === "select"         && cf.value !== "" ? cf.value  : "",
-      engagement:     ef?.type === "select"         && ef.value !== "" ? ef.value  : "",
-      clientStatuses: sf?.type === "multi-select"                      ? sf.values : [],
+      purchasesMin:   pf?.type === "number-range"  ? pf.min               : null,
+      purchasesMax:   pf?.type === "number-range"  ? pf.max               : null,
+      createdFrom:    cf?.type === "date-range"    ? (cf.from ?? "")      : "",
+      createdTo:      cf?.type === "date-range"    ? (cf.to   ?? "")      : "",
+      engagement:     ef?.type === "select"        && ef.value !== "" ? ef.value : "",
+      clientStatuses: sf?.type === "multi-select"  ? sf.values            : [],
     })
     setPage(1)
   }

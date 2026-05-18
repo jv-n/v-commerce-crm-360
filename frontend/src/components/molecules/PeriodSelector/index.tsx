@@ -1,6 +1,6 @@
 import { useState } from "react"
-import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined"
-import KeyboardArrowDownIcon from "@mui/icons-material/KeyboardArrowDown"
+import CloseIcon from "@mui/icons-material/Close"
+import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -17,7 +17,6 @@ const PERIOD_OPTIONS: { type: PeriodType; label: string }[] = [
   { type: "3months",  label: "Últimos 3 meses" },
   { type: "semester", label: "Último semestre" },
   { type: "year",     label: "Último ano" },
-  { type: "custom",   label: "Personalizado" },
 ]
 
 interface PeriodSelectorProps {
@@ -27,42 +26,59 @@ interface PeriodSelectorProps {
 
 export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
   const [customStart, setCustomStart] = useState(value.startDate ?? "")
-  const [customEnd, setCustomEnd] = useState(value.endDate ?? "")
-  const [open, setOpen] = useState(false)
+  const [customEnd,   setCustomEnd]   = useState(value.endDate   ?? "")
+  const [open,        setOpen]        = useState(false)
 
   const currentLabel =
-    PERIOD_OPTIONS.find((o) => o.type === value.type)?.label ?? "Período"
+    value.type === "custom"
+      ? "Personalizado"
+      : (PERIOD_OPTIONS.find((o) => o.type === value.type)?.label ?? "Período")
 
-  function selectOption(type: PeriodType) {
-    if (type !== "custom") {
-      onChange({ type })
-      setOpen(false)
-    }
-    // for custom, keep open so user can fill dates
+  const isInvalid = !!customStart && !!customEnd && customStart > customEnd
+  const isActive  = value.type !== "year"
+
+  function handleStart(v: string) {
+    setCustomStart(v)
+    const invalid = !!v && !!customEnd && v > customEnd
+    if (!invalid) onChange({ type: "custom", startDate: v || undefined, endDate: customEnd || undefined })
   }
 
-  function applyCustom() {
-    if (!customStart || !customEnd) return
-    onChange({ type: "custom", startDate: customStart, endDate: customEnd })
-    setOpen(false)
+  function handleEnd(v: string) {
+    setCustomEnd(v)
+    const invalid = !!customStart && !!v && customStart > v
+    if (!invalid) onChange({ type: "custom", startDate: customStart || undefined, endDate: v || undefined })
+  }
+
+  function clearToDefault(e: React.MouseEvent) {
+    e.stopPropagation()
+    setCustomStart("")
+    setCustomEnd("")
+    onChange({ type: "year" })
   }
 
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <button className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-xs font-medium text-card-foreground shadow-sm hover:bg-muted transition-colors">
-          <CalendarTodayOutlinedIcon style={{ fontSize: 14 }} className="text-muted-foreground" />
+        <button className={cn(
+          "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl border transition-colors",
+          isActive
+            ? "bg-purple-100 border-purple-300 text-gray-900 font-medium"
+            : "border-transparent text-gray-900 hover:bg-purple-100 hover:border-purple-300"
+        )}>
           <span>{currentLabel}</span>
-          <KeyboardArrowDownIcon style={{ fontSize: 16 }} className="text-muted-foreground" />
+          {isActive
+            ? <CloseIcon sx={{ fontSize: 13 }} onClick={clearToDefault} />
+            : open ? <MdKeyboardArrowUp size={14} /> : <MdKeyboardArrowDown size={14} />
+          }
         </button>
       </DropdownMenuTrigger>
 
-      <DropdownMenuContent align="end" className="w-52">
-        {PERIOD_OPTIONS.filter((o) => o.type !== "custom").map((option) => (
+      <DropdownMenuContent align="end" className="w-56">
+        {PERIOD_OPTIONS.map((option) => (
           <DropdownMenuItem
             key={option.type}
             className={cn(value.type === option.type && "bg-muted font-semibold")}
-            onSelect={() => selectOption(option.type)}
+            onSelect={() => { onChange({ type: option.type }); setOpen(false) }}
           >
             {option.label}
           </DropdownMenuItem>
@@ -70,47 +86,38 @@ export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
 
         <DropdownMenuSeparator />
 
-        {/* Custom option header */}
-        <div
-          className={cn(
-            "flex cursor-pointer select-none items-center rounded-sm px-2 py-1.5 text-sm outline-none transition-colors hover:bg-accent hover:text-accent-foreground",
-            value.type === "custom" && "bg-muted font-semibold",
-          )}
-          onClick={() => selectOption("custom")}
-        >
+        <p className={cn(
+          "px-2 pt-1.5 pb-0.5 text-xs font-medium",
+          value.type === "custom" ? "text-purple-700" : "text-gray-500"
+        )}>
           Personalizado
-        </div>
+        </p>
 
-        {/* Date inputs (always visible when custom is selected or being configured) */}
-        {(value.type === "custom" || open) && (
-          <div className="px-2 pb-2 pt-1 flex flex-col gap-1.5">
-            <div className="flex flex-col gap-0.5">
-              <label className="text-[10px] text-muted-foreground">De</label>
-              <input
-                type="date"
-                value={customStart}
-                onChange={(e) => setCustomStart(e.target.value)}
-                className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
-              />
-            </div>
-            <div className="flex flex-col gap-0.5">
-              <label className="text-[10px] text-muted-foreground">Até</label>
-              <input
-                type="date"
-                value={customEnd}
-                onChange={(e) => setCustomEnd(e.target.value)}
-                className="w-full rounded-md border border-border bg-background px-2 py-1 text-xs text-foreground"
-              />
-            </div>
-            <button
-              onClick={applyCustom}
-              disabled={!customStart || !customEnd}
-              className="mt-1 rounded-md bg-primary px-3 py-1 text-xs font-medium text-primary-foreground disabled:opacity-40"
-            >
-              Aplicar
-            </button>
+        <div className="px-2 pb-2.5 pt-1 flex flex-col gap-2">
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-500">De</label>
+            <input
+              type="date"
+              value={customStart}
+              max={customEnd || undefined}
+              onChange={(e) => handleStart(e.target.value)}
+              className={`border rounded-md px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-1 ${isInvalid ? "border-red-400 focus:ring-red-300" : "border-gray-200 focus:ring-purple-300"}`}
+            />
           </div>
-        )}
+          <div className="flex flex-col gap-1">
+            <label className="text-xs text-gray-500">Até</label>
+            <input
+              type="date"
+              value={customEnd}
+              min={customStart || undefined}
+              onChange={(e) => handleEnd(e.target.value)}
+              className={`border rounded-md px-2 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-1 ${isInvalid ? "border-red-400 focus:ring-red-300" : "border-gray-200 focus:ring-purple-300"}`}
+            />
+          </div>
+          {isInvalid && (
+            <p className="text-xs text-red-500">Data inicial não pode ser maior que a final</p>
+          )}
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   )
