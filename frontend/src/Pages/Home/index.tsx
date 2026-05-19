@@ -150,13 +150,13 @@ const GOAL_CONFIG: Record<GoalKind, {
   Icon: React.ElementType; label: string;
 }> = {
   product_sales: {
-    border: "#86EFAC", bg: "#F0FDF4", hover: "#DCFCE7",
-    text: "#14532d", subtext: "#14532d99", deleteBg: "#86EFAC66",
+    border: "#D1B1E5", bg: "#F7EBFF", hover: "#F0DDFD",
+    text: "#2E0E55", subtext: "#2E0E5599", deleteBg: "#D1B1E566",
     Icon: Inventory2OutlinedIcon, label: "Vendas de produto",
   },
   new_clients: {
-    border: "#A8C7FA", bg: "#EEF4FF", hover: "#DCEAFF",
-    text: "#1a3a6b", subtext: "#1a3a6b99", deleteBg: "#A8C7FA66",
+    border: "#D1B1E5", bg: "#F7EBFF", hover: "#F0DDFD",
+    text: "#2E0E55", subtext: "#2E0E5599", deleteBg: "#D1B1E566",
     Icon: PeopleAltOutlined, label: "Novos clientes",
   },
   category_sales: {
@@ -204,7 +204,7 @@ function GoalCard({ goal, progressLoading, onDelete }: { goal: Goal; progressLoa
               <span className="text-xs font-medium" style={{ color: cfg.subtext }}>
                 {goal.current.toLocaleString("pt-BR")} / {goal.target.toLocaleString("pt-BR")}
               </span>
-              <span className="text-xs font-bold" style={{ color: reached ? "#15803D" : cfg.text }}>
+              <span className="text-xs font-bold" style={{ color: reached ? "#6B21A8" : cfg.text }}>
                 {reached ? "Concluída!" : `${pct}%`}
               </span>
             </>
@@ -219,7 +219,7 @@ function GoalCard({ goal, progressLoading, onDelete }: { goal: Goal; progressLoa
           ) : (
             <div
               className="h-full rounded-full transition-all duration-500"
-              style={{ width: `${pct}%`, background: reached ? "#15803D" : cfg.border }}
+              style={{ width: `${pct}%`, background: reached ? "#6B21A8" : "#C49BD4" }}
             />
           )}
         </div>
