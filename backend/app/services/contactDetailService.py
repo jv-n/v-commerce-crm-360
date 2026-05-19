@@ -5,7 +5,7 @@ from fastapi import Depends
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
-from app.models.contactModel import DimCliente, GoldCliente360
+from app.models.contactModel import GoldCliente360
 from app.models.saleModel import GoldPedidoDetalhado
 from app.models.ticketModel import GoldTicket360
 from app.schemas.contactDetailSchemas import (
@@ -21,6 +21,7 @@ from app.schemas.contactDetailSchemas import (
     ContactViewedProductOut,
 )
 from database.database import get_db
+
 
 _VALID_PERIODS = {
     "current_month",
@@ -172,38 +173,25 @@ def _title_case(value: str | None) -> str | None:
     return cleaned.lower().title()
 
 
+def _to_int(value) -> int | None:
+    if value is None:
+        return None
+
+    try:
+        return int(float(value))
+    except Exception:
+        return None
+
+
 class ContactDetailService:
     def __init__(self, db: Session = Depends(get_db)):
         self.db = db
 
-    def _create_indexes(self) -> None:
-        self.db.execute(
-            """
-            CREATE INDEX IF NOT EXISTS idx_gold_pedidos_cliente_data
-            ON gold_pedidos_detalhado (id_cliente, data_pedido)
-            """
-        )
-        self.db.execute(
-            """
-            CREATE INDEX IF NOT EXISTS idx_gold_pedidos_cliente_categoria
-            ON gold_pedidos_detalhado (id_cliente, categoria)
-            """
-        )
-        self.db.execute(
-            """
-            CREATE INDEX IF NOT EXISTS idx_gold_tickets_cliente_data
-            ON gold_analise_suporte_360 (id_cliente, data_abertura)
-            """
-        )
-        self.db.execute(
-            """
-            CREATE INDEX IF NOT EXISTS idx_gold_cliente_360_cliente
-            ON gold_cliente_360 (id_cliente)
-            """
-        )
-        self.db.commit()
-
-    def _get_reference_date_from_gold(self, contact_id: str, gold: GoldCliente360 | None) -> date | None:
+    def _get_reference_date_from_gold(
+        self,
+        contact_id: str,
+        gold: GoldCliente360 | None,
+    ) -> date | None:
         order_max = (
             self.db.query(func.max(GoldPedidoDetalhado.data_pedido))
             .filter(GoldPedidoDetalhado.id_cliente == contact_id)
@@ -254,27 +242,21 @@ class ContactDetailService:
         if not gold:
             return None
 
-        dim = (
-            self.db.query(DimCliente)
-            .filter(DimCliente.id_cliente == contact_id)
-            .first()
-        )
-
         return ContactDetailOut(
             id=gold.id_cliente,
             name=gold.nome_completo,
             email=gold.email,
-            phone=_fmt_phone(gold.telefone or (dim.telefone if dim else None)),
-            gender=gold.genero or (dim.genero if dim else None),
-            birthDate=_fmt_date(dim.data_nascimento if dim else None),
-            age=dim.idade if dim else None,
-            ageRange=gold.faixa_etaria or (dim.faixa_etaria if dim else None),
-            createdAt=_fmt_date(dim.data_cadastro if dim else gold.data_primeiro_pedido),
-            city=_title_case(gold.cidade or (dim.cidade if dim else None)),
-            state=_title_case(gold.estado or (dim.estado if dim else None)),
-            region=gold.regiao or (dim.regiao if dim else None),
-            country=_title_case(dim.pais if dim else None),
-            origin=gold.origem or (dim.origem if dim else None),
+            phone=_fmt_phone(gold.telefone),
+            gender=gold.genero,
+            birthDate=_fmt_date(gold.data_nascimento),
+            age=_to_int(gold.idade),
+            ageRange=gold.faixa_etaria,
+            createdAt=_fmt_date(gold.data_cadastro),
+            city=_title_case(gold.cidade),
+            state=_title_case(gold.estado),
+            region=gold.regiao,
+            country=_title_case(gold.pais),
+            origin=gold.origem,
             clientStatus=gold.segmento_cliente,
             contactType=_contact_type(gold),
             responsible=None,

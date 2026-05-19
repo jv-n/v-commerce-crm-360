@@ -33,15 +33,23 @@ class GoldCliente360(Base):
     __tablename__ = "gold_cliente_360"
 
     id_cliente: Mapped[str] = mapped_column(String, primary_key=True)
+
+    # Dados cadastrais vindos agora da Gold
     nome_completo: Mapped[str | None] = mapped_column(String, nullable=True)
     email: Mapped[str | None] = mapped_column(String, nullable=True)
     telefone: Mapped[str | None] = mapped_column(String, nullable=True)
     genero: Mapped[str | None] = mapped_column(String, nullable=True)
+    data_nascimento: Mapped[str | None] = mapped_column(String, nullable=True)
+    idade: Mapped[int | None] = mapped_column(Integer, nullable=True)
     faixa_etaria: Mapped[str | None] = mapped_column(String, nullable=True)
+    data_cadastro: Mapped[str | None] = mapped_column(String, nullable=True)
     regiao: Mapped[str | None] = mapped_column(String, nullable=True)
     cidade: Mapped[str | None] = mapped_column(String, nullable=True)
     estado: Mapped[str | None] = mapped_column(String, nullable=True)
+    pais: Mapped[str | None] = mapped_column(String, nullable=True)
     origem: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Métricas de pedidos
     total_pedidos: Mapped[float | None] = mapped_column(Float, nullable=True)
     total_produtos_distintos: Mapped[float | None] = mapped_column(Float, nullable=True)
     receita_total: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -49,6 +57,8 @@ class GoldCliente360(Base):
     data_primeiro_pedido: Mapped[str | None] = mapped_column(String, nullable=True)
     data_ultimo_pedido: Mapped[str | None] = mapped_column(String, nullable=True)
     metodo_pagamento_favorito: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Métricas de suporte/NPS
     total_tickets: Mapped[float | None] = mapped_column(Float, nullable=True)
     taxa_resolucao: Mapped[float | None] = mapped_column(Float, nullable=True)
     nota_media_atendimento: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -56,8 +66,12 @@ class GoldCliente360(Base):
     nota_nps_recente: Mapped[float | None] = mapped_column(Float, nullable=True)
     nota_produto_media: Mapped[float | None] = mapped_column(Float, nullable=True)
     categoria_nps_recente: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Segmentação
     segmento_cliente: Mapped[str | None] = mapped_column(String, nullable=True)
     taxa_conversao_pct: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    # Métricas de comportamento
     total_sessoes: Mapped[float | None] = mapped_column(Float, nullable=True)
     total_eventos: Mapped[float | None] = mapped_column(Float, nullable=True)
     total_visualizacoes: Mapped[float | None] = mapped_column(Float, nullable=True)
@@ -66,6 +80,8 @@ class GoldCliente360(Base):
     total_compras_cs: Mapped[float | None] = mapped_column(Float, nullable=True)
     total_abandono_carrinho: Mapped[float | None] = mapped_column(Float, nullable=True)
     tempo_medio_pagina_seg: Mapped[float | None] = mapped_column(Float, nullable=True)
+
+    # Datas e preferências comportamentais
     data_primeiro_evento: Mapped[str | None] = mapped_column(String, nullable=True)
     data_ultimo_evento: Mapped[str | None] = mapped_column(String, nullable=True)
     canal_preferido: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -73,7 +89,10 @@ class GoldCliente360(Base):
     origem_sessao_preferida: Mapped[str | None] = mapped_column(String, nullable=True)
     periodo_dia_preferido: Mapped[str | None] = mapped_column(String, nullable=True)
     dia_semana_mais_ativo: Mapped[str | None] = mapped_column(String, nullable=True)
+
+    # Produto/categoria mais visualizados
     produto_mais_visualizado_id: Mapped[str | None] = mapped_column(String, nullable=True)
     produto_mais_visualizado: Mapped[str | None] = mapped_column(String, nullable=True)
     categoria_mais_visualizada: Mapped[str | None] = mapped_column(String, nullable=True)
+
     timestamp_ingestion: Mapped[str | None] = mapped_column(String, nullable=True)
