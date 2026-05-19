@@ -56,7 +56,7 @@ export function DataTablePagination({
         <div className="relative" ref={rppRef}>
           <button
             onClick={() => setRppOpen(o => !o)}
-            className="flex items-center gap-1.5 border border-[#D1B1E5] rounded-md px-2.5 py-1 text-sm bg-[#F7EBFF] hover:bg-[#CFA7FF] transition-colors min-w-[56px] justify-between"
+            className="flex items-center gap-1.5 border border-[#D1B1E5] rounded-md px-2.5 py-1 text-sm bg-[#F7EBFF] hover:bg-[#F0DDFD] transition-colors min-w-[56px] justify-between"
           >
             <span>{rowsPerPage}</span>
             {rppOpen ? <MdKeyboardArrowUp size={14} /> : <MdKeyboardArrowDown size={14} />}
@@ -71,7 +71,7 @@ export function DataTablePagination({
                     "w-full text-left px-3 py-2 text-sm transition-colors",
                     n === rowsPerPage
                       ? "bg-white border-y border-black text-gray-900 font-medium"
-                      : "text-gray-900 hover:bg-[#CFA7FF]"
+                      : "text-gray-900 hover:bg-[#F0DDFD]"
                   )}
                 >
                   {n}

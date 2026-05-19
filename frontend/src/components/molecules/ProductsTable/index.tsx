@@ -296,18 +296,15 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
     <button
       onClick={() => setDrawerOpen(o => !o)}
       className={cn(
-        "flex items-center gap-1.5 text-sm transition-colors px-2 py-1 rounded-lg",
-        advCount > 0 ? "text-purple-700 font-medium hover:bg-[#CFA7FF]" : "text-gray-900 hover:bg-[#CFA7FF]"
+        "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl transition-colors",
+        advCount > 0
+          ? "bg-[#EACAFF] border-2 border-[#B899CC] text-[#06121C] font-medium"
+          : "border border-transparent text-gray-900 hover:bg-purple-100 hover:border-purple-300"
       )}
     >
       <TuneIcon sx={{ fontSize: 15 }} />
-      Filtros avançados
-      {advCount > 0 && (
-        <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-600 text-white text-[10px] font-bold leading-none">
-          {advCount}
-        </span>
-      )}
-      {drawerOpen ? <MdKeyboardArrowUp size={15} /> : <MdKeyboardArrowDown size={15} />}
+      {advCount > 0 ? `Filtros avançados: ${advCount}` : "Filtros avançados"}
+      {drawerOpen ? <MdKeyboardArrowUp size={14} /> : <MdKeyboardArrowDown size={14} />}
     </button>
   )
 
