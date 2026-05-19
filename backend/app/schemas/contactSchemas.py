@@ -1,3 +1,4 @@
+from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 
@@ -13,7 +14,18 @@ class ContactCreate(BaseModel):
 class ContactUpdate(BaseModel):
     name: str | None = None
     email: str | None = None
+    phone: str | None = None
     clientStatus: str | None = None
+    gender: str | None = None
+    birthDate: str | None = None
+    age: int | None = None
+    responsible: str | None = None
+    createdAt: str | None = None
+    origin: str | None = None
+    country: str | None = None
+    state: str | None = None
+    region: str | None = None
+    city: str | None = None
 
 
 class ContactOut(BaseModel):
@@ -76,3 +88,16 @@ class ContactResumoOut(BaseModel):
     metodo_pagamento_favorito: str | None
     produto_mais_comprado: str | None
     produto_mais_comprado_qty: float | None
+
+class ContactActivityOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    id_cliente: str
+    user_name: str
+    field_name: str
+    old_value: str | None
+    new_value: str | None
+    change_method: str
+    changed_at: datetime
+

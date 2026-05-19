@@ -18,7 +18,12 @@ import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined"
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined"
 import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined"
 
+import { fetchContactActivities } from "@/lib/api/contacts"
+import type { ContactActivity } from "@/lib/api/contacts"
+import { CustomScrollArea } from "@/components/atoms/CustomScrollArea"
 import { ClientStatusBadge } from "@/components/molecules/ContactsTable/ClientStatusBadge"
+import { ContactEditModal } from "./ContactEditModal"
+
 import type { ClientStatusType } from "@/types/contact"
 import type {
   ContactDashboard,
@@ -468,7 +473,7 @@ function EditContactModal({
     city: details.city ?? "",
   })
 
-  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+  function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = event.target
 
     setFormData((currentFormData) => ({
@@ -512,10 +517,32 @@ function EditContactModal({
     }
   }
 
+  const statusOptions = ["Ativo", "Inativo", "VIP", "Lead", "Em risco"]
+
+  const genderOptions = ["Masculino", "Feminino", "Outro", "Não informado"]
+
+  const originOptions = [
+    "Orgânico", "Google Ads", "Facebook Ads", "Instagram",
+    "Indicação", "Email Marketing", "Marketplace", "Loja Física", "Outro",
+  ]
+
+  const countryOptions = ["Brasil", "Argentina", "Chile", "Colômbia", "México", "Portugal", "Estados Unidos", "Outro"]
+
+  const regionOptions = ["Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"]
+
+  const stateOptions = [
+    "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
+    "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
+    "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
+  ]
+
   const labelClass = "mb-1 block text-xs font-bold text-gray-900"
 
   const fieldClass =
     "h-8 w-full rounded-lg border border-gray-300 bg-white px-3 text-xs text-gray-900 outline-none focus:border-purple-400 disabled:cursor-not-allowed disabled:opacity-60"
+
+  const selectClass =
+    "h-8 w-full rounded-lg border border-gray-300 bg-white px-2 text-xs text-gray-900 outline-none focus:border-purple-400 disabled:cursor-not-allowed disabled:opacity-60 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_8px_center] bg-no-repeat pr-7"
 
   const isBusy = saving || deleting
 
@@ -552,13 +579,18 @@ function EditContactModal({
 
               <div>
                 <label className={labelClass}>Status</label>
-                <input
+                <select
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
                   disabled={isBusy}
-                  className={fieldClass}
-                />
+                  className={selectClass}
+                >
+                  <option value="">Selecione...</option>
+                  {statusOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -609,13 +641,18 @@ function EditContactModal({
 
               <div>
                 <label className={labelClass}>Gênero</label>
-                <input
+                <select
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
                   disabled={isBusy}
-                  className={fieldClass}
-                />
+                  className={selectClass}
+                >
+                  <option value="">Selecione...</option>
+                  {genderOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -631,47 +668,67 @@ function EditContactModal({
 
               <div>
                 <label className={labelClass}>Origem</label>
-                <input
+                <select
                   name="origin"
                   value={formData.origin}
                   onChange={handleChange}
                   disabled={isBusy}
-                  className={fieldClass}
-                />
+                  className={selectClass}
+                >
+                  <option value="">Selecione...</option>
+                  {originOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="col-span-2 grid grid-cols-4 gap-4">
                 <div>
                   <label className={labelClass}>País</label>
-                  <input
+                  <select
                     name="country"
                     value={formData.country}
                     onChange={handleChange}
                     disabled={isBusy}
-                    className={fieldClass}
-                  />
+                    className={selectClass}
+                  >
+                    <option value="">Selecione...</option>
+                    {countryOptions.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label className={labelClass}>Estado</label>
-                  <input
+                  <select
                     name="state"
                     value={formData.state}
                     onChange={handleChange}
                     disabled={isBusy}
-                    className={fieldClass}
-                  />
+                    className={selectClass}
+                  >
+                    <option value="">Selecione...</option>
+                    {stateOptions.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label className={labelClass}>Região</label>
-                  <input
+                  <select
                     name="region"
                     value={formData.region}
                     onChange={handleChange}
                     disabled={isBusy}
-                    className={fieldClass}
-                  />
+                    className={selectClass}
+                  >
+                    <option value="">Selecione...</option>
+                    {regionOptions.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
@@ -1386,6 +1443,8 @@ export default function ContactDetail() {
   const [tab, setTab] = useState<TabType>("informacoes")
   const [selectedPeriod, setSelectedPeriod] =
     useState<ContactPeriod>("current_month")
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [activities, setActivities] = useState<ContactActivity[]>([])
 
   const [dashboardCache, setDashboardCache] = useState<
     Partial<Record<ContactPeriod, ContactDashboard>>
@@ -1403,6 +1462,7 @@ export default function ContactDetail() {
         setError(false)
 
         const contactDetails = await fetchContactDetails(contactId)
+        fetchContactActivities(contactId).then(setActivities).catch(() => {})
 
         if (!active) return
 
@@ -1539,8 +1599,9 @@ export default function ContactDetail() {
   }
 
   return (
-    <div className="p-6 h-full min-h-0 overflow-hidden bg-white rounded-xl">
-      <div className="grid grid-cols-[340px_minmax(560px,620px)_320px] justify-center gap-5 h-full min-h-0 overflow-hidden">
+    <>
+      <div className="p-6 h-full min-h-0 overflow-hidden bg-white rounded-xl">
+        <div className="grid grid-cols-[340px_minmax(560px,620px)_320px] justify-center gap-5 h-full min-h-0 overflow-hidden">
         <div className="flex flex-col gap-4 min-h-0 overflow-hidden">
           <ContactIdentityCard
             details={details}
@@ -1635,10 +1696,66 @@ export default function ContactDetail() {
               </div>
             </>
           ) : (
-            <ActivitiesPlaceholder />
+            <div className="h-full rounded-xl border border-[#E5E5E5] shadow-[0_0_4px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden bg-white">
+              <div className="flex items-center justify-center gap-2 px-5 py-4 shrink-0">
+                <span className="text-base font-bold text-gray-900">Atividades</span>
+              </div>
+              <hr className="border-[#E5E5E5] shrink-0 mx-5" />
+              <CustomScrollArea className="flex-1"><div className="p-3 flex flex-col gap-3">
+                {activities.length === 0 ? (
+                  <p className="text-xs text-gray-400 text-center py-4">Sem atividades registradas.</p>
+                ) : activities.map(act => {
+                  const dtPart = act.changed_at.includes("T") ? act.changed_at.split("T") : act.changed_at.split(" ")
+                  const [y, m, d] = dtPart[0].split("-")
+                  const actDate = `${d}/${m}/${y}`
+                  const actTime = (dtPart[1] ?? "").slice(0, 5)
+                  return (
+                    <div key={act.id} className="rounded-xl border border-gray-200 p-4 flex flex-col gap-1.5 bg-white">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 text-purple-700 text-xs font-bold shrink-0">
+                          {initials(act.user_name)}
+                        </span>
+                        <span className="text-sm font-semibold text-gray-800">{act.user_name}</span>
+                      </div>
+                      <span className="text-sm text-gray-600">
+                        {"• "}Data da Alteração:{" "}
+                        <span className="text-purple-600 font-medium">{actDate}</span>
+                        {actTime && <> - {actTime}</>}
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {"• "}Campo alterado:{" "}
+                        <span className="text-purple-600 font-medium">{act.field_name}</span>
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {"• "}Alteração: {act.old_value ?? "—"} para{" "}
+                        <span className="font-semibold text-gray-900">{act.new_value ?? "—"}</span>
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {"• "}Método: <span className="font-medium text-gray-800">{act.change_method}</span>
+                      </span>
+                    </div>
+                  )
+                })}
+              </div></CustomScrollArea>
+            </div>
           )}
         </div>
       </div>
-    </div>
+      </div>
+      {isEditOpen && (
+        <ContactEditModal
+          open={isEditOpen}
+          details={details}
+          onClose={() => setIsEditOpen(false)}
+          onSuccess={(updated) => {
+            setDetails(updated)
+            setIsEditOpen(false)
+            if (id) {
+              fetchContactActivities(id).then(setActivities).catch(() => {})
+            }
+          }}
+        />
+      )}
+    </>
   )
 }

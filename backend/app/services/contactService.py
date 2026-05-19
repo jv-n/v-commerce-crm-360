@@ -1,7 +1,9 @@
 import csv
 import io
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone, timedelta
+
+_BRT = timezone(timedelta(hours=-3))
 from typing import Generator
 
 from fastapi import Depends
@@ -11,9 +13,9 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc, func
 
-from app.models.contactModel import GoldCliente360
+from app.models.contactModel import GoldCliente360, ContactActivity
 from app.models.saleModel import GoldPedidoDetalhado
-from app.schemas.contactSchemas import ContactOut, ContactsPageOut, ContactCreate, ContactUpdate, ContactResumoOut
+from app.schemas.contactSchemas import ContactOut, ContactsPageOut, ContactCreate, ContactUpdate, ContactResumoOut, ContactActivityOut
 from database.database import get_db
 
 _VALID_STATUSES = {"Ativo", "Inativo", "VIP", "Lead", "Em risco"}
@@ -273,17 +275,75 @@ class ContactService:
         self.db.refresh(gold)
         return _to_contact_out(gold)
 
-    def update_contact(self, contact_id: str, data: ContactUpdate) -> ContactOut | None:
+    def update_contact(self, contact_id: str, data: ContactUpdate, user_name: str = "Sistema") -> ContactOut | None:
         gold = self.db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()
         if not gold:
             return None
 
+        now = datetime.now(_BRT).replace(tzinfo=None)
+        activities: list[ContactActivity] = []
+
+        def _track(field_label: str, old_val, new_val, db_attr: str):
+            old_str = str(old_val) if old_val is not None else "—"
+            new_str = str(new_val) if new_val is not None else "—"
+            if old_str != new_str:
+                activities.append(ContactActivity(
+                    id_cliente=contact_id,
+                    user_name=user_name,
+                    field_name=field_label,
+                    old_value=old_str,
+                    new_value=new_str,
+                    change_method="Edição direta",
+                    changed_at=now,
+                ))
+                setattr(gold, db_attr, new_val)
+
         if data.name is not None:
-            gold.nome_completo = data.name
+            _track("Nome", gold.nome_completo, data.name, "nome_completo")
+
         if data.email is not None:
-            gold.email = data.email
+            _track("Email", gold.email, data.email, "email")
+
+        if data.phone is not None:
+            _track("Telefone", gold.telefone, data.phone, "telefone")
+
         if data.clientStatus is not None and data.clientStatus in _VALID_STATUSES:
-            gold.segmento_cliente = data.clientStatus
+            _track("Status", gold.segmento_cliente, data.clientStatus, "segmento_cliente")
+
+        if data.gender is not None:
+            _track("Gênero", gold.genero, data.gender, "genero")
+
+        if data.birthDate is not None:
+            _track("Data de nascimento", gold.data_nascimento, data.birthDate, "data_nascimento")
+
+        if data.age is not None:
+            _track("Idade", gold.idade, data.age, "idade")
+
+        if data.responsible is not None:
+            # 'responsible' is not a native Gold column – store in segmento_cliente metadata
+            # For now we keep it tracked but there's no dedicated DB column; we skip setattr.
+            pass
+
+        if data.createdAt is not None:
+            _track("Data de cadastro", gold.data_cadastro, data.createdAt, "data_cadastro")
+
+        if data.origin is not None:
+            _track("Origem", gold.origem, data.origin, "origem")
+
+        if data.country is not None:
+            _track("País", gold.pais, data.country, "pais")
+
+        if data.state is not None:
+            _track("Estado", gold.estado, data.state, "estado")
+
+        if data.region is not None:
+            _track("Região", gold.regiao, data.region, "regiao")
+
+        if data.city is not None:
+            _track("Cidade", gold.cidade, data.city, "cidade")
+
+        for act in activities:
+            self.db.add(act)
 
         self.db.commit()
         self.db.refresh(gold)
@@ -534,3 +594,14 @@ class ContactService:
             produto_mais_comprado=qty_row.nome_produto if qty_row else None,
             produto_mais_comprado_qty=round(qty_row.total_qty, 0) if qty_row and qty_row.total_qty else None,
         )
+
+    def get_contact_activities(self, contact_id: str, limit: int = 50) -> list[ContactActivityOut]:
+        rows = (
+            self.db.query(ContactActivity)
+            .filter(ContactActivity.id_cliente == contact_id)
+            .order_by(ContactActivity.changed_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [ContactActivityOut.model_validate(r) for r in rows]
+

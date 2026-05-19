@@ -9,6 +9,7 @@ import { Label } from "@/components/atoms/label"
 import { Button } from "@/components/atoms/button"
 import type { Contact } from "@/types/contact"
 import { createContact, updateContact } from "@/lib/api/contacts"
+import { useAuth } from "@/contexts/auth/useAuth"
 
 interface ContactFormSheetProps {
   open: boolean
@@ -25,6 +26,7 @@ export function ContactFormSheet({ open, onClose, contact, onSuccess }: ContactF
   })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const { user } = useAuth()
 
   useEffect(() => {
     if (contact) {
@@ -46,7 +48,7 @@ export function ContactFormSheet({ open, onClose, contact, onSuccess }: ContactF
     setError("")
     try {
       if (contact) {
-        await updateContact(contact.id, form)
+        await updateContact(contact.id, form, user?.name ?? "Sistema")
       } else {
         await createContact(form)
       }

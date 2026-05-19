@@ -18,6 +18,7 @@ if settings.GEMINI_API_KEY:
 from database.database import engine
 from app.models.conversationModel import Conversation  # noqa: F401 — importar registra o model no metadata
 from app.models.productModel import ProductActivity    # noqa: F401 — registra ft_product_activities no metadata
+from app.models.contactModel import ContactActivity    # noqa: F401 — registra ft_contact_activities no metadata
 from app.models.saleModel import SaleActivity          # noqa: F401 — registra ft_sale_activities no metadata
 from app.models.bookmarkModel import BookmarkItem      # noqa: F401 — registra bookmarks no metadata
 from app.models.goalModel import GoalItem              # noqa: F401 — registra goals no metadata

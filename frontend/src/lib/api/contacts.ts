@@ -124,8 +124,16 @@ export interface ContactFormData {
   email?: string
   phone?: string
   clientStatus?: string
-  region?: string
+  gender?: string
+  birthDate?: string
+  age?: number
+  responsible?: string
+  createdAt?: string
   origin?: string
+  country?: string
+  state?: string
+  region?: string
+  city?: string
 }
 
 export async function createContact(data: ContactFormData): Promise<Contact> {
@@ -138,10 +146,13 @@ export async function createContact(data: ContactFormData): Promise<Contact> {
   return toContact(await res.json() as RawContact)
 }
 
-export async function updateContact(id: string, data: Partial<ContactFormData & { clientStatus?: string }>): Promise<Contact> {
+export async function updateContact(id: string, data: Partial<ContactFormData & { clientStatus?: string }>, userName = "Sistema"): Promise<Contact> {
   const res = await fetch(`/api/contacts/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-User-Name": userName,
+    },
     body: JSON.stringify(data),
   })
   if (!res.ok) throw new Error(`Erro ao atualizar contato: ${res.status}`)
@@ -182,6 +193,23 @@ export async function fetchContactResumo(id: string): Promise<ContactResumo> {
   const res = await fetch(`/api/contacts/${id}/resumo`)
   if (!res.ok) throw new Error(`Erro ao buscar resumo: ${res.status}`)
   return res.json() as Promise<ContactResumo>
+}
+
+export interface ContactActivity {
+  id: number
+  id_cliente: string
+  user_name: string
+  field_name: string
+  old_value: string | null
+  new_value: string | null
+  change_method: string
+  changed_at: string
+}
+
+export async function fetchContactActivities(id: string, limit = 50): Promise<ContactActivity[]> {
+  const res = await fetch(`/api/contacts/${id}/activities?limit=${limit}`)
+  if (!res.ok) throw new Error(`Erro ao buscar atividades: ${res.status}`)
+  return res.json() as Promise<ContactActivity[]>
 }
 
 export async function fetchContacts(params: ContactsParams): Promise<ContactsPage> {
