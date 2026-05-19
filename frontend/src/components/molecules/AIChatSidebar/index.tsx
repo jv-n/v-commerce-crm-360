@@ -513,9 +513,8 @@ export default function AIChatSidebar({
                   backgroundClip: "text",
                 }}
               >
-                Olá {userName}, como posso
+                Olá {userName}, como posso te ajudar hoje?
                 <br />
-                te ajudar hoje?
               </h2>
             </div>
           )}
