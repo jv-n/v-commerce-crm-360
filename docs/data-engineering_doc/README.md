@@ -11,7 +11,7 @@ Documentação do pipeline de dados do V-Commerce CRM 360, desenvolvido no **Dat
 | [Camada Bronze](./bronze_layer-doc.md) | Ingestão dos CSVs brutos sem transformação |
 | [Camada Silver](./silver_layer-doc.md) | Limpeza, padronização e enriquecimento dos dados |
 | [Camada Gold](./gold_layer-doc.md) | Data Marts agregados prontos para o CRM e o agente |
-| [Pipeline e Workflow](./pipeline-workflow-doc.md) | Orquestração, agendamento e execução no Databricks |
+| [Pipeline e Workflow](./pipeline_workflow-doc.md) | Orquestração, agendamento e execução no Databricks |
 
 ---
 
