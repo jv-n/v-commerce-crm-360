@@ -1,7 +1,7 @@
 import { useRef, useState } from "react"
 import { ContactsTable } from "@/components/molecules/ContactsTable"
 import type { ContactsTableHandle } from "@/components/molecules/ContactsTable"
-import AddCircleOutlinedIcon from "@mui/icons-material/AddCircleOutlined"
+import AddCircleOutlineOutlinedIcon from "@mui/icons-material/AddCircleOutlineOutlined"
 import IosShareOutlinedIcon from "@mui/icons-material/IosShareOutlined"
 import UndoIcon from "@mui/icons-material/Undo"
 import RefreshIcon from "@mui/icons-material/Refresh"
@@ -27,7 +27,7 @@ export default function Contacts() {
             onClick={() => tableRef.current?.openAdd()}
             className="flex items-center gap-2 bg-[#F7EBFF] border border-[#D1B1E5] rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-[#F0DDFD] shadow-sm transition-colors"
           >
-            <AddCircleOutlinedIcon sx={{ fontSize: 18 }} />
+            <AddCircleOutlineOutlinedIcon sx={{ fontSize: 18 }} />
             Adicionar contato
           </button>
         </div>

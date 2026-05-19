@@ -120,7 +120,8 @@ class ContactService:
                        taxa_conversao_min, taxa_conversao_max,
                        total_sessoes_min, total_sessoes_max,
                        abandono_carrinho_min, abandono_carrinho_max,
-                       nps_recente_min, nps_recente_max):
+                       nps_recente_min, nps_recente_max,
+                       search_field: str = ""):
         """Aplica todos os filtros em GoldCliente360."""
         if tab == "clients":
             query = query.filter(GoldCliente360.segmento_cliente.in_(["Ativo", "Inativo", "VIP"]))
@@ -129,10 +130,13 @@ class ContactService:
 
         if search:
             term = f"%{search}%"
-            query = query.filter(
-                GoldCliente360.nome_completo.ilike(term)
-                | GoldCliente360.email.ilike(term)
-            )
+            if search_field == "id":
+                query = query.filter(GoldCliente360.id_cliente.ilike(term))
+            else:
+                query = query.filter(
+                    GoldCliente360.nome_completo.ilike(term)
+                    | GoldCliente360.email.ilike(term)
+                )
 
         if purchases_min is not None:
             query = query.filter(GoldCliente360.total_pedidos >= purchases_min)
@@ -253,7 +257,10 @@ class ContactService:
             id_cliente=contact_id,
             nome_completo=data.name,
             email=data.email,
-            segmento_cliente="Ativo",
+            telefone=data.phone,
+            segmento_cliente=data.clientStatus or "Inativo",
+            regiao=data.region,
+            origem=data.origin,
             total_pedidos=0,
             total_produtos_distintos=0,
             receita_total=0,
@@ -325,6 +332,7 @@ class ContactService:
         page_size: int = 20,
         tab: str = "all",
         search: str = "",
+        search_field: str = "",
         purchases_min: int | None = None,
         purchases_max: int | None = None,
         created_from: str = "",
@@ -387,7 +395,7 @@ class ContactService:
         )
 
         # ── Count: só em GoldCliente360, sem join ─────────────────────────────
-        count_q = self._apply_filters(self.db.query(GoldCliente360), *filter_args)
+        count_q = self._apply_filters(self.db.query(GoldCliente360), *filter_args, search_field=search_field)
         total = count_q.count()
 
         # ── Dados paginados: ORDER BY + LIMIT em GoldCliente360 ───────────────

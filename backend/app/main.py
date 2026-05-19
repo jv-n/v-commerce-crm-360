@@ -3,8 +3,9 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import userRouter, contactRouter, agentRouter, productRouter, saleRouter, ticketRouter
+from app.routes import userRouter, contactRouter, agentRouter, productRouter, saleRouter, ticketRouter, contactDetailRouter
 from app.routes import conversationRouter, mentionRouter, reviewRouter, authRouter, dashboardRouter
+from app.routes import bookmarkRouter
 
 # Injeta a GEMINI_API_KEY no ambiente para o PydanticAI/Google SDK
 # (lida do .env via pydantic-settings no config.py)
@@ -18,6 +19,7 @@ from app.models.conversationModel import Conversation  # noqa: F401 — importar
 from app.models.productModel import ProductActivity    # noqa: F401 — registra ft_product_activities no metadata
 from app.models.contactModel import ContactActivity    # noqa: F401 — registra ft_contact_activities no metadata
 from app.models.saleModel import SaleActivity          # noqa: F401 — registra ft_sale_activities no metadata
+from app.models.bookmarkModel import BookmarkItem      # noqa: F401 — registra bookmarks no metadata
 from database.database import Base
 Base.metadata.create_all(bind=engine, checkfirst=True)
 
@@ -41,6 +43,7 @@ app.add_middleware(
 
 app.include_router(userRouter.router)
 app.include_router(contactRouter.router)
+app.include_router(contactDetailRouter.router)
 app.include_router(agentRouter.router)
 app.include_router(saleRouter.router)
 app.include_router(productRouter.router)
@@ -50,6 +53,7 @@ app.include_router(reviewRouter.router)
 app.include_router(authRouter.router)
 app.include_router(ticketRouter.router)
 app.include_router(dashboardRouter.router)
+app.include_router(bookmarkRouter.router)
 
 @app.get("/", tags=["Health"])
 async def health_check():

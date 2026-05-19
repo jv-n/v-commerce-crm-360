@@ -21,6 +21,10 @@ def get_sales(
     data_to: str = Query("", description="Format: YYYY-MM-DD"),
     search: str = Query(""),
     search_field: str = Query("all"),
+    nome_cliente: str = Query(""),
+    nome_produto: str = Query(""),
+    sort_key: str = Query(""),
+    sort_dir: str = Query("desc"),
     db: Session = Depends(get_db),
 ):
     return SaleService(db).get_sales(
@@ -35,6 +39,10 @@ def get_sales(
         data_to=data_to,
         search=search,
         search_field=search_field,
+        nome_cliente=nome_cliente,
+        nome_produto=nome_produto,
+        sort_key=sort_key,
+        sort_dir=sort_dir,
     )
 
 

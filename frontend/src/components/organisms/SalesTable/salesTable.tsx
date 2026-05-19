@@ -3,6 +3,8 @@ import { useLocation } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { getSaleColumns } from "./columns"
 import { fetchSales } from "@/lib/api/sales"
+import { fetchContacts } from "@/lib/api/contacts"
+import { fetchProducts } from "@/lib/api/products"
 import { ExportPopover, type ExportPill } from "@/components/molecules/ExportPopover"
 import type { Sale } from "@/types/sale"
 import type { Tab, ActiveFilters } from "@/components/organisms/DataTable/types"
@@ -11,10 +13,13 @@ import { SaleExpandedRow } from "./SaleExpandedRow"
 import { cn } from "@/lib/utils"
 import { MdKeyboardArrowDown } from "react-icons/md"
 
+// ── Table ──────────────────────────────────────────────────────────────────────
+
 const TABS: Tab[] = [
-  { id: "all",       label: "Todos os pedidos"    },
-  { id: "concluded", label: "Pedidos concluídos"  },
-  { id: "returned",  label: "Pedidos devolvidos"  },
+  { id: "all",       label: "Todos os pedidos"   },
+  { id: "concluded", label: "Pedidos concluídos" },
+  { id: "pending",   label: "Pedidos pendentes"  },
+  { id: "failed",    label: "Pedidos falhos"      },
 ]
 
 const DEFAULT_PAGE_SIZE = 10
@@ -25,14 +30,22 @@ interface ServerFilters {
   categoria:        string
   data_from:        string
   data_to:          string
+  nome_cliente:     string
+  nome_produto:     string
 }
 
-const EMPTY_FILTERS: ServerFilters = { status: "", metodo_pagamento: "", categoria: "", data_from: "", data_to: "" }
+const EMPTY_FILTERS: ServerFilters = {
+  status: "", metodo_pagamento: "", categoria: "",
+  data_from: "", data_to: "", nome_cliente: "", nome_produto: "",
+}
+
+type SaleSort = { key: string; direction: "asc" | "desc" } | null
 
 type FilterSnapshot = {
   tab:           string
   page:          number
   serverFilters: ServerFilters
+  sort:          SaleSort
 }
 
 export type SalesTableHandle = {
@@ -44,8 +57,8 @@ export type SalesTableHandle = {
 
 export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can: boolean) => void }>(
   ({ onCanUndoChange }, ref) => {
-    const location  = useLocation()
-    const navState  = location.state as { search?: string; searchField?: string } | null
+    const location   = useLocation()
+    const navState   = location.state as { search?: string; searchField?: string } | null
     const initSearch = navState?.search ?? ""
     const initField  = (navState?.searchField ?? "all") as "all" | "client" | "product" | "client_id"
 
@@ -61,18 +74,23 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
     const [editSale,       setEditSale]       = useState<Sale | undefined>(undefined)
     const [refetchKey,     setRefetchKey]     = useState(0)
     const [search,         setSearch]         = useState(initSearch)
-    const [searchScope,    setSearchScope]    = useState<"all" | "client" | "product" | "client_id">(initField)
     const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(new Set())
+    const [sort,           setSort]           = useState<SaleSort>(null)
+    const [searchScope,    setSearchScope]    = useState<"all" | "client" | "product" | "client_id">(initField)
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const searchRef   = useRef("")
 
-    const currentSnapshot = useRef<FilterSnapshot>({ tab: "all", page: 1, serverFilters: EMPTY_FILTERS })
+    const currentSnapshot = useRef<FilterSnapshot>({ tab: "all", page: 1, serverFilters: EMPTY_FILTERS, sort: null })
     useEffect(() => {
-      currentSnapshot.current = { tab: activeTab, page, serverFilters }
+      currentSnapshot.current = { tab: activeTab, page, serverFilters, sort }
     })
 
     const pushHistory = useCallback(() => {
-      setFilterHistory(h => [...h, { ...currentSnapshot.current }])
+      setFilterHistory(h => [...h, {
+        ...currentSnapshot.current,
+        serverFilters: { ...currentSnapshot.current.serverFilters },
+        sort: currentSnapshot.current.sort ? { ...currentSnapshot.current.sort } : null,
+      }])
     }, [])
 
     useEffect(() => {
@@ -87,7 +105,20 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
       })
     }, [])
 
-    const columns = getSaleColumns(expandedRowIds, handleToggleExpand)
+    const fetchClientOptions = useCallback(async (q: string): Promise<string[]> => {
+      const res = await fetchContacts({ page: 1, pageSize: 10, tab: "all", search: q, sortBy: null, sortDir: "asc" })
+      return res.data.map(c => c.name).filter(Boolean)
+    }, [])
+
+    const fetchProductOptions = useCallback(async (q: string): Promise<string[]> => {
+      const res = await fetchProducts({ search: q, pageSize: 10 })
+      return res.data.map(p => p.name).filter(Boolean)
+    }, [])
+
+    const columns = getSaleColumns(expandedRowIds, handleToggleExpand, fetchClientOptions, fetchProductOptions)
+
+    const [exportOpen,    setExportOpen]    = useState(false)
+    const [exportLoading, setExportLoading] = useState(false)
 
     useImperativeHandle(ref, () => ({
       undo: () => {
@@ -99,6 +130,7 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
           setPage(prev.page)
           setLoading(true)
           setServerFilters(prev.serverFilters)
+          setSort(prev.sort)
           return h.slice(0, -1)
         })
       },
@@ -109,22 +141,20 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
         setActiveTab("all")
         setPage(1)
         setServerFilters(EMPTY_FILTERS)
+        setSort(null)
       },
-      openAdd: () => { setEditSale(undefined); setFormOpen(true) },
-
-
+      openAdd:    () => { setEditSale(undefined); setFormOpen(true) },
       openExport: () => setExportOpen(true),
     }), [pushHistory])
-    const { status, metodo_pagamento, categoria, data_from, data_to } = serverFilters
-    const [exportOpen,    setExportOpen]    = useState(false)
-    const [exportLoading, setExportLoading] = useState(false)
 
-    // ── Seleção acumulativa por cache ──────────────────────────────────────────
-    const salesRef        = useRef<Sale[]>([])
-    const selectedCache   = useRef<Map<string, Sale>>(new Map())
-    const [selectedIds,   setSelectedIds]   = useState<Set<string>>(new Set())
+    const { status, metodo_pagamento, categoria, data_from, data_to, nome_cliente, nome_produto } = serverFilters
+
+    // ── Selection cache ────────────────────────────────────────────────────────
+    const salesRef      = useRef<Sale[]>([])
+    const selectedCache = useRef<Map<string, Sale>>(new Map())
+    const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
     useEffect(() => { salesRef.current = sales }, [sales])
-     // eslint-disable-next-line 
+
     const handleSelectionChange = useCallback((ids: Set<string>) => {
       const cache = selectedCache.current
       for (const id of cache.keys()) { if (!ids.has(id)) cache.delete(id) }
@@ -132,6 +162,7 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
       setSelectedIds(new Set(ids))
     }, [])
 
+    // ── CSV helpers ────────────────────────────────────────────────────────────
     const buildCSV = (rows: Sale[]) => {
       const headers = ["ID", "Produto", "Cliente", "Categoria", "Quantidade", "Valor", "Data", "Status", "Pagamento"]
       const lines = rows.map(s => [s.id, s.product, s.client, s.categoria ?? "", s.amount, s.value, s.date, s.status, s.payment_method])
@@ -149,7 +180,13 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
     const handleExportCSV = async () => {
       setExportLoading(true)
       try {
-        const res = await fetchSales({ page: 1, pageSize: 500000, tab: activeTab, status: serverFilters.status, metodo_pagamento: serverFilters.metodo_pagamento, categoria: serverFilters.categoria })
+        const res = await fetchSales({
+          page: 1, pageSize: 500000, tab: activeTab,
+          status, metodo_pagamento, categoria, data_from, data_to,
+          nome_cliente, nome_produto,
+          search, search_field: search ? "sale_id" : undefined,
+          sortKey: sort?.key, sortDir: sort?.direction,
+        })
         downloadCSV(buildCSV(res.data), `pedidos_${new Date().toISOString().slice(0, 10)}.csv`)
         setExportOpen(false)
       } finally { setExportLoading(false) }
@@ -164,19 +201,25 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
     }
 
     const exportPills: ExportPill[] = useMemo(() => [
-      ...(activeTab === "concluded" ? [{ label: "Aba", value: "Pedidos concluídos" }] : []),
-      ...(activeTab === "returned"  ? [{ label: "Aba", value: "Pedidos devolvidos"  }] : []),
-      ...(serverFilters.status           ? [{ label: "Status",    value: serverFilters.status           }] : []),
-      ...(serverFilters.metodo_pagamento ? [{ label: "Pagamento", value: serverFilters.metodo_pagamento }] : []),
-      ...(serverFilters.categoria        ? [{ label: "Categoria", value: serverFilters.categoria        }] : []),
-   
-    ], [activeTab, serverFilters.status, serverFilters.metodo_pagamento, serverFilters.categoria])
+      ...(activeTab === "concluded"        ? [{ label: "Aba",      value: "Pedidos concluídos"       }] : []),
+      ...(activeTab === "returned"         ? [{ label: "Aba",      value: "Pedidos devolvidos"        }] : []),
+      ...(serverFilters.status             ? [{ label: "Status",   value: serverFilters.status        }] : []),
+      ...(serverFilters.metodo_pagamento   ? [{ label: "Pgto",     value: serverFilters.metodo_pagamento }] : []),
+      ...(serverFilters.categoria          ? [{ label: "Categ.",   value: serverFilters.categoria     }] : []),
+      ...(serverFilters.nome_cliente       ? [{ label: "Cliente",  value: serverFilters.nome_cliente  }] : []),
+      ...(serverFilters.nome_produto       ? [{ label: "Produto",  value: serverFilters.nome_produto  }] : []),
+    ], [activeTab, serverFilters])
 
-
+    // ── Fetch ──────────────────────────────────────────────────────────────────
     useEffect(() => {
       let cancelled = false
-
-      fetchSales({ page, pageSize, tab: activeTab, status, metodo_pagamento, categoria, data_from, data_to, search, search_field: searchScope })
+      fetchSales({
+        page, pageSize, tab: activeTab,
+        status, metodo_pagamento, categoria, data_from, data_to,
+        nome_cliente, nome_produto,
+        search, search_field: search ? searchScope : undefined,
+        sortKey: sort?.key, sortDir: sort?.direction,
+      })
         .then((res) => {
           if (cancelled) return
           setSales(res.data)
@@ -184,10 +227,10 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
         })
         .catch(console.error)
         .finally(() => { if (!cancelled) setLoading(false) })
-
       return () => { cancelled = true }
-    }, [page, pageSize, activeTab, status, metodo_pagamento, categoria, data_from, data_to, search, searchScope, refetchKey])
+    }, [page, pageSize, activeTab, status, metodo_pagamento, categoria, data_from, data_to, nome_cliente, nome_produto, search, searchScope, sort, refetchKey])
 
+    // ── Handlers ──────────────────────────────────────────────────────────────
     const handleTabChange = (tabId: string) => {
       pushHistory()
       setExpandedRowIds(new Set())
@@ -195,6 +238,15 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
       setActiveTab(tabId)
       setPage(1)
       setServerFilters(EMPTY_FILTERS)
+      setSort(null)
+    }
+
+    const handleSortChange = (s: SaleSort) => {
+      pushHistory()
+      setExpandedRowIds(new Set())
+      setLoading(true)
+      setPage(1)
+      setSort(s)
     }
 
     const handlePageChange = (newPage: number) => {
@@ -215,16 +267,20 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
       const pf = active["paymentMethod"]
       const cf = active["categoria"]
       const df = active["saleDate"]
+      const clF = active["client"]
+      const prF = active["product"]
       pushHistory()
       setExpandedRowIds(new Set())
       setLoading(true)
       setServerFilters(prev => ({
         ...prev,
-        status:           sf?.type === "select"     && sf.value ? sf.value : "",
-        metodo_pagamento: pf?.type === "select"     && pf.value ? pf.value : "",
-        categoria:        cf?.type === "select"     && cf.value ? cf.value : "",
-        data_from:        df?.type === "date-range" && df.from  ? df.from  : "",
-        data_to:          df?.type === "date-range" && df.to    ? df.to    : "",
+        status:           sf?.type === "select"        && sf.value  ? sf.value  : "",
+        metodo_pagamento: pf?.type === "select"        && pf.value  ? pf.value  : "",
+        categoria:        cf?.type === "select"        && cf.value  ? cf.value  : "",
+        data_from:        df?.type === "date-range"    && df.from   ? df.from   : "",
+        data_to:          df?.type === "date-range"    && df.to     ? df.to     : "",
+        nome_cliente:     clF?.type === "search-select" && clF.value ? clF.value : "",
+        nome_produto:     prF?.type === "search-select" && prF.value ? prF.value : "",
       }))
       setPage(1)
     }
@@ -245,29 +301,19 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
       setFormOpen(true)
     }, [])
 
-    const handleFormClose = () => {
-      setFormOpen(false)
-      setEditSale(undefined)
-    }
-
-    const handleFormSuccess = () => {
-      setLoading(true)
-      setRefetchKey(k => k + 1)
-    }
-
     return (
       <>
-      <ExportPopover
-        open={exportOpen}
-        onClose={() => setExportOpen(false)}
-        total={total}
-        entityLabel="Pedidos"
-        pills={exportPills}
-        exportLoading={exportLoading}
-        onExport={handleExportCSV}
-        selectedCount={selectedIds.size}
-        onExportSelected={handleExportSelected}
-      />
+        <ExportPopover
+          open={exportOpen}
+          onClose={() => setExportOpen(false)}
+          total={total}
+          entityLabel="Pedidos"
+          pills={exportPills}
+          exportLoading={exportLoading}
+          onExport={handleExportCSV}
+          selectedCount={selectedIds.size}
+          onExportSelected={handleExportSelected}
+        />
         <DataTable
           data={sales}
           loading={loading}
@@ -278,6 +324,7 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
           onTabChange={handleTabChange}
           onFiltersChange={handleFiltersChange}
           onSearchChange={handleSearchChange}
+          onSortChange={handleSortChange}
           searchPlaceholder={
             searchScope === "client"    ? "Buscar por cliente..."
             : searchScope === "product" ? "Buscar por produto..."
@@ -290,7 +337,7 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
                 value={searchScope}
                 onChange={e => { setSearchScope(e.target.value as typeof searchScope); setPage(1) }}
                 className={cn(
-                  "appearance-none text-xs bg-transparent pl-2 pr-5 py-0.5 rounded cursor-pointer outline-none transition-colors hover:bg-[#F7EBFF]",
+                  "appearance-none text-xs bg-transparent pl-2 pr-5 py-0.5 rounded cursor-pointer outline-none transition-colors hover:bg-[#CFA7FF]",
                   searchScope !== "all" ? "text-purple-700 font-medium" : "text-gray-700"
                 )}
               >
@@ -315,12 +362,13 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
             onPageChange:     handlePageChange,
             onPageSizeChange: handlePageSizeChange,
           }}
+          onSelectionChange={handleSelectionChange}
         />
         <SaleFormSheet
           open={formOpen}
           sale={editSale}
-          onClose={handleFormClose}
-          onSuccess={handleFormSuccess}
+          onClose={() => { setFormOpen(false); setEditSale(undefined) }}
+          onSuccess={() => { setLoading(true); setRefetchKey(k => k + 1) }}
         />
       </>
     )

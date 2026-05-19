@@ -16,6 +16,12 @@ import {
     SidebarProvider,
     SidebarSeparator,
 } from "@/components/molecules/Sidebar/sidebar";
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from "@/components/atoms/tooltip";
 import HomeOutlinedIcon from '@mui/icons-material/HomeOutlined';
 import ContactPageOutlinedIcon from '@mui/icons-material/ContactPageOutlined';
 import RequestQuoteOutlinedIcon from '@mui/icons-material/RequestQuoteOutlined';
@@ -113,16 +119,24 @@ export default function AppFrame() {
                         <img src="vcom360_icon.svg" alt="CRM Icon" height={80} width={80}/> 
                     </SidebarHeader>
                     <SidebarContent>
+                        <TooltipProvider>
                         <SidebarGroup>
                             <SidebarGroupContent>
-                                <SidebarMenu className="gap-2">
+                                <SidebarMenu className="gap-4">
                                     {sidebarItems1.map((item) => (
                                         <SidebarMenuItem key={item.name} className="flex align-center justify-center">
-                                            <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
-                                                <NavLink to={item.path}>
-                                                    {setIcon(item.name)}
-                                                </NavLink>
-                                            </SidebarMenuButton>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
+                                                        <NavLink to={item.path}>
+                                                            {setIcon(item.name)}
+                                                        </NavLink>
+                                                    </SidebarMenuButton>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="right" className="bg-background text-primary rounded-lg" arrowClassName="bg-background fill-background">
+                                                    <p>{item.name}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
                                         </SidebarMenuItem>
                                     ))}
                                 </SidebarMenu>
@@ -131,14 +145,21 @@ export default function AppFrame() {
                         <SidebarSeparator className="bg-foreground/30" />
                         <SidebarGroup>
                             <SidebarGroupContent>
-                                <SidebarMenu className="gap-2">
+                                <SidebarMenu className="gap-4">
                                     {sidebarItems2.map((item) => (
                                         <SidebarMenuItem key={item.name} className="flex align-center justify-center">
-                                            <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
-                                                <NavLink to={item.path}>
-                                                    {setIcon(item.name)}
-                                                </NavLink>
-                                            </SidebarMenuButton>
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
+                                                        <NavLink to={item.path}>
+                                                            {setIcon(item.name)}
+                                                        </NavLink>
+                                                    </SidebarMenuButton>
+                                                </TooltipTrigger>
+                                                <TooltipContent side="right" className="bg-background text-primary rounded-lg" arrowClassName="bg-background fill-background">
+                                                    <p>{item.name}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
                                         </SidebarMenuItem>
                                     ))}
                                 </SidebarMenu>
@@ -147,32 +168,39 @@ export default function AppFrame() {
                         <SidebarSeparator className="bg-foreground/30"/>
                         <SidebarGroup>
                             <SidebarGroupContent>
-                                <SidebarMenu className="gap-2">
+                                <SidebarMenu className="gap-4">
                                     {sidebarItems3.map((item) => (
                                         <SidebarMenuItem key={item.name} className="flex align-center justify-center">
-                                            {item.nav ? (
-                                                <SidebarMenuButton
-                                                    className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-background hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
-                                                    asChild
-                                                >
-                                                    <NavLink to={item.path}>
-                                                        {setIcon(item.name)}
-                                                    </NavLink>
-                                                </SidebarMenuButton>
-                                            ) : (
-                                                <SidebarMenuButton
-                                                    className={`${isAIOpen ? "ring ring-primary" : ""} bg-background !w-11 !h-11 transition duration-400 hover:bg-background hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
-                                                    onClick={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }}
-                                                    title="Abrir assistente V.IA"
-                                                >
-                                                    {setIcon(item.name)}
-                                                </SidebarMenuButton>
-                                            )}
+                                            <Tooltip>
+                                                <TooltipTrigger asChild>
+                                                    {item.nav ? (
+                                                        <SidebarMenuButton
+                                                            className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-background hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
+                                                            asChild
+                                                        >
+                                                            <NavLink to={item.path}>
+                                                                {setIcon(item.name)}
+                                                            </NavLink>
+                                                        </SidebarMenuButton>
+                                                    ) : (
+                                                        <SidebarMenuButton
+                                                            className={`${isAIOpen ? "ring ring-primary" : ""} bg-background !w-11 !h-11 transition duration-400 hover:bg-background hover:ring hover:ring-primary rounded-md flex items-center justify-center`}
+                                                            onClick={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }}
+                                                        >
+                                                            {setIcon(item.name)}
+                                                        </SidebarMenuButton>
+                                                    )}
+                                                </TooltipTrigger>
+                                                <TooltipContent side="right" className="bg-background text-primary rounded-lg" arrowClassName="bg-background fill-background">
+                                                    <p>{item.name === "Chat" ? "Assistente V.IA" : item.name}</p>
+                                                </TooltipContent>
+                                            </Tooltip>
                                         </SidebarMenuItem>
                                     ))}
                                 </SidebarMenu>
                             </SidebarGroupContent>
                         </SidebarGroup>
+                        </TooltipProvider>
                     </SidebarContent>
                 </Sidebar>
             )}

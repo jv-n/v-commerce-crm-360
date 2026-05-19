@@ -73,7 +73,7 @@ export function makeProductColumns(
         <button
           type="button"
           onClick={(e) => { e.stopPropagation(); onNavigate(p.id) }}
-          className="text-left hover:bg-[#F7EBFF] rounded-full px-2 py-0.5 transition-colors"
+          className="text-left hover:bg-[#CFA7FF] rounded-lg px-2 py-0.5 transition-colors"
         >
           <CellText value={p.name} truncate maxWidth="220px" />
         </button>

@@ -5,6 +5,10 @@ from pydantic import BaseModel, ConfigDict
 class ContactCreate(BaseModel):
     name: str
     email: str | None = None
+    phone: str | None = None
+    clientStatus: str | None = None
+    region: str | None = None
+    origin: str | None = None
 
 
 class ContactUpdate(BaseModel):

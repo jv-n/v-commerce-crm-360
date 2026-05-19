@@ -6,6 +6,7 @@ from app.schemas.productSchemas import (
     ProductSchema, ProductsPageOut, ProductCreate, ProductUpdate,
     ProductOrderOut, ProductTicketOut, ProductMonthlyRevenueOut,
     ProductActivityOut, ProductResumoOut,
+    ProductMonthlyNpsOut, ProductMonthlySalesOut,
 )
 from app.services.productService import ProductService
 
@@ -125,3 +126,13 @@ def get_product_tickets(product_id: str, db: Session = Depends(get_db)):
 @router.get("/{product_id}/monthly-revenue", response_model=list[ProductMonthlyRevenueOut])
 def get_product_monthly_revenue(product_id: str, db: Session = Depends(get_db)):
     return ProductService(db).get_product_monthly_revenue(product_id)
+
+
+@router.get("/{product_id}/monthly-nps", response_model=list[ProductMonthlyNpsOut])
+def get_product_monthly_nps(product_id: str, db: Session = Depends(get_db)):
+    return ProductService(db).get_product_monthly_nps(product_id)
+
+
+@router.get("/{product_id}/monthly-sales", response_model=list[ProductMonthlySalesOut])
+def get_product_monthly_sales(product_id: str, db: Session = Depends(get_db)):
+    return ProductService(db).get_product_monthly_sales(product_id)

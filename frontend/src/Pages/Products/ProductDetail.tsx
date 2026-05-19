@@ -4,21 +4,24 @@ import { ProductEditModal } from "./ProductEditModal"
 import { ProductResumoCard } from "./ProductResumoCard"
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew"
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined"
-import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined"
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined"
 import AutorenewOutlinedIcon from "@mui/icons-material/AutorenewOutlined"
 import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined"
 import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined"
-import { MdOutlineRequestQuote } from "react-icons/md"
+import KeyboardArrowLeftIcon from "@mui/icons-material/KeyboardArrowLeft"
+import KeyboardArrowRightIcon from "@mui/icons-material/KeyboardArrowRight"
+import { MdOutlineRequestQuote, MdPayments } from "react-icons/md"
 import {
   fetchProductById,
   fetchProductOrders,
   fetchProductTickets,
   fetchProductMonthlyRevenue,
   fetchProductActivities,
+  fetchProductMonthlyNps,
+  fetchProductMonthlySales,
 } from "@/lib/api/products"
 import type { Product, ProductCategory } from "@/types/product"
-import type { ProductOrder, ProductTicket, MonthlyRevenue, ProductActivity } from "@/lib/api/products"
+import type { ProductOrder, ProductTicket, MonthlyRevenue, MonthlyNps, MonthlySales, ProductActivity } from "@/lib/api/products"
 import { cn } from "@/lib/utils"
 import { CustomScrollArea } from "@/components/atoms/CustomScrollArea"
 
@@ -91,7 +94,7 @@ function StatusBadge({ status }: { status: string | null }) {
   )
 }
 
-function RevenueChart({ productName, data }: { productName: string; data: MonthlyRevenue[] }) {
+function RevenueChart({ data }: { data: MonthlyRevenue[] }) {
   const last6 = data.slice(-6)
   const max = Math.max(...last6.map(d => d.receita), 1)
   const TICKS = 5
@@ -101,11 +104,6 @@ function RevenueChart({ productName, data }: { productName: string; data: Monthl
 
   return (
     <div className="flex flex-col gap-3">
-      <div className="flex items-center gap-2">
-        <span className="px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-500 font-medium">{productName}</span>
-        <span className="px-3 py-1 rounded-full text-xs bg-gray-100 text-gray-500 font-medium">Últimos 6 meses</span>
-      </div>
-
       {last6.length === 0 ? (
         <p className="text-xs text-gray-400 py-6 text-center">Sem dados de receita.</p>
       ) : (
@@ -149,6 +147,102 @@ function RevenueChart({ productName, data }: { productName: string; data: Monthl
   )
 }
 
+const CHART_SUBTITLES = ["Receita mensal", "NPS médio por mês", "Quantidade vendida por mês"]
+
+function NpsChart({ data }: { data: MonthlyNps[] }) {
+  const last6 = data.slice(-6)
+  const tickValues = ["10", "8", "6", "4", "2", "0"]
+
+  return (
+    <div className="flex flex-col gap-3">
+      {last6.length === 0 ? (
+        <p className="text-xs text-gray-400 py-6 text-center">Sem dados de NPS.</p>
+      ) : (
+        <div className="flex gap-1" style={{ height: 220 }}>
+          <div className="flex flex-col justify-between pb-5 shrink-0" style={{ width: 28 }}>
+            {tickValues.map((v, i) => (
+              <span key={i} className="text-[8px] text-gray-400 text-right leading-none">{v}</span>
+            ))}
+          </div>
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex items-end gap-2 border-l border-b border-gray-300 pl-2 pb-0 overflow-hidden">
+              {last6.map(d => {
+                return (
+                  <div key={d.ano_mes} className="flex-1 flex items-end h-full">
+                    <div
+                      className="w-full bg-[#2563EB] rounded-t-sm"
+                      style={{ height: `${(d.nps_medio / 10) * 100}%`, minHeight: 4 }}
+                      title={d.nps_medio.toFixed(2)}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+            <div className="flex gap-2 mt-1 pl-2">
+              {last6.map(d => {
+                const [y, m] = d.ano_mes.split("-")
+                return (
+                  <div key={d.ano_mes} className="flex-1 text-center">
+                    <span className="text-[8px] text-gray-400 whitespace-nowrap">{m}/{y}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function MonthlySalesChart({ data }: { data: MonthlySales[] }) {
+  const last6 = data.slice(-6)
+  const max = Math.max(...last6.map(d => d.quantidade), 1)
+  const TICKS = 5
+  const tickValues = Array.from({ length: TICKS + 1 }, (_, i) =>
+    Math.round((max * (TICKS - i)) / TICKS)
+  )
+
+  return (
+    <div className="flex flex-col gap-3">
+      {last6.length === 0 ? (
+        <p className="text-xs text-gray-400 py-6 text-center">Sem dados de vendas.</p>
+      ) : (
+        <div className="flex gap-1" style={{ height: 220 }}>
+          <div className="flex flex-col justify-between pb-5 shrink-0" style={{ width: 44 }}>
+            {tickValues.map((v, i) => (
+              <span key={i} className="text-[8px] text-gray-400 text-right leading-none">{v}</span>
+            ))}
+          </div>
+          <div className="flex-1 flex flex-col min-w-0">
+            <div className="flex-1 flex items-end gap-2 border-l border-b border-gray-300 pl-2 pb-0 overflow-hidden">
+              {last6.map(d => (
+                <div key={d.ano_mes} className="flex-1 flex items-end h-full">
+                  <div
+                    className="w-full bg-[#2563EB] rounded-t-sm"
+                    style={{ height: `${(d.quantidade / max) * 100}%`, minHeight: 4 }}
+                    title={String(Math.round(d.quantidade))}
+                  />
+                </div>
+              ))}
+            </div>
+            <div className="flex gap-2 mt-1 pl-2">
+              {last6.map(d => {
+                const [y, m] = d.ano_mes.split("-")
+                return (
+                  <div key={d.ano_mes} className="flex-1 text-center">
+                    <span className="text-[8px] text-gray-400 whitespace-nowrap">{m}/{y}</span>
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
 // ── page ─────────────────────────────────────────────────────────────────────
 
 export default function ProductDetail() {
@@ -158,12 +252,15 @@ export default function ProductDetail() {
   const [product,  setProduct]  = useState<Product | null>(null)
   const [orders,   setOrders]   = useState<ProductOrder[]>([])
   const [tickets,  setTickets]  = useState<ProductTicket[]>([])
-  const [revenue,     setRevenue]     = useState<MonthlyRevenue[]>([])
-  const [activities,  setActivities]  = useState<ProductActivity[]>([])
-  const [loading,     setLoading]     = useState(true)
-  const [error,    setError]    = useState(false)
-  const [tab,      setTab]      = useState<"informacoes" | "atividades">("informacoes")
-  const [editOpen, setEditOpen] = useState(false)
+  const [revenue,    setRevenue]    = useState<MonthlyRevenue[]>([])
+  const [npsData,    setNpsData]    = useState<MonthlyNps[]>([])
+  const [salesData,  setSalesData]  = useState<MonthlySales[]>([])
+  const [activities, setActivities] = useState<ProductActivity[]>([])
+  const [loading,    setLoading]    = useState(true)
+  const [error,      setError]      = useState(false)
+  const [tab,        setTab]        = useState<"informacoes" | "atividades">("informacoes")
+  const [chartIndex, setChartIndex] = useState(0)
+  const [editOpen,   setEditOpen]   = useState(false)
   const [idCopied, setIdCopied] = useState(false)
 
   const handleCopyId = () => {
@@ -193,6 +290,9 @@ export default function ProductDetail() {
       })
       .catch(() => setError(true))
       .finally(() => setLoading(false))
+
+    fetchProductMonthlyNps(id).then(setNpsData).catch(() => {})
+    fetchProductMonthlySales(id).then(setSalesData).catch(() => {})
   }, [id])
 
   if (loading) {
@@ -423,17 +523,37 @@ export default function ProductDetail() {
 
               {/* Métricas */}
               <div className="rounded-xl border border-[#E5E5E5] shadow-[0_0_4px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden">
-                <div className="flex items-center justify-center px-5 py-4">
+                <div className="flex items-center justify-between px-4 py-4">
+                  <button
+                    onClick={() => setChartIndex(i => (i - 1 + 3) % 3)}
+                    className="flex items-center justify-center bg-[#F0DDFD] hover:bg-[#EACAFF] transition-colors text-gray-900"
+                    style={{ width: 26, height: 26, borderRadius: '5.78px', border: '0.72px solid #D1B1E5' }}
+                  >
+                    <KeyboardArrowLeftIcon sx={{ fontSize: 16 }} />
+                  </button>
                   <span className="text-base font-bold text-gray-900">Métricas do produto</span>
+                  <button
+                    onClick={() => setChartIndex(i => (i + 1) % 3)}
+                    className="flex items-center justify-center bg-[#F0DDFD] hover:bg-[#EACAFF] transition-colors text-gray-900"
+                    style={{ width: 26, height: 26, borderRadius: '5.78px', border: '0.72px solid #D1B1E5' }}
+                  >
+                    <KeyboardArrowRightIcon sx={{ fontSize: 16 }} />
+                  </button>
                 </div>
                 <hr className="border-[#E5E5E5] mx-5" />
                 <div className="p-4">
                   <div className="rounded-xl border border-gray-200 p-4 flex flex-col gap-3">
                     <div className="flex items-center gap-2">
-                      <BarChartOutlinedIcon sx={{ fontSize: 18, color: "#9F83B2" }} />
-                      <span className="text-sm font-semibold text-gray-400">Receita mensal</span>
+                      <MdPayments size={18} color="#9F83B2" />
+                      <span className="text-sm font-semibold text-[#9F83B2]">{CHART_SUBTITLES[chartIndex]}</span>
                     </div>
-                    <RevenueChart productName={product.name} data={revenue} />
+                    <div className="flex items-center" style={{ gap: '4.07px' }}>
+                      <span className="text-[10px] text-gray-600 font-medium" style={{ backgroundColor: '#E7DEED', borderRadius: '2.71px', padding: '0.68px 5.43px' }}>{product.name}</span>
+                      <span className="text-[10px] text-gray-600 font-medium" style={{ backgroundColor: '#E7DEED', borderRadius: '2.71px', padding: '0.68px 5.43px' }}>Últimos 6 meses</span>
+                    </div>
+                    {chartIndex === 0 && <RevenueChart data={revenue} />}
+                    {chartIndex === 1 && <NpsChart data={npsData} />}
+                    {chartIndex === 2 && <MonthlySalesChart data={salesData} />}
                   </div>
                 </div>
               </div>

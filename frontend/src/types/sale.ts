@@ -1,4 +1,6 @@
-export type SaleStatus = "Aprovado" | "Processando" | "Recusado" | "Reembolsado"
+export type SaleStatus =
+  | "Aprovado" | "Processando" | "Recusado" | "Reembolsado"
+  | "Em rota" | "Entregue" | "Entregue com Atraso" | "Cancelado"
 
 export interface Sale {
   id: string

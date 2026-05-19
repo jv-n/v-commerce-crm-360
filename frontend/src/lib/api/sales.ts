@@ -18,6 +18,10 @@ interface SalesParams {
   data_to?: string
   search?: string
   search_field?: string
+  nome_cliente?: string
+  nome_produto?: string
+  sortKey?: string
+  sortDir?: "asc" | "desc"
 }
 
 interface RawSale {
@@ -32,7 +36,10 @@ interface RawSale {
   status: string | null
 }
 
-const VALID_STATUSES = new Set<SaleStatus>(["Aprovado", "Processando", "Recusado", "Reembolsado"])
+const VALID_STATUSES = new Set<SaleStatus>([
+  "Aprovado", "Processando", "Recusado", "Reembolsado",
+  "Em rota", "Entregue", "Entregue com Atraso", "Cancelado",
+])
 
 function formatDate(raw: string | null): string {
   if (!raw) return ""
@@ -55,7 +62,7 @@ function toSale(raw: RawSale): Sale {
     date:           formatDate(raw.data_pedido),
     status:         VALID_STATUSES.has(raw.status as SaleStatus)
                       ? (raw.status as SaleStatus)
-                      : "Aprovado",
+                      : "Processando",
     payment_method: raw.metodo_pagamento ?? "",
   }
 }
@@ -138,6 +145,10 @@ export async function fetchSales(params: SalesParams): Promise<SalesPage> {
     ...(params.data_to          ? { data_to:          params.data_to          } : {}),
     ...(params.search           ? { search:           params.search           } : {}),
     ...(params.search_field && params.search_field !== "all" ? { search_field: params.search_field } : {}),
+    ...(params.nome_cliente     ? { nome_cliente:     params.nome_cliente     } : {}),
+    ...(params.nome_produto     ? { nome_produto:     params.nome_produto     } : {}),
+    ...(params.sortKey          ? { sort_key:         params.sortKey          } : {}),
+    ...(params.sortDir          ? { sort_dir:         params.sortDir          } : {}),
   })
 
   const res = await fetch(`/api/sales/?${query}`)

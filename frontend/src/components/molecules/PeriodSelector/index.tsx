@@ -1,6 +1,6 @@
 import { useState } from "react"
-import CloseIcon from "@mui/icons-material/Close"
 import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md"
+import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,17 +59,10 @@ export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
   return (
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
-        <button className={cn(
-          "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl border transition-colors",
-          isActive
-            ? "bg-purple-100 border-purple-300 text-gray-900 font-medium"
-            : "border-transparent text-gray-900 hover:bg-purple-100 hover:border-purple-300"
-        )}>
+        <button className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl border border-transparent text-gray-900 hover:bg-purple-100 hover:border-purple-300 transition-colors">
+          <CalendarTodayOutlinedIcon sx={{ fontSize: 14 }} />
           <span>{currentLabel}</span>
-          {isActive
-            ? <CloseIcon sx={{ fontSize: 13 }} onClick={clearToDefault} />
-            : open ? <MdKeyboardArrowUp size={14} /> : <MdKeyboardArrowDown size={14} />
-          }
+          {open ? <MdKeyboardArrowUp size={14} /> : <MdKeyboardArrowDown size={14} />}
         </button>
       </DropdownMenuTrigger>
 
@@ -77,7 +70,10 @@ export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
         {PERIOD_OPTIONS.map((option) => (
           <DropdownMenuItem
             key={option.type}
-            className={cn(value.type === option.type && "bg-muted font-semibold")}
+            className={cn(
+              "focus:bg-purple-100 focus:text-gray-900",
+              value.type === option.type && "bg-[#EACAFF] font-medium focus:bg-[#EACAFF]"
+            )}
             onSelect={() => { onChange({ type: option.type }); setOpen(false) }}
           >
             {option.label}

@@ -36,7 +36,7 @@ export default function AppNavbar({ onOpenAI }: AppNavbarProps) {
                 <Dropdown title="Settings" buttonIcon={<SettingsOutlinedIcon sx={{color: "#74FF60"}}/>} menuItems={["Preferences", "Help"]} />
                 <Dropdown title="Notifications" buttonIcon={hasUnreadNotifications()} menuItems={["Notification 1", "Notification 2", "Notification 3"]} onOpenChange={(open) => { if(open) markNotificationsAsRead()}} />
                 <Separator orientation="vertical" className="bg-foreground/30" />
-                <UserMenu name={user?.name ?? "Usuário"} role={user?.role} onLogout={handleLogout} />
+                <UserMenu name={user?.name ?? "Usuário"} email={user?.email} role={user?.role} onLogout={handleLogout} />
             </div>
         </div>
     );

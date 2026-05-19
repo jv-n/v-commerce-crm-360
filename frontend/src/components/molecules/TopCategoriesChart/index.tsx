@@ -88,7 +88,7 @@ export function TopCategoriesChart({ period }: Props) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-[#A195A9] text-[1rem] font-bold">
-          <LeaderboardOutlinedIcon style={{ fontSize: 18 }} />
+          <LeaderboardOutlinedIcon style={{ fontSize: 22 }} />
           Categorias de produtos
         </div>
         <div className="flex items-center gap-2">

@@ -124,7 +124,7 @@ export function NumberRangeDropdown({ current, onApply, onClear, minBound, maxBo
             }
             onApply(clamp(min, minBound, maxBound), clamp(max, minBound, maxBound))
           }}
-          className="flex-1 bg-[#F7EBFF] border border-[#D1B1E5] text-black rounded-md py-1.5 text-xs font-medium hover:bg-[#F0DDFD] hover:border-[#9e72b8] active:bg-[#c99aee] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#EACAFF] disabled:hover:border-[#B899CC]"
+          className="flex-1 bg-[#F7EBFF] border border-[#D1B1E5] text-black rounded-md py-1.5 text-xs font-medium hover:bg-[#CFA7FF] hover:border-[#8C4ADD] active:bg-[#c99aee] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#EACAFF] disabled:hover:border-[#B899CC]"
         >
           Aplicar
         </button>

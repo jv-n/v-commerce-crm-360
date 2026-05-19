@@ -22,8 +22,17 @@ _TRACKED_FIELDS: list[tuple[str, str, str]] = [
 ]
 
 _TAB_STATUSES: dict[str, list[str]] = {
-    "concluded": ["Aprovado"],
-    "returned":  ["Reembolsado", "Recusado"],
+    "concluded": ["Entregue", "Entregue com Atraso", "Reembolsado"],
+    "pending":   ["Aprovado", "Em rota"],
+    "failed":    ["Recusado", "Cancelado"],
+}
+
+_SORT_COLUMNS = {
+    "client":   "nome_cliente",
+    "product":  "nome_produto",
+    "value":    "valor_pedido",
+    "amount":   "quantidade",
+    "saleDate": "data_pedido",
 }
 
 
@@ -42,6 +51,8 @@ class SaleService:
         data_to: str = "",
         search: str = "",
         search_field: str = "all",
+        nome_cliente: str = "",
+        nome_produto: str = "",
     ):
         query = self.db.query(GoldPedidoDetalhado)
 
@@ -59,15 +70,17 @@ class SaleService:
             query = query.filter(GoldPedidoDetalhado.data_pedido >= data_from)
         if data_to:
             query = query.filter(GoldPedidoDetalhado.data_pedido <= data_to)
+        if nome_cliente:
+            query = query.filter(GoldPedidoDetalhado.nome_cliente.ilike(f"%{nome_cliente}%"))
+        if nome_produto:
+            query = query.filter(GoldPedidoDetalhado.nome_produto.ilike(f"%{nome_produto}%"))
         if search:
-            pattern = f"%{search}%"
-            if search_field == "client":
-                query = query.filter(GoldPedidoDetalhado.nome_cliente.ilike(pattern))
-            elif search_field == "product":
-                query = query.filter(GoldPedidoDetalhado.nome_produto.ilike(pattern))
+            if search_field == "sale_id":
+                query = query.filter(GoldPedidoDetalhado.id_pedido.ilike(f"%{search}%"))
             elif search_field == "client_id":
                 query = query.filter(GoldPedidoDetalhado.id_cliente == search)
             else:
+                pattern = f"%{search}%"
                 query = query.filter(or_(
                     GoldPedidoDetalhado.nome_cliente.ilike(pattern),
                     GoldPedidoDetalhado.nome_produto.ilike(pattern),
@@ -88,14 +101,22 @@ class SaleService:
         data_to: str = "",
         search: str = "",
         search_field: str = "all",
+        nome_cliente: str = "",
+        nome_produto: str = "",
+        sort_key: str = "",
+        sort_dir: str = "desc",
     ) -> SalesPageOut:
-        query = self._base_query(tab, status, metodo_pagamento, categoria, ano_mes, data_from, data_to, search, search_field)
+        query = self._base_query(tab, status, metodo_pagamento, categoria, ano_mes, data_from, data_to, search, search_field, nome_cliente, nome_produto)
 
         total = query.count()
 
+        col_name = _SORT_COLUMNS.get(sort_key, "data_pedido")
+        col = getattr(GoldPedidoDetalhado, col_name)
+        order = col.asc() if sort_dir == "asc" else col.desc()
+
         rows = (
             query
-            .order_by(GoldPedidoDetalhado.data_pedido.desc())
+            .order_by(order)
             .offset((page - 1) * page_size)
             .limit(page_size)
             .all()
