@@ -16,7 +16,7 @@ export function TabButton({ label, isActive, onClick, count }: TabButtonProps) {
         "flex items-center gap-2 px-4 py-3.5 text-sm font-medium border-b-2 -mb-px transition-colors",
         isActive
           ? "border-gray-800 text-gray-900"
-          : "border-transparent text-gray-900 hover:bg-[#CFA7FF]"
+          : "border-transparent text-gray-900 hover:bg-[#F0DDFD]"
       )}
     >
       <MdOutlineTableChart size={15} />
