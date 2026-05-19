@@ -122,6 +122,10 @@ function toContact(raw: RawContact): Contact {
 export interface ContactFormData {
   name: string
   email?: string
+  phone?: string
+  clientStatus?: string
+  region?: string
+  origin?: string
 }
 
 export async function createContact(data: ContactFormData): Promise<Contact> {
