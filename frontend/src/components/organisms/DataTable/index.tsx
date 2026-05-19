@@ -56,6 +56,7 @@ export function DataTable<T,>({
   onSearchChange,
   headerClassName,
   rowClassName,
+  getRowClassName,
   expandedRowClassName,
   dividersClassName,
   expandedRowIds,
@@ -70,9 +71,11 @@ export function DataTable<T,>({
   extraActiveFilterCount = 0,
   onClearExtraFilters,
   onSelectionChange,
+  initialSearchQuery = "",
+  initialSearchOpen = false,
 }: DataTableProps<T>) {
-  const [searchOpen, setSearchOpen] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
+  const [searchOpen, setSearchOpen] = useState(initialSearchOpen || !!initialSearchQuery)
+  const [searchQuery, setSearchQuery] = useState(initialSearchQuery)
 
   const handleSearchChange = (q: string) => {
     setSearchQuery(q)
@@ -370,6 +373,7 @@ export function DataTable<T,>({
           onToggleRow={selection.toggleRow}
           headerClassName={headerClassName}
           rowClassName={rowClassName}
+          getRowClassName={getRowClassName}
           expandedRowClassName={expandedRowClassName}
           dividersClassName={dividersClassName}
           expandedRowIds={expandedRowIds}

@@ -4,19 +4,13 @@ from sqlalchemy.orm import Mapped, mapped_column
 from database.database import Base
 
 
-class DimCliente(Base):
-    __tablename__ = "dim_clientes"
-
-    id_cliente: Mapped[str]       = mapped_column(String, primary_key=True)
-    telefone:   Mapped[str | None] = mapped_column(String, nullable=True)
-
-
 class GoldCliente360(Base):
     __tablename__ = "gold_cliente_360"
 
     id_cliente:                Mapped[str]         = mapped_column(String,  primary_key=True)
     nome_completo:             Mapped[str | None]   = mapped_column(String,  nullable=True)
     email:                     Mapped[str | None]   = mapped_column(String,  nullable=True)
+    telefone:                  Mapped[str | None]   = mapped_column(String,  nullable=True)
     genero:                    Mapped[str | None]   = mapped_column(String,  nullable=True)
     faixa_etaria:              Mapped[str | None]   = mapped_column(String,  nullable=True)
     regiao:                    Mapped[str | None]   = mapped_column(String,  nullable=True)

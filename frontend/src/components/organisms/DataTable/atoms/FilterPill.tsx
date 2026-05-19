@@ -29,7 +29,7 @@ export function FilterPill({
       <button
         onClick={onToggle}
         className={cn(
-          "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md transition-colors",
+          "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-full transition-colors",
           isActive
             ? "bg-purple-50 text-purple-700 font-medium"
             : "text-gray-900 hover:bg-[#F7EBFF]"

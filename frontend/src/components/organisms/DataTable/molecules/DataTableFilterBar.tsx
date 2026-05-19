@@ -51,7 +51,7 @@ export function DataTableFilterBar({
           <div className="relative" ref={ref}>
           <button
             onClick={() => setDropdownOpen(o => !o)}
-            className="p-1.5 text-gray-900 hover:text-gray-900 rounded-md hover:bg-[#F7EBFF]"
+            className="p-1.5 text-gray-900 hover:text-gray-900 rounded-full hover:bg-[#F7EBFF]"
           >
             <AddIcon sx={{ fontSize: 14 }} />
           </button>

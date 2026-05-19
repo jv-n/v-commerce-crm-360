@@ -1,5 +1,5 @@
 import type { Column } from "@/components/organisms/DataTable/types"
-import { RowExpandButton } from "@/components/organisms/DataTable/atoms/RowExpandButton"
+import { OpenCircleButton } from "@/components/atoms/open-circle-button"
 import { CellText }        from "@/components/organisms/DataTable/atoms/CellText"
 import { CellDouble }      from "@/components/organisms/DataTable/atoms/CellDouble"
 import { CellTag }         from "@/components/organisms/DataTable/atoms/CellTag"
@@ -7,6 +7,13 @@ import AccessTimeOutlinedIcon  from "@mui/icons-material/AccessTimeOutlined"
 import ArrowForwardIcon         from "@mui/icons-material/ArrowForward"
 import { ClientStatusBadge, ALL_CLIENT_STATUSES } from "./ClientStatusBadge"
 import type { Contact, EngagementType, ClientStatusType } from "@/types/contact"
+
+function formatPhone(phone: string): string {
+  const d = phone.replace(/\D/g, "")
+  if (d.length === 11) return `(${d.slice(0,2)})${d.slice(2,7)}-${d.slice(7)}`
+  if (d.length === 10) return `(${d.slice(0,2)})${d.slice(2,6)}-${d.slice(6)}`
+  return phone
+}
 
 const ENGAGEMENT_COLORS: Record<EngagementType, string> = {
   "Promotor":     "bg-green-50 text-green-700",
@@ -17,7 +24,7 @@ const ENGAGEMENT_COLORS: Record<EngagementType, string> = {
 
 export function makeContactColumns(
   expandedRowId: string | null,
-  onToggle: (id: string) => void,
+  _onToggle: (id: string) => void,
   onNavigate: (id: string) => void,
 ): Column<Contact>[] {
   return [
@@ -25,7 +32,12 @@ export function makeContactColumns(
   {
     key: "info",
     header: "",
-    render: (c) => <RowExpandButton expanded={expandedRowId === c.id} />,
+    minWidth: "30px",
+    render: (c) => (
+      <div className={expandedRowId === c.id ? "inline-flex rotate-90 transition-transform duration-200" : "inline-flex transition-transform duration-200"}>
+        <OpenCircleButton title={expandedRowId === c.id ? "Fechar detalhes do contato" : "Abrir detalhes do contato"} />
+      </div>
+    ),
   },
 
   // ── Nome ───────────────────────────────────────────────────────────────────
@@ -37,9 +49,13 @@ export function makeContactColumns(
     sortValue: (c) => c.name ?? "",
     copyId: (c) => c.id,
     render: (c) => (
-      <span className="text-sm text-[#06121C] truncate block max-w-[200px]">
-        {c.name}
-      </span>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onNavigate(c.id) }}
+        className="text-left hover:bg-[#F7EBFF] rounded-full px-2 py-0.5 transition-colors"
+      >
+        <CellText value={c.name} truncate maxWidth="200px" />
+      </button>
     ),
   },
 
@@ -102,7 +118,11 @@ export function makeContactColumns(
     render: (c) => (
       <CellDouble
         top={c.email ?? "—"}
-        bottom={c.phone ?? undefined}
+        bottom={
+          c.phone
+            ? <span className="text-[#06121C]">{formatPhone(c.phone)}</span>
+            : "—"
+        }
       />
     ),
   },
@@ -147,13 +167,14 @@ export function makeContactColumns(
     key: "navigate",
     header: "",
     render: (c) => (
-      <div
+      <button
+        type="button"
         onClick={(e) => { e.stopPropagation(); onNavigate(c.id) }}
-        className="flex justify-center items-center w-[2.2rem] h-[2.2rem] rounded-md bg-[#F7EBFF] border border-[#D1B1E5] hover:bg-[#F0D4FF] cursor-pointer transition-colors"
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D1B1E5] bg-[#F7EBFF] transition-colors hover:bg-[#F0DDFD]"
         title="Ver detalhe do contato"
       >
-        <ArrowForwardIcon sx={{ color: "#06121C" }} />
-      </div>
+        <ArrowForwardIcon sx={{ fontSize: 16, color: "#06121C" }} />
+      </button>
     ),
   },
   ]

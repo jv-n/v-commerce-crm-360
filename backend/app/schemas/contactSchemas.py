@@ -19,7 +19,7 @@ class ContactOut(BaseModel):
     id: str
     name: str | None
     email: str | None
-    phone: str | None           # não existe em gold_cliente_360 — sempre None
+    phone: str | None           # telefone (gold_cliente_360.telefone)
 
     # Segmentação e origem
     clientStatus: str | None    # segmento_cliente
@@ -54,6 +54,15 @@ class ContactsPageOut(BaseModel):
     total: int
     page: int
     pageSize: int
+
+
+class ContactPedidoOut(BaseModel):
+    id_pedido: str
+    nome_produto: str | None
+    quantidade: float | None
+    valor_pedido: float | None
+    metodo_pagamento: str | None
+    data_pedido: str | None
 
 
 class ContactResumoOut(BaseModel):

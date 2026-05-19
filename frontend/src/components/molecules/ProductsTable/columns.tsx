@@ -1,5 +1,5 @@
 import type { Column } from "@/components/organisms/DataTable/types"
-import { RowExpandButton } from "@/components/organisms/DataTable/atoms/RowExpandButton"
+import { OpenCircleButton } from "@/components/atoms/open-circle-button"
 import { CellText }        from "@/components/organisms/DataTable/atoms/CellText"
 import { CellTag }         from "@/components/organisms/DataTable/atoms/CellTag"
 import type { Product, ProductCategory } from "@/types/product"
@@ -42,13 +42,20 @@ export function makeProductColumns(
     {
       key: "info",
       header: (
-        <RowExpandButton
-          expanded={allExpanded}
-          onClick={(e) => { e.stopPropagation(); onToggleAll() }}
-        />
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className={allExpanded ? "inline-flex rotate-90 transition-transform duration-200" : "inline-flex transition-transform duration-200"}
+        >
+          <OpenCircleButton
+            title={allExpanded ? "Fechar todos" : "Abrir todos"}
+            onClick={() => onToggleAll()}
+          />
+        </div>
       ),
       render: (p) => (
-        <RowExpandButton expanded={expandedRowIds.has(p.id)} />
+        <div className={expandedRowIds.has(p.id) ? "inline-flex rotate-90 transition-transform duration-200" : "inline-flex transition-transform duration-200"}>
+          <OpenCircleButton title={expandedRowIds.has(p.id) ? "Fechar detalhes do produto" : "Abrir detalhes do produto"} />
+        </div>
       ),
     },
 
@@ -65,7 +72,15 @@ export function makeProductColumns(
       minWidth: "180px",
       sortable: true,
       copyId: (p) => p.id,
-      render: (p) => <CellText value={p.name} truncate maxWidth="220px" />,
+      render: (p) => (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onNavigate(p.id) }}
+          className="text-left hover:bg-[#F7EBFF] rounded-full px-2 py-0.5 transition-colors"
+        >
+          <CellText value={p.name} truncate maxWidth="220px" />
+        </button>
+      ),
     },
 
     {
@@ -177,7 +192,7 @@ export function makeProductColumns(
           onClick={(e) => { e.stopPropagation(); onNavigate(p.id) }}
           className={cn(
             "flex items-center justify-center w-8 h-8 rounded-lg",
-            "border border-[#D1B1E5] bg-[#F7EBFF] hover:bg-purple-100 transition-colors"
+            "border border-[#D1B1E5] bg-[#F7EBFF] hover:bg-[#F0DDFD] transition-colors"
           )}
         >
           <ArrowForwardIcon sx={{ fontSize: 16, color: "#06121C" }} />

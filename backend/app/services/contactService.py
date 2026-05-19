@@ -58,7 +58,7 @@ def _to_contact_out(g: GoldCliente360) -> ContactOut:
         id=g.id_cliente,
         name=g.nome_completo,
         email=g.email,
-        phone=None,
+        phone=str(g.telefone) if g.telefone is not None else None,
         clientStatus=g.segmento_cliente,
         region=g.regiao,
         origin=g.origem,
@@ -82,6 +82,26 @@ def _to_contact_out(g: GoldCliente360) -> ContactOut:
 class ContactService:
     def __init__(self, db: Session = Depends(get_db)):
         self.db = db
+
+    def get_last_pedidos(self, id_cliente: str, limit: int = 3) -> list[dict]:
+        rows = (
+            self.db.query(GoldPedidoDetalhado)
+            .filter(GoldPedidoDetalhado.id_cliente == id_cliente)
+            .order_by(GoldPedidoDetalhado.data_pedido.desc())
+            .limit(limit)
+            .all()
+        )
+        return [
+            {
+                "id_pedido": r.id_pedido,
+                "nome_produto": r.nome_produto,
+                "quantidade": float(r.quantidade) if r.quantidade is not None else None,
+                "valor_pedido": float(r.valor_pedido) if r.valor_pedido is not None else None,
+                "metodo_pagamento": r.metodo_pagamento,
+                "data_pedido": _fmt_date(r.data_pedido),
+            }
+            for r in rows
+        ]
 
     def _apply_filters(self, query, tab, search, purchases_min, purchases_max,
                        created_year, engagement, client_status,
@@ -242,7 +262,7 @@ class ContactService:
         self.db.add(gold)
         self.db.commit()
         self.db.refresh(gold)
-        return _to_contact_out(gold, phone=None)
+        return _to_contact_out(gold)
 
     def update_contact(self, contact_id: str, data: ContactUpdate) -> ContactOut | None:
         gold = self.db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()

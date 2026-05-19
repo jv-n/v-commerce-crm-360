@@ -1,7 +1,6 @@
 import { Field } from "@/components/atoms/field";
 import UserMenu from "../UserMenu";
 import SettingsOutlinedIcon from '@mui/icons-material/SettingsOutlined';
-import NotificationImportantOutlinedIcon from '@mui/icons-material/NotificationImportantOutlined';
 import NotificationsOutlinedIcon from '@mui/icons-material/NotificationsOutlined';
 import AddOutlinedIcon from '@mui/icons-material/AddOutlined';
 import { useState } from "react"
@@ -27,11 +26,8 @@ export default function AppNavbar({ onOpenAI }: AppNavbarProps) {
     const [unreadNotifications, setUnreadNotifications] = useState(4);
 
     const hasUnreadNotifications = () => {
-        if(unreadNotifications > 0) {
-            return <NotificationImportantOutlinedIcon sx={{ color: "#74FF60" }} />;
-        } else {
-            return <NotificationsOutlinedIcon sx={{ color: "#74FF60" }} />;
-        }
+        
+        return <NotificationsOutlinedIcon sx={{ color: "#74FF60" }} />;
     }
 
     const markNotificationsAsRead = () => {

@@ -71,7 +71,7 @@ export function DataTablePagination({
                     "w-full text-left px-3 py-2 text-sm transition-colors",
                     n === rowsPerPage
                       ? "bg-white border-y border-black text-gray-900 font-medium"
-                      : "text-gray-900 hover:bg-[#EACAFF]"
+                      : "text-gray-900 hover:bg-[#F7EBFF]"
                   )}
                 >
                   {n}
@@ -87,7 +87,7 @@ export function DataTablePagination({
         {totalWindows > 1 && pageWindow > 0 && (
           <button
             onClick={() => onPageChange((pageWindow - 1) * WINDOW_SIZE + 1)}
-            className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600"
+            className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-black"
           >
             <KeyboardDoubleArrowLeftIcon sx={{ fontSize: 18 }} />
           </button>
@@ -96,7 +96,7 @@ export function DataTablePagination({
         <button
           onClick={() => onPageChange(currentPage - 1)}
           disabled={currentPage === 1}
-          className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-black disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <KeyboardArrowLeftIcon sx={{ fontSize: 18 }} />
         </button>
@@ -108,8 +108,8 @@ export function DataTablePagination({
             className={cn(
               "w-8 h-8 text-sm rounded transition-colors",
               currentPage === page
-                ? "bg-[#F7EBFF] border border-[#D1B1E5] text-gray-600"
-                : "text-gray-600 hover:bg-[#EACAFF]"
+                ? "bg-[#F7EBFF] border border-[#D1B1E5] text-black"
+                : "text-black hover:bg-[#EACAFF]"
             )}
           >
             {page}
@@ -119,7 +119,7 @@ export function DataTablePagination({
         <button
           onClick={() => onPageChange(currentPage + 1)}
           disabled={currentPage === totalPages}
-          className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600 disabled:opacity-30 disabled:cursor-not-allowed"
+          className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-black disabled:opacity-30 disabled:cursor-not-allowed"
         >
           <KeyboardArrowRightIcon sx={{ fontSize: 18 }} />
         </button>
@@ -127,7 +127,7 @@ export function DataTablePagination({
         {totalWindows > 1 && pageWindow < totalWindows - 1 && (
           <button
             onClick={() => onPageChange((pageWindow + 1) * WINDOW_SIZE + 1)}
-            className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-gray-600"
+            className="p-1.5 rounded hover:bg-[#EACAFF] transition-colors text-black"
           >
             <KeyboardDoubleArrowRightIcon sx={{ fontSize: 18 }} />
           </button>

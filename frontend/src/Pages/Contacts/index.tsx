@@ -1,38 +1,37 @@
-import { useState, useCallback } from "react"
+import { useRef, useState } from "react"
 import { ContactsTable } from "@/components/molecules/ContactsTable"
+import type { ContactsTableHandle } from "@/components/molecules/ContactsTable"
 import AddCircleOutlinedIcon from "@mui/icons-material/AddCircleOutlined"
 import IosShareOutlinedIcon from "@mui/icons-material/IosShareOutlined"
+import UndoIcon from "@mui/icons-material/Undo"
+import RefreshIcon from "@mui/icons-material/Refresh"
+import { cn } from "@/lib/utils"
 
 export default function Contacts() {
-  const [openAdd,        setOpenAdd]        = useState<(() => void) | null>(null)
-  const [openExport,     setOpenExport]     = useState<(() => void) | null>(null)
-  const [switchToLeads,  setSwitchToLeads]  = useState<(() => void) | null>(null)
-
-  const handleOpenAdd       = useCallback((fn: () => void) => { setOpenAdd(() => fn)       }, [])
-  const handleOpenExport    = useCallback((fn: () => void) => { setOpenExport(() => fn)    }, [])
-  const handleSwitchToLeads = useCallback((fn: () => void) => { setSwitchToLeads(() => fn) }, [])
+  const tableRef = useRef<ContactsTableHandle>(null)
+  const [canUndo, setCanUndo] = useState(false)
 
   return (
-    <div className="relative p-6 flex-1 flex flex-col gap-5 bg-white rounded-xl overflow-auto">
+    <div className="relative p-6 h-full flex flex-col gap-5 bg-white min-h-full rounded-xl">
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Contatos</h1>
         <div className="flex items-center gap-2">
           <button
-            onClick={() => openExport?.()}
+            onClick={() => tableRef.current?.openExport()}
             className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors"
           >
             <IosShareOutlinedIcon sx={{ fontSize: 16 }} />
             Exportar
           </button>
           <button
-            onClick={() => switchToLeads?.()}
+            onClick={() => tableRef.current?.switchToLeads()}
             className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors"
           >
             Leads
           </button>
           <button
-            onClick={() => openAdd?.()}
-            className="flex items-center gap-2 bg-[#F7EBFF] border border-[#D1B1E5] rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors"
+            onClick={() => tableRef.current?.openAdd()}
+            className="flex items-center gap-2 bg-[#F7EBFF] border border-[#D1B1E5] rounded-lg px-4 py-2 text-sm font-medium text-gray-700 hover:bg-[#F0DDFD] shadow-sm transition-colors"
           >
             <AddCircleOutlinedIcon sx={{ fontSize: 18 }} />
             Adicionar contato
@@ -40,11 +39,29 @@ export default function Contacts() {
         </div>
       </div>
 
-      <ContactsTable
-        onOpenAdd={handleOpenAdd}
-        onOpenExport={handleOpenExport}
-        onSwitchToLeads={handleSwitchToLeads}
-      />
+      <ContactsTable ref={tableRef} onCanUndoChange={setCanUndo} />
+
+      <div className="fixed bottom-6 right-6 flex items-center gap-2 z-50">
+        <button
+          onClick={() => tableRef.current?.undo()}
+          disabled={!canUndo}
+          title="Desfazer último filtro"
+          className={cn(
+            "flex items-center justify-center transition-all",
+            canUndo ? "text-gray-900 hover:opacity-70" : "text-gray-300 cursor-not-allowed"
+          )}
+        >
+          <UndoIcon sx={{ fontSize: 22 }} />
+        </button>
+
+        <button
+          onClick={() => tableRef.current?.reset()}
+          title="Resetar tabela"
+          className="flex items-center justify-center text-gray-900 hover:opacity-70 transition-all"
+        >
+          <RefreshIcon sx={{ fontSize: 22 }} />
+        </button>
+      </div>
     </div>
   )
 }

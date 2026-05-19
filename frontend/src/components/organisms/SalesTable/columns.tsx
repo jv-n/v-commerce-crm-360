@@ -4,7 +4,7 @@ import { CellTag }  from "@/components/organisms/DataTable/atoms/CellTag"
 import { StatusBadge } from "./tableComponents/badge"
 import { OpenCircleButton } from "@/components/atoms/open-circle-button"
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward"
-import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined"
+
 import type { Sale, SaleStatus } from "@/types/sale"
 import type { ProductCategory } from "@/types/product"
 
@@ -45,7 +45,10 @@ export function getSaleColumns(
       render: (sale) => {
         const isExpanded = expandedRowIds.has(sale.id)
         return (
-          <div className={isExpanded ? "inline-flex rotate-90 transition-transform duration-200" : "inline-flex transition-transform duration-200"}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className={isExpanded ? "inline-flex rotate-90 transition-transform duration-200" : "inline-flex transition-transform duration-200"}
+          >
             <OpenCircleButton
               title={isExpanded ? "Fechar histórico do pedido" : "Abrir histórico do pedido"}
               onClick={() => onToggleExpand(sale.id)}
@@ -110,14 +113,9 @@ export function getSaleColumns(
         },
       },
       render: (c) =>
-        c.date ? (
-          <div className="flex items-center gap-1.5 text-gray-600">
-            <AccessTimeOutlinedIcon sx={{ fontSize: 13, color: "#9CA3AF" }} />
-            <CellText value={c.date} variant="primary" />
-          </div>
-        ) : (
-          <CellText value="—" variant="muted" />
-        ),
+        c.date
+          ? <CellText value={c.date} variant="primary" />
+          : <CellText value="—" variant="muted" />,
     },
     {
       key: "status",
@@ -133,7 +131,7 @@ export function getSaleColumns(
     },
     {
       key: "paymentMethod",
-      header: "Método de pagamento",
+      header: "Tipo de pagamento",
       minWidth: "130px",
       filter: {
         type: "select",
@@ -146,10 +144,14 @@ export function getSaleColumns(
     {
       key: "forward",
       header: "",
-      render: () =>
-        <div className="flex justify-center items-center w-[2.2rem] h-[2.2rem] rounded-md bg-[#F7EBFF] border-[#D1B1E5] border hover:bg-[#F0D4FF] cursor-pointer transition-colors">
-          <ArrowForwardIcon sx={{ color: "#06121C" }} />
-        </div>,
+      render: () => (
+        <button
+          type="button"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D1B1E5] bg-[#F7EBFF] transition-colors hover:bg-[#F0DDFD]"
+        >
+          <ArrowForwardIcon sx={{ fontSize: 16, color: "#06121C" }} />
+        </button>
+      ),
     },
   ]
 }

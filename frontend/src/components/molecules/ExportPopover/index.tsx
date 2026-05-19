@@ -23,9 +23,10 @@ export function ExportPopover({
   selectedCount = 0, onExportSelected,
 }: Props) {
   const [mode, setMode] = useState<"all" | "selected">("all")
+  const [confirmOpen, setConfirmOpen] = useState(false)
 
   useEffect(() => {
-    if (!open) setMode("all")
+    if (!open) { setMode("all"); setConfirmOpen(false) }
   }, [open])
 
   if (!open) return null
@@ -34,13 +35,68 @@ export function ExportPopover({
   const isSelected  = mode === "selected" && hasSelection
 
   const handleExport = () => {
-    if (isSelected) onExportSelected?.()
-    else            onExport()
+    if (isSelected) {
+      onExportSelected?.()
+    } else if (pills.length === 0) {
+      setConfirmOpen(true)
+    } else {
+      onExport()
+    }
+  }
+
+  if (confirmOpen) {
+    const entityLower = entityLabel.toLowerCase()
+    return (
+      <div
+        className="fixed inset-0 bg-black/20 flex items-center justify-center z-60"
+        onMouseDown={() => setConfirmOpen(false)}
+      >
+        <div
+          className="bg-white rounded-2xl shadow-2xl w-[480px] p-8 flex flex-col gap-5"
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          <h2 className="text-xl font-bold text-gray-900">Você tem certeza?</h2>
+          <p className="text-gray-700 leading-relaxed text-sm">
+            Você está exportando toda a planilha{" "}
+            <span className="text-purple-600 font-semibold">{entityLower}</span>{" "}
+            sem{" "}
+            <span className="text-purple-600 font-semibold">nenhum filtro</span>,
+            sendo assim, todos os {entityLower} dessa planilha serão exportados,
+            isso significa:{" "}
+            <span className="text-purple-600 font-bold">{total.toLocaleString("pt-BR")}</span>{" "}
+            {entityLower}, caso não seja isso que deseja, aplique filtros ou
+            selecione {entityLower} específicos, mas se esse for seu objetivo clique em{" "}
+            <button
+              onClick={() => { setConfirmOpen(false); onExport() }}
+              className="text-purple-600 font-medium hover:underline"
+            >
+              continuar
+            </button>
+            .
+          </p>
+          <div className="flex justify-end gap-3 pt-1">
+            <button
+              onClick={() => setConfirmOpen(false)}
+              className="px-5 py-2.5 rounded-xl border border-green-400 text-green-600 font-medium text-sm hover:bg-green-50 transition"
+            >
+              Cancelar
+            </button>
+            <button
+              onClick={() => { setConfirmOpen(false); onExport() }}
+              disabled={exportLoading}
+              className="px-5 py-2.5 rounded-xl bg-green-400 text-gray-900 font-bold text-sm hover:bg-green-500 transition disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {exportLoading ? "Exportando..." : "Continuar"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )
   }
 
   return (
     <div
-      className="fixed inset-0 bg-black/20 flex items-center justify-center z-50"
+      className="fixed inset-0 bg-black/20 flex items-center justify-center z-60"
       onMouseDown={onClose}
     >
       <div
