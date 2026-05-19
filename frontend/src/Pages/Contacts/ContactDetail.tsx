@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react"
-import { useNavigate, useParams } from "react-router-dom"
+import { useNavigate, useOutletContext, useParams } from "react-router-dom"
 
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew"
 import EmailOutlinedIcon from "@mui/icons-material/EmailOutlined"
@@ -14,6 +14,7 @@ import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
 import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined"
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined"
 import ReplayOutlinedIcon from "@mui/icons-material/ReplayOutlined"
+import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined"
 
 import { ClientStatusBadge } from "@/components/molecules/ContactsTable/ClientStatusBadge"
 import type { ClientStatusType } from "@/types/contact"
@@ -33,6 +34,10 @@ import {
 
 type TabType = "informacoes" | "atividades"
 type TicketProblem = "Produto" | "Entrega" | "Pagamento" | "Reembolso"
+
+type AppFrameOutletContext = {
+  onOpenAI: (message?: string) => void
+}
 
 const periodOptions: Array<{ label: string; value: ContactPeriod }> = [
   { label: "Esse mês", value: "current_month" },
@@ -82,24 +87,6 @@ function ViaIcon({ className = "w-5 h-5" }: { className?: string }) {
       className={className}
       draggable={false}
     />
-  )
-}
-
-function InfoRow({
-  label,
-  value,
-}: {
-  label: string
-  value?: string | number | null
-}) {
-  return (
-    <div className="flex flex-col gap-0.5">
-      <span className="text-[10px] text-gray-400 uppercase tracking-wide font-medium">
-        {label}
-      </span>
-
-      <span className="text-sm text-gray-800 break-words">{value ?? "—"}</span>
-    </div>
   )
 }
 
@@ -479,7 +466,9 @@ function ContactInfoCard({
 
             {npsConfig ? (
               <>
-                <span className={`text-sm pl-8 font-medium ${npsConfig.textClass}`}>
+                <span
+                  className={`text-sm pl-8 font-medium ${npsConfig.textClass}`}
+                >
                   {npsLabel}
                 </span>
 
@@ -503,11 +492,12 @@ function ContactInfoCard({
 }
 
 function ContactSummaryCard({
-  details,
   metrics,
+  onAskViaClick,
 }: {
   details: ContactDetails
   metrics: ContactMetrics | null
+  onAskViaClick: () => void
 }) {
   return (
     <section className="border border-purple-200 rounded-xl bg-white shadow-sm px-4 py-3">
@@ -541,10 +531,15 @@ function ContactSummaryCard({
             </div>
           </div>
 
-          <div className="mt-auto flex items-center justify-end gap-2 text-sm text-gray-900">
+          <button
+            type="button"
+            onClick={onAskViaClick}
+            className="mt-auto ml-auto flex items-center justify-end gap-2 bg-transparent border-0 p-0 text-sm text-gray-900 cursor-pointer hover:text-purple-700 transition-colors"
+            aria-label="Abrir assistente V.IA"
+          >
             <ViaIcon className="w-7 h-7" />
             <span>Faça uma pergunta</span>
-          </div>
+          </button>
         </div>
       </div>
     </section>
@@ -681,18 +676,18 @@ function ContactMetricsCard({
         </div>
 
         <div className="rounded-xl border border-gray-200 bg-white p-3 shadow-sm min-h-[216px]">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-5 h-5 rounded-sm border border-purple-200 flex items-center justify-center text-purple-300 text-xs">
-              ▣
+          <div className="flex items-center gap-2 mb-3">
+            <div className="flex h-5 w-5 items-center justify-center text-[#9B8DA6]">
+              <Inventory2OutlinedIcon sx={{ fontSize: 20 }} />
             </div>
 
-            <p className="text-xs font-semibold text-purple-300">
-              Valor comprado por categoria
+            <p className="text-sm font-bold text-[#9B8DA6]">
+              Categorias de produtos mais comprados
             </p>
           </div>
 
-          <p className="text-xs text-gray-700 mb-3">
-            <span className="text-purple-500 mr-1">▪</span>
+          <p className="text-sm font-semibold text-gray-900 mb-3">
+            <span className="text-purple-500 mr-2">▪</span>
             {metrics?.periodLabel ?? "Esse mês"}
           </p>
 
@@ -955,17 +950,19 @@ function ContactTicketsCard({ tickets }: { tickets: ContactTicketsPage | null })
 
 function ActivitiesPlaceholder() {
   return (
-    <div className="border border-dashed border-gray-200 rounded-xl p-5 bg-gray-50 text-center">
-      <CalendarMonthOutlinedIcon sx={{ fontSize: 24, color: "#9CA3AF" }} />
+    <div className="h-full min-h-0 rounded-xl border border-dashed border-purple-100 bg-white/60 flex items-center justify-center px-4 text-center">
+      <div>
+        <CalendarMonthOutlinedIcon sx={{ fontSize: 24, color: "#9CA3AF" }} />
 
-      <p className="text-sm text-gray-500 mt-2">
-        Atividades ainda não disponíveis.
-      </p>
+        <p className="text-sm text-gray-500 mt-2">
+          Espaço reservado para futuras informações da aba de atividades.
+        </p>
 
-      <p className="text-xs text-gray-400 mt-1">
-        Para preencher essa aba com histórico real, será necessária uma tabela de
-        auditoria ou eventos.
-      </p>
+        <p className="text-xs text-gray-400 mt-1">
+          Esta área poderá receber histórico, timeline, tarefas ou próximos
+          passos do contato.
+        </p>
+      </div>
     </div>
   )
 }
@@ -973,6 +970,8 @@ function ActivitiesPlaceholder() {
 export default function ContactDetail() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+
+  const { onOpenAI } = useOutletContext<AppFrameOutletContext>()
 
   const [details, setDetails] = useState<ContactDetails | null>(null)
 
@@ -1177,7 +1176,11 @@ export default function ContactDetail() {
           <div className="flex-1 min-h-0 overflow-hidden pr-1">
             {tab === "informacoes" ? (
               <div className="flex flex-col gap-3">
-                <ContactSummaryCard details={details} metrics={summaryMetrics} />
+                <ContactSummaryCard
+                  details={details}
+                  metrics={summaryMetrics}
+                  onAskViaClick={() => onOpenAI()}
+                />
 
                 <ContactMetricsCard
                   metrics={dashboardMetrics}
@@ -1187,13 +1190,29 @@ export default function ContactDetail() {
                 />
               </div>
             ) : (
-              <ActivitiesPlaceholder />
+              <div className="relative flex flex-col gap-4 h-full min-h-0">
+                {historyLoading && (
+                  <div className="absolute inset-0 z-10 rounded-xl bg-white/50 backdrop-blur-[1px] flex items-start justify-center pt-6">
+                    <span className="text-xs text-purple-600 font-medium">
+                      Carregando histórico...
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex-1 min-h-0">
+                  <ContactOrdersCard orders={orders} />
+                </div>
+
+                <div className="flex-1 min-h-0">
+                  <ContactTicketsCard tickets={tickets} />
+                </div>
+              </div>
             )}
           </div>
         </div>
 
         <div className="relative min-h-0 flex flex-col gap-4 overflow-hidden">
-          {historyLoading && (
+          {historyLoading && tab === "informacoes" && (
             <div className="absolute inset-0 z-10 bg-white/50 backdrop-blur-[1px] flex items-start justify-center pt-6">
               <span className="text-xs text-purple-600 font-medium">
                 Carregando histórico...
@@ -1201,13 +1220,19 @@ export default function ContactDetail() {
             </div>
           )}
 
-          <div className="flex-1 min-h-0">
-            <ContactOrdersCard orders={orders} />
-          </div>
+          {tab === "informacoes" ? (
+            <>
+              <div className="flex-1 min-h-0">
+                <ContactOrdersCard orders={orders} />
+              </div>
 
-          <div className="flex-1 min-h-0">
-            <ContactTicketsCard tickets={tickets} />
-          </div>
+              <div className="flex-1 min-h-0">
+                <ContactTicketsCard tickets={tickets} />
+              </div>
+            </>
+          ) : (
+            <ActivitiesPlaceholder />
+          )}
         </div>
       </div>
     </div>
