@@ -31,6 +31,7 @@ function columnFiltersToParams(cf: ActiveFilters): Partial<ProductsParams> {
 
   const cat = cf.category
   if (cat?.type === "select" && cat.value) p.category = cat.value
+  if (cat?.type === "multi-select" && cat.values.length > 0) p.category = cat.values.join(",")
 
   const price = cf.price
   if (price?.type === "number-range") {
@@ -342,7 +343,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
         columns={makeProductColumns(expandedRowIds, onToggleExpand, products.map(p => p.id), onToggleAllExpand, (id) => navigate(`/products/${id}`)
         )}
         getRowId={(p) => p.id}
-        getRowClassName={(p) => (p.id === activeRowId ? "bg-[#F0DDFD] hover:bg-[#F0DDFD]" : "")}
+        getRowClassName={(p) => (p.id === activeRowId ? "bg-[#EACAFF] hover:bg-[#EACAFF]" : "")}
         tabs={TABS}
         activeTab={activeTab}
         onTabChange={handleTabChange}

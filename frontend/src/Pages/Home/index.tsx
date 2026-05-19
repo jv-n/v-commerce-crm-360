@@ -5,16 +5,11 @@ import type { ShortcutItem } from "@/types/home"
 import MentionInput, { type MentionInputHandle } from "@/components/molecules/MentionInput"
 import { useRef } from "react"
 import {
-  ContactPage as ContactPageIcon,
   ContactPageOutlined as ContactPageOutlinedIcon,     
-  ConfirmationNumber as ConfirmationNumberIcon,
   ConfirmationNumberOutlined as ConfirmationNumberOutlinedIcon,
-  BarChart as BarChartIcon,
   BarChartOutlined as BarChartOutlinedIcon,     
-  RequestQuote as RequestQuoteIcon,
   RequestQuoteOutlined as RequestQuoteOutlinedIcon,  
   Inventory2Outlined as Inventory2OutlinedIcon,
-  MenuBook as MenuBookIcon,
   MenuBookOutlined as MenuBookOutlinedIcon,
 
   FlagOutlined,
@@ -64,11 +59,11 @@ function ShortcutCard({
     bg-[#F7EBFF] rounded-xl
     py-8 px-4
     shadow-md
-    hover:bg-[#D1B1E5] active:scale-95
+    hover:bg-[#F0DDFD] active:scale-95
     transition-all duration-150
     ${shortcut.disabled 
-          ? 'border-[#D1B1E5] bg-bg-[#F7EBFF] cursor-not-allowed opacity-60' 
-          : 'border-[#D1B1E5] bg-[#F7EBFF] hover:bg-[#D1B1E5] active:scale-95'
+          ? 'border-[#D1B1E5] bg-[#F7EBFF] cursor-not-allowed opacity-60' 
+          : 'border-[#D1B1E5] bg-[#F7EBFF] hover:bg-[#F0DDFD] active:scale-95'
         }
   `}
     >

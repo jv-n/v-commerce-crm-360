@@ -22,9 +22,9 @@ def _to_review(row: FtAvaliacao) -> ReviewSchema:
 
 class ReviewService:
     _SORT_COLUMNS = {
-        "data":          lambda: FtAvaliacao.data_avaliacao,
-        "nota_produto":  lambda: FtAvaliacao.nota_produto,
-        "nota_nps":      lambda: FtAvaliacao.nota_nps,
+        "data":         lambda: FtAvaliacao.data_avaliacao,
+        "nota_produto": lambda: FtAvaliacao.nota_produto,
+        "nota_nps":     lambda: FtAvaliacao.nota_nps,
     }
 
     def __init__(self, db: Session):

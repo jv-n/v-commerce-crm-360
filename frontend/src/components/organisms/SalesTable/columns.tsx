@@ -18,15 +18,15 @@ const ALL_CATEGORIES = [
 const ALL_PAYMENT_METHODS = ["Boleto", "Pix", "Cartão"]
 
 const CATEGORY_COLORS: Record<ProductCategory, string> = {
-  "Automotivo":  "bg-slate-100 text-[#06121C]",
-  "Beleza":      "bg-pink-100 text-[#06121C]",
-  "Brinquedos":  "bg-violet-100 text-[#06121C]",
-  "Casa":        "bg-amber-100 text-[#06121C]",
-  "Eletronicos": "bg-blue-100 text-[#06121C]",
-  "Esportes":    "bg-green-100 text-[#06121C]",
-  "Indefinida":  "bg-gray-100 text-[#06121C]",
-  "Moveis":      "bg-orange-100 text-[#06121C]",
-  "Vestuario":   "bg-teal-100 text-[#06121C]",
+  "Automotivo":  "bg-slate-100 text-slate-700",
+  "Beleza":      "bg-pink-100 text-pink-700",
+  "Brinquedos":  "bg-violet-100 text-violet-700",
+  "Casa":        "bg-amber-100 text-amber-700",
+  "Eletronicos": "bg-blue-100 text-blue-700",
+  "Esportes":    "bg-green-100 text-green-700",
+  "Indefinida":  "bg-gray-100 text-gray-600",
+  "Moveis":      "bg-orange-100 text-orange-700",
+  "Vestuario":   "bg-teal-100 text-teal-700",
 }
 
 function formatBRL(value: number): string {
@@ -105,7 +105,7 @@ export function getSaleColumns(
         filterFn: (c, value) => c.categoria === value,
       },
       render: (c) => c.categoria
-        ? <CellTag label={c.categoria} colorClasses={CATEGORY_COLORS[c.categoria as ProductCategory] ?? "bg-gray-100 text-[#06121C]"} />
+        ? <CellTag label={c.categoria} colorClasses={CATEGORY_COLORS[c.categoria as ProductCategory] ?? "bg-gray-100 text-gray-600"} variant="badge" />
         : <CellText value="—" variant="muted" />,
     },
     {

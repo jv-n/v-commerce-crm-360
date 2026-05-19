@@ -79,6 +79,16 @@ class ProductMonthlyRevenueOut(BaseModel):
     receita: float
 
 
+class ProductMonthlyNpsOut(BaseModel):
+    ano_mes: str
+    nps_medio: float
+
+
+class ProductMonthlySalesOut(BaseModel):
+    ano_mes: str
+    quantidade: float
+
+
 class ProductResumoOut(BaseModel):
     receita_total: float | None = None
     melhor_mes: str | None = None

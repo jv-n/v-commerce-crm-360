@@ -51,9 +51,6 @@ export function DataTableTabs({
             onClick={() => onTabChange(tab.id)}
           />
         ))}
-        <button className="p-2 ml-1 text-black hover:text-gray-600 rounded-full hover:bg-[#F7EBFF]">
-          <AddIcon sx={{ fontSize: 16 }} />
-        </button>
       </div>
 
       <div className="flex items-center gap-2 relative z-50">
@@ -86,10 +83,6 @@ export function DataTableTabs({
             <SearchOutlinedIcon sx={{ fontSize: 18 }} />
           </button>
         )}
-
-        <button className="p-1.5 text-gray-700">
-          <MdOutlineTableChart />
-        </button>
       </div>
     </div>
   )

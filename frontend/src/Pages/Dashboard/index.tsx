@@ -51,7 +51,7 @@ function fmtYoyLabel(yoyStart: string, yoyEnd: string): string {
 // -----------------------------------------------------------------------
 
 export default function Dashboard() {
-  const [period, setPeriod] = useState<PeriodFilter>({ type: "month" })
+  const [period, setPeriod] = useState<PeriodFilter>({ type: "year" })
   const [metrics, setMetrics] = useState<DashboardMetrics | null>(null)
 
   const isLoading = metrics === null
@@ -161,7 +161,7 @@ export default function Dashboard() {
     <div className="flex flex-col gap-6 h-full w-full rounded-xl bg-secondary p-6 overflow-auto">
       {/* Page header */}
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-secondary-foreground">Dashboard</h1>
+        <h1 className="text-[40px] font-bold text-gray-900">Dashboard</h1>
         <PeriodSelector value={period} onChange={handlePeriodChange} />
       </div>
 

@@ -41,10 +41,10 @@ export function DataTableRows<T,>({
   onToggleRow,
   loading = false,
   emptyMessage = "Nenhum item encontrado.",
-  headerClassName = "bg-[#EACAFF]",
-  rowClassName = "hover:bg-[#F7EBFF]",
+  headerClassName = "bg-[#F0DDFD]",
+  rowClassName = "hover:bg-[#F0DDFD]",
   getRowClassName,
-  expandedRowClassName = "bg-[#F7EBFF]",
+  expandedRowClassName = "bg-[#EACAFF]",
   dividersClassName = "divide-[#9F83B2]",
   expandedRowIds,
   renderExpandedRow,
@@ -139,7 +139,7 @@ export function DataTableRows<T,>({
           <th
             key={col.key}
             style={col.minWidth ? { minWidth: col.minWidth } : undefined}
-            className="px-3 py-3 text-left text-xs font-medium text-[#06121C]"
+            className="px-3 py-3 text-left text-sm font-bold text-[#06121C]"
           >
             {col.sortable && col.header ? (
               <button
@@ -215,7 +215,8 @@ export function DataTableRows<T,>({
                           "group/row transition-colors",
                           rowClassName,
                           isExpanded && expandedRowClassName,
-                          isSelected && "bg-[#F7EBFF]",
+                          isExpanded && "bg-purple-50/",
+                          isSelected && "bg-[#EACAFF]",
                           onRowClick && "cursor-pointer",
                           getRowClassName?.(row)
                         )}
