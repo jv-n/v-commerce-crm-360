@@ -170,7 +170,7 @@ export function DataTableRows<T,>({
 
   return (
     <div
-      className="relative flex-1 min-h-0 overflow-hidden rounded-xl mt-4"
+      className="relative flex-1 min-h-0 overflow-hidden rounded-xl mt-4 border-b-2 border-[#E5E5E5]"
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
@@ -181,11 +181,11 @@ export function DataTableRows<T,>({
         className="absolute inset-0 overflow-y-auto overflow-x-hidden [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
       >
         <table className="w-full text-xs font-medium text-[#06121C]">
-          <thead className={cn("sticky top-0 z-10 border-b border-gray-200", headerClassName)}>
+         <thead className={cn("sticky top-0 z-10 border-t-2 border-l-2 border-r-2 border-[#EACAFF]", headerClassName)}>
             <tr>{headerCells}</tr>
           </thead>
 
-          <tbody className={cn("divide-y", dividersClassName)}>
+          <tbody className={cn("divide-y border-l-2 border-r-2 border-[#E5E5E5]", dividersClassName)}>
             {loading ? (
               Array.from({ length: 8 }).map((_, i) => (
                 <tr key={i} className="animate-pulse">
