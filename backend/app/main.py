@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.routes import userRouter, contactRouter, agentRouter, productRouter, saleRouter, ticketRouter, contactDetailRouter
 from app.routes import conversationRouter, mentionRouter, reviewRouter, authRouter, dashboardRouter
 from app.routes import bookmarkRouter
+from app.routes import goalRouter
 
 # Injeta a GEMINI_API_KEY no ambiente para o PydanticAI/Google SDK
 # (lida do .env via pydantic-settings no config.py)
@@ -19,8 +20,18 @@ from app.models.conversationModel import Conversation  # noqa: F401 — importar
 from app.models.productModel import ProductActivity    # noqa: F401 — registra ft_product_activities no metadata
 from app.models.saleModel import SaleActivity          # noqa: F401 — registra ft_sale_activities no metadata
 from app.models.bookmarkModel import BookmarkItem      # noqa: F401 — registra bookmarks no metadata
+from app.models.goalModel import GoalItem              # noqa: F401 — registra goals no metadata
 from database.database import Base
 Base.metadata.create_all(bind=engine, checkfirst=True)
+
+# Índices nas tabelas gold para acelerar queries de metas (IF NOT EXISTS = idempotente)
+from sqlalchemy import text
+with engine.connect() as _conn:
+    _conn.execute(text("CREATE INDEX IF NOT EXISTS idx_pedidos_data      ON gold_pedidos_detalhado(data_pedido)"))
+    _conn.execute(text("CREATE INDEX IF NOT EXISTS idx_pedidos_produto    ON gold_pedidos_detalhado(id_produto)"))
+    _conn.execute(text("CREATE INDEX IF NOT EXISTS idx_pedidos_categoria  ON gold_pedidos_detalhado(categoria)"))
+    _conn.execute(text("CREATE INDEX IF NOT EXISTS idx_clientes_cadastro  ON gold_cliente_360(data_cadastro)"))
+    _conn.commit()
 
 app = FastAPI(
     title="V-Commerce CRM 360 API",
@@ -53,6 +64,7 @@ app.include_router(authRouter.router)
 app.include_router(ticketRouter.router)
 app.include_router(dashboardRouter.router)
 app.include_router(bookmarkRouter.router)
+app.include_router(goalRouter.router)
 
 @app.get("/", tags=["Health"])
 async def health_check():
