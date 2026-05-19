@@ -3,7 +3,6 @@ import { CellText } from "@/components/organisms/DataTable/atoms/CellText"
 import { CellTag } from "@/components/organisms/DataTable/atoms/CellTag"
 import { StatusBadge } from "./tableComponents/badge"
 import { OpenCircleButton } from "@/components/atoms/open-circle-button"
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward"
 
 import type { Sale, SaleStatus } from "@/types/sale"
 import type { ProductCategory } from "@/types/product"
@@ -44,9 +43,6 @@ const CATEGORY_COLORS: Record<ProductCategory, string> = {
   Moveis: "bg-orange-100 text-orange-700",
   Vestuario: "bg-teal-100 text-teal-700",
 }
-
-const idButtonClassName =
-  "block truncate rounded-lg px-2 py-0.5 text-[13px] font-medium text-gray-900 transition-colors hover:bg-[#CFA7FF]"
 
 function formatBRL(value: number): string {
   return value.toLocaleString("pt-BR", {
@@ -241,18 +237,6 @@ export function getSaleColumns(
         filterFn: (c, value) => c.payment_method === value,
       },
       render: (c) => <CellText value={c.payment_method} variant="primary" />,
-    },
-    {
-      key: "forward",
-      header: "",
-      render: () => (
-        <button
-          type="button"
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D1B1E5] bg-[#F7EBFF] transition-colors hover:bg-[#F0DDFD]"
-        >
-          <ArrowForwardIcon sx={{ fontSize: 16, color: "#06121C" }} />
-        </button>
-      ),
     },
   ]
 }

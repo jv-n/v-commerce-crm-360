@@ -17,7 +17,6 @@ import type { Ticket } from "@/types/ticket"
 import type { ActiveFilters } from "@/components/organisms/DataTable/types"
 import { useAuth } from "@/contexts/auth/useAuth"
 import { TicketExpandedRow } from "./TicketExpandedRow"
-import { cn } from "@/lib/utils"
 
 import {
   DEFAULT_PAGE_SIZE,
@@ -74,10 +73,6 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
 
     const ticketsRef = useRef<Ticket[]>([])
     const selectedCache = useRef<Map<string, Ticket>>(new Map())
-
-    const dateFilterCount =
-      Number(Boolean(dateFilters.openedFrom)) +
-      Number(Boolean(dateFilters.openedTo))
 
     const currentSnapshot = useRef<FilterSnapshot>({
       tab: "all",
@@ -350,13 +345,13 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
 
     const handleFiltersChange = (active: ActiveFilters) => {
       const responsibleFilter = active["responsible"]
-      const statusFilter = active["status"]
-      const problemFilter = active["problem"]
-      const scoreFilter = active["score"]
+      const statusFilter      = active["status"]
+      const problemFilter     = active["problem"]
+      const scoreFilter       = active["score"]
+      const dateFilter        = active["openedAt"]
 
-      const getMultiSelectValues = (filter: ActiveFilters[string]) => {
-        return filter?.type === "multi-select" ? filter.values : []
-      }
+      const getMultiSelectValues = (filter: ActiveFilters[string]) =>
+        filter?.type === "multi-select" ? filter.values : []
 
       pushHistory()
       setExpandedRowIds(new Set())
@@ -365,34 +360,17 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
 
       setServerFilters({
         responsible: getMultiSelectValues(responsibleFilter),
-        status: getMultiSelectValues(statusFilter),
-        problem: getMultiSelectValues(problemFilter),
-        score: getMultiSelectValues(scoreFilter),
+        status:      getMultiSelectValues(statusFilter),
+        problem:     getMultiSelectValues(problemFilter),
+        score:       getMultiSelectValues(scoreFilter),
+      })
+
+      setDateFilters({
+        openedFrom: dateFilter?.type === "date-range" && dateFilter.from ? dateFilter.from : "",
+        openedTo:   dateFilter?.type === "date-range" && dateFilter.to   ? dateFilter.to   : "",
       })
 
       setPage(1)
-    }
-
-    const handleDateFilterChange = (key: keyof DateFilters, value: string) => {
-      pushHistory()
-      setExpandedRowIds(new Set())
-      setLoading(true)
-      setPage(1)
-      clearSelection()
-
-      setDateFilters(prev => ({
-        ...prev,
-        [key]: value,
-      }))
-    }
-
-    const handleClearDateFilters = () => {
-      pushHistory()
-      setExpandedRowIds(new Set())
-      setLoading(true)
-      setPage(1)
-      clearSelection()
-      setDateFilters(EMPTY_DATE_FILTERS)
     }
 
     const handleSearchChange = (query: string) => {
@@ -461,46 +439,6 @@ export const TicketsTable = forwardRef<TicketsTableHandle, TicketsTableProps>(
           expandedRowIds={expandedRowIds}
           renderExpandedRow={ticket => <TicketExpandedRow ticket={ticket} />}
           onRowClick={(ticket) => handleToggleExpand(ticket.id)}
-          extraActiveFilterCount={dateFilterCount}
-          onClearExtraFilters={handleClearDateFilters}
-          filterBarExtra={
-            <div
-              className={cn(
-                "flex items-center gap-2 text-sm font-medium text-[#06121C] transition-opacity",
-                exportOpen && "pointer-events-none opacity-60"
-              )}
-            >
-              <span className="whitespace-nowrap">Data abertura:</span>
-
-              <input
-                type="date"
-                value={dateFilters.openedFrom}
-                disabled={exportOpen}
-                onChange={event =>
-                  handleDateFilterChange("openedFrom", event.target.value)
-                }
-                className={cn(
-                  "h-9 w-[150px] rounded-xl border border-[#D1B1E5] bg-white px-2.5 text-sm font-medium text-[#06121C] outline-none transition-colors focus:border-[#9F83B2] disabled:cursor-not-allowed disabled:opacity-100 [color-scheme:light] [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer",
-                  exportOpen && "brightness-90"
-                )}
-              />
-
-              <span className="text-sm font-medium text-gray-400">até</span>
-
-              <input
-                type="date"
-                value={dateFilters.openedTo}
-                disabled={exportOpen}
-                onChange={event =>
-                  handleDateFilterChange("openedTo", event.target.value)
-                }
-                className={cn(
-                  "h-9 w-[150px] rounded-xl border border-[#D1B1E5] bg-white px-2.5 text-sm font-medium text-[#06121C] outline-none transition-colors focus:border-[#9F83B2] disabled:cursor-not-allowed disabled:opacity-100 [color-scheme:light] [&::-webkit-calendar-picker-indicator]:ml-auto [&::-webkit-calendar-picker-indicator]:cursor-pointer",
-                  exportOpen && "brightness-90"
-                )}
-              />
-            </div>
-          }
           searchPlaceholder="Pesquisar tickets..."
           searchFn={(ticket, query) => {
             const normalizedQuery = query.toLowerCase()

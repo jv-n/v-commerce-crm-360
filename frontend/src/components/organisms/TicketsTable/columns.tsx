@@ -5,7 +5,7 @@ import type { Column } from "@/components/organisms/DataTable/types"
 import type { Ticket, TicketProblem, TicketStatus } from "@/types/ticket"
 import { ScoreBadge, TicketStatusBadge } from "./tableComponents/badge"
 
-import ArrowForwardIcon from "@mui/icons-material/ArrowForward"
+
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
 import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined"
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined"
@@ -140,6 +140,18 @@ export function getTicketColumns(
       sortable: true,
       sortValue: ticket => ticket.openedAt,
       minWidth: "115px",
+      filter: {
+        type: "date-range" as const,
+        label: "Data abertura",
+        filterFn: (c: Ticket, from: string | null, to: string | null) => {
+          if (!c.openedAt) return true
+          const [d, m, y] = c.openedAt.split("/")
+          const iso = `${y}-${m}-${d}`
+          if (from && iso < from) return false
+          if (to   && iso > to)   return false
+          return true
+        },
+      },
       render: ticket => (
         <div className="flex flex-col leading-tight">
           <span className="text-[13px] font-semibold text-gray-900">
@@ -269,19 +281,6 @@ export function getTicketColumns(
             </span>
           )}
         </div>
-      ),
-    },
-    {
-      key: "forward",
-      header: "",
-      minWidth: "32px",
-      render: () => (
-        <button
-          type="button"
-          className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D1B1E5] bg-[#F7EBFF] transition-colors hover:bg-[#F0DDFD]"
-        >
-          <ArrowForwardIcon sx={{ fontSize: 16, color: "#06121C" }} />
-        </button>
       ),
     },
   ]
