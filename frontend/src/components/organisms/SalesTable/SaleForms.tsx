@@ -14,7 +14,10 @@ import { useAuth } from "@/contexts/auth/useAuth"
 
 const CATEGORIAS = ["Eletronicos", "Brinquedos", "Vestuario", "Esportes", "Casa", "Moveis", "Beleza", "Automotivo", "Indefinida"]
 const PAGAMENTOS = ["Boleto", "Pix", "Cartão"]
-const STATUSES   = ["Aprovado", "Processando", "Recusado", "Reembolsado"]
+const STATUSES = [
+  "Processando", "Aprovado", "Em rota", "Entregue",
+  "Entregue com Atraso", "Recusado", "Cancelado", "Reembolsado",
+]
 
 const selectCls = "h-8 w-full rounded-lg border border-input bg-transparent px-2.5 py-1 text-sm transition-colors outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/50"
 

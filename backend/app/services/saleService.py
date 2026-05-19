@@ -22,8 +22,9 @@ _TRACKED_FIELDS: list[tuple[str, str, str]] = [
 ]
 
 _TAB_STATUSES: dict[str, list[str]] = {
-    "concluded": ["Aprovado"],
-    "returned":  ["Reembolsado", "Recusado"],
+    "concluded": ["Entregue", "Entregue com Atraso", "Reembolsado"],
+    "pending":   ["Aprovado", "Em rota"],
+    "failed":    ["Recusado", "Cancelado"],
 }
 
 _SORT_COLUMNS = {

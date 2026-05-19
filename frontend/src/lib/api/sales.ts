@@ -36,7 +36,10 @@ interface RawSale {
   status: string | null
 }
 
-const VALID_STATUSES = new Set<SaleStatus>(["Aprovado", "Processando", "Recusado", "Reembolsado"])
+const VALID_STATUSES = new Set<SaleStatus>([
+  "Aprovado", "Processando", "Recusado", "Reembolsado",
+  "Em rota", "Entregue", "Entregue com Atraso", "Cancelado",
+])
 
 function formatDate(raw: string | null): string {
   if (!raw) return ""
@@ -59,7 +62,7 @@ function toSale(raw: RawSale): Sale {
     date:           formatDate(raw.data_pedido),
     status:         VALID_STATUSES.has(raw.status as SaleStatus)
                       ? (raw.status as SaleStatus)
-                      : "Aprovado",
+                      : "Processando",
     payment_method: raw.metodo_pagamento ?? "",
   }
 }
