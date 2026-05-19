@@ -31,6 +31,7 @@ function columnFiltersToParams(cf: ActiveFilters): Partial<ProductsParams> {
 
   const cat = cf.category
   if (cat?.type === "select" && cat.value) p.category = cat.value
+  if (cat?.type === "multi-select" && cat.values.length > 0) p.category = cat.values.join(",")
 
   const price = cf.price
   if (price?.type === "number-range") {
