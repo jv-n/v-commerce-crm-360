@@ -179,7 +179,7 @@ export default function AppFrame() {
             <SidebarInset className="m-2 ml-0 rounded-xl overflow-hidden flex flex-col transition-all duration-300">
                 <div className="flex items-center">
                     {isOnHome && ( 
-                        <img src="vcom360_icon.svg" alt="Logo" className="w-8 h-8 ml-3 flex-shrink-0" />
+                        <img src="vcom360_icon.svg" alt="Logo" className="w-15 h-15 ml-3 flex-shrink-0" />
                     )}
                     <div className="flex-1">
                         <AppNavbar onOpenAI={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }} />
