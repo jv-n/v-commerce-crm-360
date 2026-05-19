@@ -1,6 +1,7 @@
 import type {
   ContactDashboard,
   ContactDetails,
+  ContactDetailsPatch,
   ContactMetrics,
   ContactOrdersPage,
   ContactPeriod,
@@ -97,6 +98,37 @@ export async function fetchContactTickets(
   return getJson<ContactTicketsPage>(
     `/api/contact-details/${contactId}/tickets${query}`
   )
+}
+
+export async function patchContactDetails(
+  contactId: string,
+  payload: ContactDetailsPatch
+): Promise<ContactDetails> {
+  const response = await fetch(`/api/contact-details/${contactId}/details`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  })
+
+  if (!response.ok) {
+    throw new Error(
+      `Erro ao atualizar contato ${contactId}: ${response.status}`
+    )
+  }
+
+  return response.json() as Promise<ContactDetails>
+}
+
+export async function deleteContactDetails(contactId: string): Promise<void> {
+  const response = await fetch(`/api/contact-details/${contactId}/details`, {
+    method: "DELETE",
+  })
+
+  if (!response.ok) {
+    throw new Error(`Erro ao remover contato ${contactId}: ${response.status}`)
+  }
 }
 
 export async function fetchContactViewedProducts(

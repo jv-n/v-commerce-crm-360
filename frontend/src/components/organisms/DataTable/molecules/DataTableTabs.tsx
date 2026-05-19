@@ -77,7 +77,7 @@ export function DataTableTabs({
         ) : (
           <button
             onClick={onSearchOpen}
-            className="p-1.5 text-black hover:text-gray-700 hover:bg-[#CFA7FF] rounded-lg"
+            className="p-1.5 text-black hover:text-gray-700 hover:bg-[#F0DDFD] rounded-lg"
           >
             <SearchOutlinedIcon sx={{ fontSize: 18 }} />
           </button>

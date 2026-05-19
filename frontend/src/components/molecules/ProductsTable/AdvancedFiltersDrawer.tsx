@@ -117,7 +117,7 @@ export function AdvancedFiltersDrawer({
             <TuneIcon sx={{ fontSize: 16, color: "#374151" }} />
             <span className="font-semibold text-gray-900 text-sm">Filtros avançados</span>
           </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+          <button onClick={onClose} className="text-gray-500 border border-transparent rounded-xl p-1 hover:bg-purple-100 hover:border-purple-300 active:bg-[#EACAFF] active:border-[#B899CC] transition-colors">
             <CloseIcon sx={{ fontSize: 18 }} />
           </button>
         </div>

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.schemas.contactDetailSchemas import (
     ContactDashboardOut,
     ContactDetailOut,
+    ContactDetailPatchIn,
     ContactMetricsOut,
     ContactOrdersPageOut,
     ContactTicketsPageOut,
@@ -11,6 +12,7 @@ from app.schemas.contactDetailSchemas import (
 )
 from app.services.contactDetailService import ContactDetailService
 from database.database import get_db
+
 
 router = APIRouter(prefix="/contact-details", tags=["contact-details"])
 
@@ -21,6 +23,23 @@ def get_contact_details(
     db: Session = Depends(get_db),
 ):
     result = ContactDetailService(db).get_contact_details(contact_id)
+
+    if not result:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    return result
+
+
+@router.patch("/{contact_id}/details", response_model=ContactDetailOut)
+def patch_contact_details(
+    contact_id: str,
+    payload: ContactDetailPatchIn,
+    db: Session = Depends(get_db),
+):
+    result = ContactDetailService(db).patch_contact_details(
+        contact_id=contact_id,
+        payload=payload,
+    )
 
     if not result:
         raise HTTPException(status_code=404, detail="Contact not found")
@@ -108,7 +127,10 @@ def get_contact_tickets(
     return result
 
 
-@router.get("/{contact_id}/viewed-products", response_model=list[ContactViewedProductOut])
+@router.get(
+    "/{contact_id}/viewed-products",
+    response_model=list[ContactViewedProductOut],
+)
 def get_contact_viewed_products(
     contact_id: str,
     period: str = Query("current_month"),
@@ -123,3 +145,15 @@ def get_contact_viewed_products(
         raise HTTPException(status_code=404, detail="Contact not found")
 
     return result
+
+@router.delete("/{contact_id}/details")
+def delete_contact_details(
+    contact_id: str,
+    db: Session = Depends(get_db),
+):
+    deleted = ContactDetailService(db).delete_contact_details(contact_id)
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail="Contact not found")
+
+    return {"message": "Contact deleted successfully"}

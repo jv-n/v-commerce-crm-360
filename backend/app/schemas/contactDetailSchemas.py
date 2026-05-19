@@ -18,7 +18,6 @@ class ContactDetailOut(BaseModel):
     origin: str | None
     clientStatus: str | None
     contactType: str
-    responsible: str | None = None
 
 
 class ContactOrderProductOut(BaseModel):
@@ -121,3 +120,18 @@ class ContactDashboardOut(BaseModel):
     orders: ContactOrdersPageOut
     tickets: ContactTicketsPageOut
     viewedProducts: list[ContactViewedProductOut]
+
+class ContactDetailPatchIn(BaseModel):
+    name: str | None = None
+    email: str | None = None
+    phone: str | None = None
+    gender: str | None = None
+    birthDate: str | None = None
+    age: int | None = None
+    createdAt: str | None = None
+    city: str | None = None
+    state: str | None = None
+    region: str | None = None
+    country: str | None = None
+    origin: str | None = None
+    clientStatus: str | None = None
