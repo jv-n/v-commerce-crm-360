@@ -473,7 +473,7 @@ function EditContactModal({
     city: details.city ?? "",
   })
 
-  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+  function handleChange(event: ChangeEvent<HTMLInputElement | HTMLSelectElement>) {
     const { name, value } = event.target
 
     setFormData((currentFormData) => ({
@@ -517,10 +517,32 @@ function EditContactModal({
     }
   }
 
+  const statusOptions = ["Ativo", "Inativo", "VIP", "Lead", "Em risco"]
+
+  const genderOptions = ["Masculino", "Feminino", "Outro", "Não informado"]
+
+  const originOptions = [
+    "Orgânico", "Google Ads", "Facebook Ads", "Instagram",
+    "Indicação", "Email Marketing", "Marketplace", "Loja Física", "Outro",
+  ]
+
+  const countryOptions = ["Brasil", "Argentina", "Chile", "Colômbia", "México", "Portugal", "Estados Unidos", "Outro"]
+
+  const regionOptions = ["Norte", "Nordeste", "Centro-Oeste", "Sudeste", "Sul"]
+
+  const stateOptions = [
+    "AC", "AL", "AP", "AM", "BA", "CE", "DF", "ES", "GO",
+    "MA", "MT", "MS", "MG", "PA", "PB", "PR", "PE", "PI",
+    "RJ", "RN", "RS", "RO", "RR", "SC", "SP", "SE", "TO",
+  ]
+
   const labelClass = "mb-1 block text-xs font-bold text-gray-900"
 
   const fieldClass =
     "h-8 w-full rounded-lg border border-gray-300 bg-white px-3 text-xs text-gray-900 outline-none focus:border-purple-400 disabled:cursor-not-allowed disabled:opacity-60"
+
+  const selectClass =
+    "h-8 w-full rounded-lg border border-gray-300 bg-white px-2 text-xs text-gray-900 outline-none focus:border-purple-400 disabled:cursor-not-allowed disabled:opacity-60 appearance-none bg-[url('data:image/svg+xml;charset=UTF-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2212%22%20height%3D%2212%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22%236b7280%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%3E%3Cpolyline%20points%3D%226%209%2012%2015%2018%209%22%3E%3C%2Fpolyline%3E%3C%2Fsvg%3E')] bg-[length:12px] bg-[right_8px_center] bg-no-repeat pr-7"
 
   const isBusy = saving || deleting
 
@@ -557,13 +579,18 @@ function EditContactModal({
 
               <div>
                 <label className={labelClass}>Status</label>
-                <input
+                <select
                   name="status"
                   value={formData.status}
                   onChange={handleChange}
                   disabled={isBusy}
-                  className={fieldClass}
-                />
+                  className={selectClass}
+                >
+                  <option value="">Selecione...</option>
+                  {statusOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -614,13 +641,18 @@ function EditContactModal({
 
               <div>
                 <label className={labelClass}>Gênero</label>
-                <input
+                <select
                   name="gender"
                   value={formData.gender}
                   onChange={handleChange}
                   disabled={isBusy}
-                  className={fieldClass}
-                />
+                  className={selectClass}
+                >
+                  <option value="">Selecione...</option>
+                  {genderOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -636,47 +668,67 @@ function EditContactModal({
 
               <div>
                 <label className={labelClass}>Origem</label>
-                <input
+                <select
                   name="origin"
                   value={formData.origin}
                   onChange={handleChange}
                   disabled={isBusy}
-                  className={fieldClass}
-                />
+                  className={selectClass}
+                >
+                  <option value="">Selecione...</option>
+                  {originOptions.map((opt) => (
+                    <option key={opt} value={opt}>{opt}</option>
+                  ))}
+                </select>
               </div>
 
               <div className="col-span-2 grid grid-cols-4 gap-4">
                 <div>
                   <label className={labelClass}>País</label>
-                  <input
+                  <select
                     name="country"
                     value={formData.country}
                     onChange={handleChange}
                     disabled={isBusy}
-                    className={fieldClass}
-                  />
+                    className={selectClass}
+                  >
+                    <option value="">Selecione...</option>
+                    {countryOptions.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label className={labelClass}>Estado</label>
-                  <input
+                  <select
                     name="state"
                     value={formData.state}
                     onChange={handleChange}
                     disabled={isBusy}
-                    className={fieldClass}
-                  />
+                    className={selectClass}
+                  >
+                    <option value="">Selecione...</option>
+                    {stateOptions.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
                   <label className={labelClass}>Região</label>
-                  <input
+                  <select
                     name="region"
                     value={formData.region}
                     onChange={handleChange}
                     disabled={isBusy}
-                    className={fieldClass}
-                  />
+                    className={selectClass}
+                  >
+                    <option value="">Selecione...</option>
+                    {regionOptions.map((opt) => (
+                      <option key={opt} value={opt}>{opt}</option>
+                    ))}
+                  </select>
                 </div>
 
                 <div>
