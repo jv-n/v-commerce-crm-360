@@ -7,6 +7,8 @@ import EditOutlinedIcon from "@mui/icons-material/EditOutlined"
 import BarChartOutlinedIcon from "@mui/icons-material/BarChartOutlined"
 import ConfirmationNumberOutlinedIcon from "@mui/icons-material/ConfirmationNumberOutlined"
 import AutorenewOutlinedIcon from "@mui/icons-material/AutorenewOutlined"
+import ContentCopyOutlinedIcon from "@mui/icons-material/ContentCopyOutlined"
+import CheckCircleOutlinedIcon from "@mui/icons-material/CheckCircleOutlined"
 import { MdOutlineRequestQuote } from "react-icons/md"
 import {
   fetchProductById,
@@ -162,6 +164,14 @@ export default function ProductDetail() {
   const [error,    setError]    = useState(false)
   const [tab,      setTab]      = useState<"informacoes" | "atividades">("informacoes")
   const [editOpen, setEditOpen] = useState(false)
+  const [idCopied, setIdCopied] = useState(false)
+
+  const handleCopyId = () => {
+    if (!product) return
+    navigator.clipboard.writeText(product.id)
+    setIdCopied(true)
+    setTimeout(() => setIdCopied(false), 2000)
+  }
 
   useEffect(() => {
     if (!id) return
@@ -230,6 +240,15 @@ export default function ProductDetail() {
 
   return (
     <>
+    {/* Toast ID copiado */}
+    <div className={cn(
+      "fixed bottom-8 left-1/2 -translate-x-1/2 z-[9999] flex items-center gap-2.5 px-5 py-3 rounded-[10px] bg-[#1e1e1e] border-2 border-[#39ff14] text-[#39ff14] text-sm font-medium shadow-lg transition-all duration-300",
+      idCopied ? "opacity-100 translate-y-0" : "opacity-0 translate-y-4 pointer-events-none"
+    )}>
+      <CheckCircleOutlinedIcon sx={{ fontSize: 20, color: "#39ff14" }} />
+      ID copiado
+    </div>
+
     {editOpen && (
       <ProductEditModal
         open={editOpen}
@@ -263,7 +282,7 @@ export default function ProductDetail() {
             <hr className="border-[#E5E5E5]" />
             <div className="px-4 py-4 flex flex-col gap-1">
               <span className="font-bold text-gray-900 text-lg leading-tight">{product.name}</span>
-              <span className="text-xs text-purple-500 truncate cursor-default" title={product.id}>
+              <span className="text-xs text-black truncate cursor-default" title={product.id}>
                 {product.id}
               </span>
             </div>
@@ -276,7 +295,12 @@ export default function ProductDetail() {
               <span className="flex-1 text-center text-base font-bold text-gray-900">Informações importantes</span>
               <button
                 onClick={() => setEditOpen(true)}
-                className="text-gray-400 hover:text-gray-700 transition-colors shrink-0"
+                className={cn(
+                  "shrink-0 w-[30px] h-[30px] flex items-center justify-center rounded-[6.67px] text-gray-700 transition-colors",
+                  editOpen
+                    ? "bg-[#EACAFF] border-[1.25px] border-[#B899CC]"
+                    : "border border-transparent hover:bg-[#F0DDFD] hover:border-[#D1B1E5]"
+                )}
               >
                 <EditOutlinedIcon sx={{ fontSize: 18 }} />
               </button>
@@ -285,7 +309,14 @@ export default function ProductDetail() {
 
             <div className="flex flex-col gap-5 px-5 py-5">
               <InfoRow label="ID produto">
-                <span className="text-sm text-gray-900 break-all">{product.id}</span>
+                <button
+                  onClick={handleCopyId}
+                  title="Copiar ID"
+                  className="flex items-center gap-1.5 group/id text-left"
+                >
+                  <span className="text-sm text-gray-900 break-all">{product.id}</span>
+                  <ContentCopyOutlinedIcon sx={{ fontSize: 14, color: "#9ca3af" }} className="opacity-0 group-hover/id:opacity-100 transition-opacity shrink-0" />
+                </button>
               </InfoRow>
               <InfoRow label="Nome do produto">
                 <span className="text-base text-gray-900">{product.name}</span>
@@ -294,7 +325,7 @@ export default function ProductDetail() {
                 <span className="text-base text-gray-900">{fmtCurrency(product.price)}</span>
               </InfoRow>
               <InfoRow label="Categoria">
-                <span className={cn("inline-block px-3 py-1 rounded-full text-sm font-medium", catColor)}>
+                <span className={cn("inline-flex items-center gap-[5.75px] px-[7.67px] py-[0.96px] rounded-[3.83px] text-sm font-medium", catColor)}>
                   {product.category}
                 </span>
               </InfoRow>
@@ -302,14 +333,7 @@ export default function ProductDetail() {
                 <span className="text-base text-gray-900">{product.stock.toLocaleString("pt-BR")}</span>
               </InfoRow>
               <InfoRow label="Fornecedor">
-                {product.supplier ? (
-                  <div className="flex items-center gap-3 mt-1">
-                    <span className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-purple-200 text-purple-800 text-sm font-bold shrink-0">
-                      {initials(product.supplier)}
-                    </span>
-                    <span className="text-base text-gray-900">{product.supplier}</span>
-                  </div>
-                ) : <span className="text-base text-gray-900">—</span>}
+                <span className="text-base text-gray-900">{product.supplier ?? "—"}</span>
               </InfoRow>
               <InfoRow label="Peso KG">
                 <span className="text-base text-gray-900">
