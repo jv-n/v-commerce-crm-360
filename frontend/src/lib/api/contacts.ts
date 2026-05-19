@@ -179,6 +179,23 @@ export async function fetchContactResumo(id: string): Promise<ContactResumo> {
   return res.json() as Promise<ContactResumo>
 }
 
+export interface ContactActivity {
+  id: number
+  id_cliente: string
+  user_name: string
+  field_name: string
+  old_value: string | null
+  new_value: string | null
+  change_method: string
+  changed_at: string
+}
+
+export async function fetchContactActivities(id: string, limit = 50): Promise<ContactActivity[]> {
+  const res = await fetch(`/api/contacts/${id}/activities?limit=${limit}`)
+  if (!res.ok) throw new Error(`Erro ao buscar atividades: ${res.status}`)
+  return res.json() as Promise<ContactActivity[]>
+}
+
 export async function fetchContacts(params: ContactsParams): Promise<ContactsPage> {
   const query = new URLSearchParams({
     page:     String(params.page),

@@ -2,8 +2,9 @@ import { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { cn } from "@/lib/utils"
 import type { Contact } from "@/types/contact"
-import { fetchContactPedidos, type ContactPedido } from "@/lib/api/contacts"
+import { fetchContactPedidos, fetchContactActivities, type ContactPedido, type ContactActivity } from "@/lib/api/contacts"
 import AddIcon             from "@mui/icons-material/Add"
+import { FaPen } from "react-icons/fa6"
 import EditOutlinedIcon    from "@mui/icons-material/EditOutlined"
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
 import MoreHorizIcon       from "@mui/icons-material/MoreHoriz"
@@ -13,29 +14,55 @@ function fmtBRL(value: number | null): string {
   return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
 }
 
+function fmtActivityDate(iso: string): string {
+  if (!iso) return "—"
+  const [datePart, timePart = ""] = iso.includes("T") ? iso.split("T") : iso.split(" ")
+  const [y, m, d] = datePart.split("-")
+  return `${d}/${m} ${y} ${timePart.slice(0, 5)}`
+}
+
+function parseDate(iso: string | null): number {
+  if (!iso) return 0
+  return new Date(iso).getTime()
+}
+
 type TimelineEntry =
-  | { type: "purchase"; pedido: ContactPedido }
-  | { type: "more";     count: number }
-  | { type: "created" }
+  | { type: "purchase"; pedido: ContactPedido; time: number }
+  | { type: "activity"; activity: ContactActivity; time: number }
+  | { type: "more";     count: number; time: number }
+  | { type: "created"; time: number }
 
 export function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEdit: () => void }) {
   const navigate = useNavigate()
   const [pedidos, setPedidos] = useState<ContactPedido[]>([])
+  const [activities, setActivities] = useState<ContactActivity[]>([])
 
   useEffect(() => {
     fetchContactPedidos(contact.id, 3)
       .then(setPedidos)
+      .catch(() => {})
+      
+    fetchContactActivities(contact.id, 5)
+      .then(setActivities)
       .catch(() => {})
   }, [contact.id])
 
   const hiddenCount = Math.max(0, contact.purchases - pedidos.length)
   const showMore = hiddenCount > 0
 
-  const timeline: TimelineEntry[] = [
-    ...pedidos.map(p => ({ type: "purchase" as const, pedido: p })),
-    ...(showMore ? [{ type: "more" as const, count: hiddenCount }] : []),
-    { type: "created" as const },
+  let timeline: TimelineEntry[] = [
+    ...pedidos.map(p => ({ type: "purchase" as const, pedido: p, time: parseDate(p.data_pedido) })),
+    ...activities.map(a => ({ type: "activity" as const, activity: a, time: parseDate(a.changed_at) })),
   ]
+  
+  timeline.sort((a, b) => b.time - a.time)
+  
+  const lastPurchaseTime = pedidos.length > 0 ? parseDate(pedidos[pedidos.length - 1].data_pedido) : 0
+  if (showMore) {
+    timeline.push({ type: "more" as const, count: hiddenCount, time: lastPurchaseTime - 1 })
+  }
+  
+  timeline.push({ type: "created" as const, time: -1 }) // Created is always last
 
   return (
     <div className="bg-purple-50/40 px-8 py-5 flex gap-8 border-t border-purple-100">
@@ -48,15 +75,18 @@ export function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEd
                 "w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5",
                 entry.type === "created"
                   ? "border-2 border-dashed border-gray-300 bg-transparent"
+                  : entry.type === "activity"
+                  ? "bg-[#F0DDFD]"
                   : entry.type === "more"
                   ? "border border-gray-300 bg-white shadow-sm"
                   : "bg-white border border-purple-200 shadow-sm",
               )}>
                 {entry.type === "purchase" && <ShoppingCartOutlinedIcon sx={{ fontSize: 12, color: "#7C3AED" }} />}
+                {entry.type === "activity" && <FaPen size={10} color="#9F83B2" />}
                 {entry.type === "more"     && <MoreHorizIcon            sx={{ fontSize: 14, color: "#9CA3AF" }} />}
                 {entry.type === "created"  && <AddIcon                  sx={{ fontSize: 13, color: "#9CA3AF" }} />}
               </div>
-              {i < timeline.length - 1 && <div className="w-px flex-1 bg-gray-200 my-1" />}
+              {i < timeline.length - 1 && <div className={cn("w-px flex-1 my-1", entry.type === "activity" ? "bg-[#9F83B2]" : "bg-gray-200")} />}
             </div>
 
             {/* Conteúdo do marco */}
@@ -75,6 +105,18 @@ export function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEd
                     <span className="text-gray-300">·</span>
                     <span>{entry.pedido.data_pedido ?? "—"}</span>
                   </div>
+                </div>
+              )}
+
+              {entry.type === "activity" && (
+                <div className="flex items-center gap-1 flex-wrap text-sm">
+                  <span className="font-semibold text-gray-900">{entry.activity.user_name}</span>
+                  <span className="text-gray-500">atualizou</span>
+                  <span className="font-medium text-gray-900">{entry.activity.field_name}:</span>
+                  <span className="text-gray-500">{entry.activity.old_value ?? "—"}</span>
+                  <span className="text-gray-500">→</span>
+                  <span className="font-semibold text-gray-900">{entry.activity.new_value ?? "—"}</span>
+                  <span className="text-xs text-gray-400 ml-0.5">- {fmtActivityDate(entry.activity.changed_at)}</span>
                 </div>
               )}
 

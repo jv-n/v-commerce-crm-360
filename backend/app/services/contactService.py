@@ -1,7 +1,9 @@
 import csv
 import io
 import uuid
-from datetime import date
+from datetime import date, datetime, timezone, timedelta
+
+_BRT = timezone(timedelta(hours=-3))
 from typing import Generator
 
 from fastapi import Depends
@@ -11,9 +13,9 @@ from fastapi import Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc, func
 
-from app.models.contactModel import GoldCliente360
+from app.models.contactModel import GoldCliente360, ContactActivity
 from app.models.saleModel import GoldPedidoDetalhado
-from app.schemas.contactSchemas import ContactOut, ContactsPageOut, ContactCreate, ContactUpdate, ContactResumoOut
+from app.schemas.contactSchemas import ContactOut, ContactsPageOut, ContactCreate, ContactUpdate, ContactResumoOut, ContactActivityOut
 from database.database import get_db
 
 _VALID_STATUSES = {"Ativo", "Inativo", "VIP", "Lead", "Em risco"}
@@ -266,17 +268,52 @@ class ContactService:
         self.db.refresh(gold)
         return _to_contact_out(gold)
 
-    def update_contact(self, contact_id: str, data: ContactUpdate) -> ContactOut | None:
+    def update_contact(self, contact_id: str, data: ContactUpdate, user_name: str = "Sistema") -> ContactOut | None:
         gold = self.db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()
         if not gold:
             return None
 
-        if data.name is not None:
+        now = datetime.now(_BRT).replace(tzinfo=None)
+        activities: list[ContactActivity] = []
+
+        if data.name is not None and gold.nome_completo != data.name:
+            activities.append(ContactActivity(
+                id_cliente=contact_id,
+                user_name=user_name,
+                field_name="Nome",
+                old_value=gold.nome_completo or "—",
+                new_value=data.name,
+                change_method="Edição direta",
+                changed_at=now,
+            ))
             gold.nome_completo = data.name
-        if data.email is not None:
+            
+        if data.email is not None and gold.email != data.email:
+            activities.append(ContactActivity(
+                id_cliente=contact_id,
+                user_name=user_name,
+                field_name="Email",
+                old_value=gold.email or "—",
+                new_value=data.email,
+                change_method="Edição direta",
+                changed_at=now,
+            ))
             gold.email = data.email
-        if data.clientStatus is not None and data.clientStatus in _VALID_STATUSES:
+            
+        if data.clientStatus is not None and data.clientStatus in _VALID_STATUSES and gold.segmento_cliente != data.clientStatus:
+            activities.append(ContactActivity(
+                id_cliente=contact_id,
+                user_name=user_name,
+                field_name="Status",
+                old_value=gold.segmento_cliente or "—",
+                new_value=data.clientStatus,
+                change_method="Edição direta",
+                changed_at=now,
+            ))
             gold.segmento_cliente = data.clientStatus
+
+        for act in activities:
+            self.db.add(act)
 
         self.db.commit()
         self.db.refresh(gold)
@@ -526,3 +563,14 @@ class ContactService:
             produto_mais_comprado=qty_row.nome_produto if qty_row else None,
             produto_mais_comprado_qty=round(qty_row.total_qty, 0) if qty_row and qty_row.total_qty else None,
         )
+
+    def get_contact_activities(self, contact_id: str, limit: int = 50) -> list[ContactActivityOut]:
+        rows = (
+            self.db.query(ContactActivity)
+            .filter(ContactActivity.id_cliente == contact_id)
+            .order_by(ContactActivity.changed_at.desc())
+            .limit(limit)
+            .all()
+        )
+        return [ContactActivityOut.model_validate(r) for r in rows]
+

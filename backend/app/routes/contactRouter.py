@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.schemas.contactSchemas import ContactsPageOut, ContactOut, ContactCreate, ContactUpdate, ContactResumoOut, ContactPedidoOut
+from app.schemas.contactSchemas import ContactsPageOut, ContactOut, ContactCreate, ContactUpdate, ContactResumoOut, ContactPedidoOut, ContactActivityOut
 from app.services.contactService import ContactService
 from database.database import get_db
 
@@ -95,6 +95,14 @@ def get_contact_pedidos(
     db: Session = Depends(get_db),
 ):
     return ContactService(db).get_last_pedidos(contact_id, limit=limit)
+
+@router.get("/{contact_id}/activities", response_model=list[ContactActivityOut])
+def get_contact_activities(
+    contact_id: str,
+    limit: int = Query(50, ge=1, le=100),
+    db: Session = Depends(get_db),
+):
+    return ContactService(db).get_contact_activities(contact_id, limit=limit)
 
 
 @router.get("/{contact_id}/resumo", response_model=ContactResumoOut)

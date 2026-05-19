@@ -1,5 +1,6 @@
-from sqlalchemy import Float, String
+from sqlalchemy import Float, String, Integer, DateTime
 from sqlalchemy.orm import Mapped, mapped_column
+from datetime import datetime
 
 from database.database import Base
 
@@ -52,3 +53,16 @@ class GoldCliente360(Base):
     produto_mais_visualizado:  Mapped[str | None]   = mapped_column(String,  nullable=True)
     categoria_mais_visualizada: Mapped[str | None]  = mapped_column(String,  nullable=True)
     timestamp_ingestion:       Mapped[str | None]   = mapped_column(String,  nullable=True)
+
+
+class ContactActivity(Base):
+    __tablename__ = "ft_contact_activities"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    id_cliente: Mapped[str] = mapped_column(String, nullable=False, index=True)
+    user_name: Mapped[str] = mapped_column(String(255), nullable=False)
+    field_name: Mapped[str] = mapped_column(String(100), nullable=False)
+    old_value: Mapped[str | None] = mapped_column(String, nullable=True)
+    new_value: Mapped[str | None] = mapped_column(String, nullable=True)
+    change_method: Mapped[str] = mapped_column(String(100), nullable=False, default="Edicao direta")
+    changed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
