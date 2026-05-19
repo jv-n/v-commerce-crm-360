@@ -31,8 +31,10 @@ function App() {
               <Route element={<ProtectedRoute allowedRoles={["admin", "sales"]} />}>
                 <Route path="/contacts" element={<Contacts />} />
               </Route>
-              <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
+              <Route element={<ProtectedRoute allowedRoles={["admin", "sales"]} />}>
                 <Route path="/sales" element={<Sales />} />
+              </Route>
+              <Route element={<ProtectedRoute allowedRoles={["admin"]} />}>
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/chat" element={<Chat />} />
               </Route>

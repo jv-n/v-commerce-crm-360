@@ -34,7 +34,7 @@ const ALL_SCORES = [
 ]
 
 const idButtonClassName =
-  "block truncate rounded-md px-2 py-0.5 text-[13px] font-medium text-gray-900 transition-colors hover:bg-[#F0DDFD]"
+  "block truncate rounded-lg px-2 py-0.5 text-[13px] font-medium text-gray-900 transition-colors hover:bg-[#CFA7FF]"
 
 function getProblemIcon(problem: TicketProblem): ReactNode {
   const iconStyle = { fontSize: 18, color: "#A855F7" }
@@ -88,7 +88,8 @@ function formatTicketDate(value?: string) {
 export function getTicketColumns(
   responsibleOptions: string[],
   expandedRowIds: Set<string>,
-  onToggleExpand: (id: string) => void
+  onToggleExpand: (id: string) => void,
+  onNavigateContact: (clientId: string) => void,
 ): Column<Ticket>[] {
   return [
     {
@@ -100,6 +101,7 @@ export function getTicketColumns(
 
         return (
           <div
+            onClick={(e) => e.stopPropagation()}
             className={
               isExpanded
                 ? "inline-flex rotate-90 transition-transform duration-200"
@@ -161,6 +163,7 @@ export function getTicketColumns(
           type="button"
           className={`${idButtonClassName} max-w-[130px]`}
           title={ticket.clientId}
+          onClick={(e) => { e.stopPropagation(); onNavigateContact(ticket.clientId) }}
         >
           {ticket.client}
         </button>
@@ -195,7 +198,7 @@ export function getTicketColumns(
       render: ticket => (
         <button
           type="button"
-          className="flex max-w-[140px] items-center gap-1.5 rounded-md px-1.5 py-0.5 text-left transition-colors hover:bg-[#F0DDFD]"
+          className="flex max-w-[140px] items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-left transition-colors hover:bg-[#CFA7FF]"
           title={ticket.responsible.name}
         >
           <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#F0DDFD] text-[11px] text-[#6F2B90]">
@@ -275,9 +278,9 @@ export function getTicketColumns(
       render: () => (
         <button
           type="button"
-          className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#D1B1E5] bg-[#F7EBFF] transition-colors hover:bg-[#F0DDFD]"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D1B1E5] bg-[#F7EBFF] transition-colors hover:bg-[#F0DDFD]"
         >
-          <ArrowForwardIcon sx={{ fontSize: 18, color: "#111827" }} />
+          <ArrowForwardIcon sx={{ fontSize: 16, color: "#06121C" }} />
         </button>
       ),
     },

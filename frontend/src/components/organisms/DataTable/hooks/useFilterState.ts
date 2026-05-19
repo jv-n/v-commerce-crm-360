@@ -2,11 +2,13 @@ import { useState, useMemo } from "react"
 import type { Column, ActiveFilters, ActiveFilter } from "../types"
 
 export function isFilterActive(f: ActiveFilter): boolean {
-  if (f.type === "select")       return f.value !== ""
-  if (f.type === "toggle")       return f.active
-  if (f.type === "multi-select") return f.values.length > 0
-  if (f.type === "date-range")   return f.from != null || f.to != null
-  return f.min != null || f.max != null  // number-range
+  if (f.type === "select")        return f.value !== ""
+  if (f.type === "search-select") return f.value !== ""
+  if (f.type === "toggle")        return f.active
+  if (f.type === "multi-select")  return f.values.length > 0
+  if (f.type === "date-range")    return f.from != null || f.to != null
+  if (f.type === "number-range")  return f.min != null || f.max != null
+  return false
 }
 
 function fmtDate(iso: string): string {
@@ -15,7 +17,8 @@ function fmtDate(iso: string): string {
 }
 
 export function formatActiveFilter(f: ActiveFilter): string {
-  if (f.type === "select") return f.value
+  if (f.type === "select")        return f.value
+  if (f.type === "search-select") return f.value
   if (f.type === "toggle") return ""
   if (f.type === "multi-select") {
     if (f.values.length === 0) return ""
@@ -90,6 +93,8 @@ export function useFilterState<T>(columns: Column<T>[], data: T[], onChange?: (f
           return !def.filterFn || def.filterFn(row, active.values)
         if (def.type === "date-range" && active.type === "date-range")
           return def.filterFn(row, active.from, active.to)
+        if (def.type === "search-select" && active.type === "search-select")
+          return def.filterFn(row, active.value)
         return true
       })
     )

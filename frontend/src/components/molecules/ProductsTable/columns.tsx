@@ -1,5 +1,5 @@
 import type { Column } from "@/components/organisms/DataTable/types"
-import { RowExpandButton } from "@/components/organisms/DataTable/atoms/RowExpandButton"
+import { OpenCircleButton } from "@/components/atoms/open-circle-button"
 import { CellText }        from "@/components/organisms/DataTable/atoms/CellText"
 import { CellTag }         from "@/components/organisms/DataTable/atoms/CellTag"
 import type { Product, ProductCategory } from "@/types/product"
@@ -12,16 +12,17 @@ const ALL_CATEGORIES: ProductCategory[] = [
 ]
 
 const CATEGORY_COLORS: Record<ProductCategory, string> = {
-  "Automotivo":  "bg-slate-100 text-[#06121C]",
-  "Beleza":      "bg-pink-100 text-[#06121C]",
-  "Brinquedos":  "bg-violet-100 text-[#06121C]",
-  "Casa":        "bg-amber-100 text-[#06121C]",
-  "Eletronicos": "bg-blue-100 text-[#06121C]",
-  "Esportes":    "bg-green-100 text-[#06121C]",
-  "Indefinida":  "bg-gray-100 text-[#06121C]",
-  "Moveis":      "bg-orange-100 text-[#06121C]",
-  "Vestuario":   "bg-teal-100 text-[#06121C]",
+  "Automotivo":  "bg-slate-100 text-slate-700",
+  "Beleza":      "bg-pink-100 text-pink-700",
+  "Brinquedos":  "bg-violet-100 text-violet-700",
+  "Casa":        "bg-amber-100 text-amber-700",
+  "Eletronicos": "bg-blue-100 text-blue-700",
+  "Esportes":    "bg-green-100 text-green-700",
+  "Indefinida":  "bg-gray-100 text-gray-600",
+  "Moveis":      "bg-orange-100 text-orange-700",
+  "Vestuario":   "bg-teal-100 text-teal-700",
 }
+
 
 function getRatingStyles(rating: number): { dotClass: string; colorClasses: string } {
   if (rating >= 7) return { dotClass: "bg-[#257719]", colorClasses: "bg-[#D2F9BE] text-[#257719]" }
@@ -42,13 +43,16 @@ export function makeProductColumns(
     {
       key: "info",
       header: (
-        <RowExpandButton
-          expanded={allExpanded}
-          onClick={(e) => { e.stopPropagation(); onToggleAll() }}
-        />
+        <div
+          onClick={(e) => e.stopPropagation()}
+          className={allExpanded ? "inline-flex rotate-90 transition-transform duration-200" : "inline-flex transition-transform duration-200"}
+        >
+        </div>
       ),
       render: (p) => (
-        <RowExpandButton expanded={expandedRowIds.has(p.id)} />
+        <div className={expandedRowIds.has(p.id) ? "inline-flex rotate-90 transition-transform duration-200" : "inline-flex transition-transform duration-200"}>
+          <OpenCircleButton title={expandedRowIds.has(p.id) ? "Fechar detalhes do produto" : "Abrir detalhes do produto"} />
+        </div>
       ),
     },
 
@@ -65,7 +69,15 @@ export function makeProductColumns(
       minWidth: "180px",
       sortable: true,
       copyId: (p) => p.id,
-      render: (p) => <CellText value={p.name} truncate maxWidth="220px" />,
+      render: (p) => (
+        <button
+          type="button"
+          onClick={(e) => { e.stopPropagation(); onNavigate(p.id) }}
+          className="text-left hover:bg-[#CFA7FF] rounded-lg px-2 py-0.5 transition-colors"
+        >
+          <CellText value={p.name} truncate maxWidth="220px" />
+        </button>
+      ),
     },
 
     {
@@ -73,13 +85,13 @@ export function makeProductColumns(
       header: "Categoria",
       minWidth: "140px",
       filter: {
-        type: "select",
+        type: "multi-select",
         label: "Categoria",
         options: ALL_CATEGORIES,
-        filterFn: (p, value) => p.category === (value as ProductCategory),
+        filterFn: (p, values) => values.includes(p.category),
       },
       render: (p) => (
-        <CellTag label={p.category} colorClasses={CATEGORY_COLORS[p.category]} />
+        <CellTag label={p.category} colorClasses={CATEGORY_COLORS[p.category]} variant="badge" />
       ),
     },
 
@@ -147,6 +159,7 @@ export function makeProductColumns(
             label={p.rating.toFixed(1)}
             colorClasses={s.colorClasses}
             dotClass={s.dotClass}
+            variant="badge"
           />
         )
       },
@@ -177,7 +190,7 @@ export function makeProductColumns(
           onClick={(e) => { e.stopPropagation(); onNavigate(p.id) }}
           className={cn(
             "flex items-center justify-center w-8 h-8 rounded-lg",
-            "border border-[#D1B1E5] bg-[#F7EBFF] hover:bg-purple-100 transition-colors"
+            "border border-[#D1B1E5] bg-[#F7EBFF] hover:bg-[#F0DDFD] transition-colors"
           )}
         >
           <ArrowForwardIcon sx={{ fontSize: 16, color: "#06121C" }} />

@@ -12,8 +12,8 @@ export function TogglePill({ label, active, onToggle }: TogglePillProps) {
     <button
       onClick={onToggle}
       className={cn(
-        "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-md transition-colors",
-        active ? "bg-purple-50 text-purple-700 font-medium" : "text-gray-900 hover:bg-[#F7EBFF]"
+        "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl transition-colors",
+        active ? "bg-[#EACAFF] border-2 border-[#B899CC] text-[#06121C] font-medium" : "border border-transparent text-gray-900 hover:bg-purple-100 hover:border-purple-300"
       )}
     >
       <span>{label}</span>

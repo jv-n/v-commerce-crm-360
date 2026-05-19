@@ -14,9 +14,11 @@ interface ContactsParams {
   search?: string
   purchasesMin?: number | null
   purchasesMax?: number | null
-  createdYear?: string
-  engagement?: string
+  createdFrom?: string
+  createdTo?:   string
+  engagements?: string[]
   clientStatuses?: string[]
+  search_field?: string
   sortBy?: string | null
   sortDir?: "asc" | "desc"
   // advanced filters — compras / financeiro
@@ -120,6 +122,10 @@ function toContact(raw: RawContact): Contact {
 export interface ContactFormData {
   name: string
   email?: string
+  phone?: string
+  clientStatus?: string
+  region?: string
+  origin?: string
 }
 
 export async function createContact(data: ContactFormData): Promise<Contact> {
@@ -157,6 +163,21 @@ export async function fetchContactById(id: string): Promise<Contact> {
   return toContact(await res.json() as RawContact)
 }
 
+export interface ContactPedido {
+  id_pedido: string
+  nome_produto: string | null
+  quantidade: number | null
+  valor_pedido: number | null
+  metodo_pagamento: string | null
+  data_pedido: string | null
+}
+
+export async function fetchContactPedidos(id: string, limit = 3): Promise<ContactPedido[]> {
+  const res = await fetch(`/api/contacts/${id}/pedidos?limit=${limit}`)
+  if (!res.ok) throw new Error(`Erro ao buscar pedidos: ${res.status}`)
+  return res.json() as Promise<ContactPedido[]>
+}
+
 export async function fetchContactResumo(id: string): Promise<ContactResumo> {
   const res = await fetch(`/api/contacts/${id}/resumo`)
   if (!res.ok) throw new Error(`Erro ao buscar resumo: ${res.status}`)
@@ -169,10 +190,11 @@ export async function fetchContacts(params: ContactsParams): Promise<ContactsPag
     pageSize: String(params.pageSize),
     tab:      params.tab,
     ...(params.search                    ? { search:           params.search                    } : {}),
+    ...(params.search_field && params.search_field !== "name" ? { search_field: params.search_field } : {}),
     ...(params.purchasesMin != null      ? { purchases_min:    String(params.purchasesMin)      } : {}),
     ...(params.purchasesMax != null      ? { purchases_max:    String(params.purchasesMax)      } : {}),
-    ...(params.createdYear               ? { created_year:     params.createdYear               } : {}),
-    ...(params.engagement                ? { engagement: params.engagement } : {}),
+    ...(params.createdFrom               ? { created_from:     params.createdFrom               } : {}),
+    ...(params.createdTo                 ? { created_to:       params.createdTo                 } : {}),
     ...(params.sortBy                    ? { sort_by:    params.sortBy    } : {}),
     ...(params.sortBy && params.sortDir  ? { sort_dir:   params.sortDir   } : {}),
     ...(params.receitaMin != null            ? { receita_min:          String(params.receitaMin)       } : {}),
@@ -201,6 +223,7 @@ export async function fetchContacts(params: ContactsParams): Promise<ContactsPag
     ...(params.npsRecenteMax != null         ? { nps_recente_max:      String(params.npsRecenteMax)    } : {}),
   })
 
+  params.engagements?.forEach(e  => query.append("engagement",    e))
   params.clientStatuses?.forEach(s => query.append("client_status", s))
   params.regioes?.forEach(r   => query.append("regioes",    r))
   params.origens?.forEach(o   => query.append("origens",    o))
@@ -233,8 +256,8 @@ export async function exportContactsCSV(params: Omit<ContactsParams, "page" | "p
     ...(params.search                    ? { search:                params.search                    } : {}),
     ...(params.purchasesMin != null      ? { purchases_min:         String(params.purchasesMin)      } : {}),
     ...(params.purchasesMax != null      ? { purchases_max:         String(params.purchasesMax)      } : {}),
-    ...(params.createdYear               ? { created_year:          params.createdYear               } : {}),
-    ...(params.engagement                ? { engagement:            params.engagement                } : {}),
+    ...(params.createdFrom               ? { created_from:           params.createdFrom               } : {}),
+    ...(params.createdTo                 ? { created_to:             params.createdTo                 } : {}),
     ...(params.receitaMin != null        ? { receita_min:           String(params.receitaMin)        } : {}),
     ...(params.receitaMax != null        ? { receita_max:           String(params.receitaMax)        } : {}),
     ...(params.ticketMedioMin != null    ? { ticket_medio_min:      String(params.ticketMedioMin)    } : {}),
@@ -260,6 +283,7 @@ export async function exportContactsCSV(params: Omit<ContactsParams, "page" | "p
     ...(params.npsRecenteMin != null     ? { nps_recente_min:       String(params.npsRecenteMin)     } : {}),
     ...(params.npsRecenteMax != null     ? { nps_recente_max:       String(params.npsRecenteMax)     } : {}),
   })
+  params.engagements?.forEach(e              => query.append("engagement",              e))
   params.clientStatuses?.forEach(s          => query.append("client_status",           s))
   params.regioes?.forEach(r                 => query.append("regioes",                 r))
   params.origens?.forEach(o                 => query.append("origens",                 o))

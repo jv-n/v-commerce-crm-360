@@ -1,23 +1,113 @@
+import { useState, useRef, useEffect } from "react"
+import { createPortal } from "react-dom"
 import type { Column } from "@/components/organisms/DataTable/types"
-import { RowExpandButton } from "@/components/organisms/DataTable/atoms/RowExpandButton"
+import { OpenCircleButton } from "@/components/atoms/open-circle-button"
 import { CellText }        from "@/components/organisms/DataTable/atoms/CellText"
 import { CellDouble }      from "@/components/organisms/DataTable/atoms/CellDouble"
 import { CellTag }         from "@/components/organisms/DataTable/atoms/CellTag"
-import AccessTimeOutlinedIcon  from "@mui/icons-material/AccessTimeOutlined"
-import ArrowForwardIcon         from "@mui/icons-material/ArrowForward"
+import InfoOutlinedIcon    from "@mui/icons-material/InfoOutlined"
+import ArrowForwardIcon    from "@mui/icons-material/ArrowForward"
 import { ClientStatusBadge, ALL_CLIENT_STATUSES } from "./ClientStatusBadge"
 import type { Contact, EngagementType, ClientStatusType } from "@/types/contact"
+import { fetchContactPedidos, type ContactPedido } from "@/lib/api/contacts"
+
+function LastPurchaseTooltip({ contactId }: { contactId: string }) {
+  const [open, setOpen]       = useState(false)
+  const [pedido, setPedido]   = useState<ContactPedido | null>(null)
+  const [loading, setLoading] = useState(false)
+  const [pos, setPos]         = useState({ top: 0, left: 0 })
+  const anchorRef             = useRef<HTMLDivElement>(null)
+  const fetched               = useRef(false)
+
+  const handleEnter = async () => {
+    if (anchorRef.current) {
+      const r = anchorRef.current.getBoundingClientRect()
+      setPos({ top: r.top + window.scrollY, left: r.left + r.width / 2 + window.scrollX })
+    }
+    setOpen(true)
+    if (fetched.current) return
+    fetched.current = true
+    setLoading(true)
+    try {
+      const list = await fetchContactPedidos(contactId, 1)
+      setPedido(list[0] ?? null)
+    } catch {
+      setPedido(null)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    if (!open) return
+    const onScroll = () => setOpen(false)
+    window.addEventListener("scroll", onScroll, true)
+    return () => window.removeEventListener("scroll", onScroll, true)
+  }, [open])
+
+  const formatBRL = (v: number) =>
+    v.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+
+  const tooltip = open ? createPortal(
+    <div
+      className="pointer-events-none fixed z-[9999]"
+      style={{ top: pos.top, left: pos.left, transform: "translate(-50%, calc(-100% - 10px))" }}
+    >
+      <div className="bg-[#222] text-white rounded-2xl px-3.5 py-2.5 text-sm whitespace-nowrap shadow-xl">
+        {loading ? (
+          <span className="text-gray-400 text-xs">Carregando...</span>
+        ) : pedido ? (
+          <>
+            <p className="font-medium leading-snug">
+              {pedido.quantidade && pedido.quantidade > 1 ? `${pedido.quantidade}x ` : ""}
+              {pedido.nome_produto ?? "—"}
+            </p>
+            <p className="text-green-400 font-semibold leading-snug">
+              {pedido.valor_pedido != null ? formatBRL(pedido.valor_pedido) : "—"}
+            </p>
+          </>
+        ) : (
+          <span className="text-gray-400 text-xs">Sem dados</span>
+        )}
+      </div>
+      <div className="flex justify-center -mt-1.5">
+        <div className="w-3 h-3 bg-[#222] rotate-45" />
+      </div>
+    </div>,
+    document.body
+  ) : null
+
+  return (
+    <div
+      ref={anchorRef}
+      className="inline-flex items-center"
+      onMouseEnter={handleEnter}
+      onMouseLeave={() => setOpen(false)}
+    >
+      <InfoOutlinedIcon sx={{ fontSize: 14, color: "#9CA3AF" }} className="cursor-default" />
+      {tooltip}
+    </div>
+  )
+}
+
+function formatPhone(phone: string): string {
+  const d = phone.replace(/\D/g, "")
+  if (d.length === 11) return `(${d.slice(0,2)})${d.slice(2,7)}-${d.slice(7)}`
+  if (d.length === 10) return `(${d.slice(0,2)})${d.slice(2,6)}-${d.slice(6)}`
+  return phone
+}
 
 const ENGAGEMENT_COLORS: Record<EngagementType, string> = {
-  "Promotor":     "bg-green-50 text-green-700",
-  "Neutro":       "bg-yellow-50 text-yellow-700",
-  "Detrator":     "bg-red-50 text-red-600",
-  "Nenhum NPS":   "bg-gray-100 text-gray-500",
+  "Promotor":   "bg-green-50 text-green-700",
+  "Neutro":     "bg-yellow-50 text-yellow-700",
+  "Detrator":   "bg-red-50 text-red-600",
+  "Nenhum NPS": "bg-gray-100 text-gray-500",
 }
+
 
 export function makeContactColumns(
   expandedRowId: string | null,
-  onToggle: (id: string) => void,
+  _onToggle: (id: string) => void,
   onNavigate: (id: string) => void,
 ): Column<Contact>[] {
   return [
@@ -25,7 +115,12 @@ export function makeContactColumns(
   {
     key: "info",
     header: "",
-    render: (c) => <RowExpandButton expanded={expandedRowId === c.id} />,
+    minWidth: "30px",
+    render: (c) => (
+      <div className={expandedRowId === c.id ? "inline-flex rotate-90 transition-transform duration-200" : "inline-flex transition-transform duration-200"}>
+        <OpenCircleButton title={expandedRowId === c.id ? "Fechar detalhes do contato" : "Abrir detalhes do contato"} />
+      </div>
+    ),
   },
 
   // ── Nome ───────────────────────────────────────────────────────────────────
@@ -37,9 +132,13 @@ export function makeContactColumns(
     sortValue: (c) => c.name ?? "",
     copyId: (c) => c.id,
     render: (c) => (
-      <span className="text-sm text-[#06121C] truncate block max-w-[200px]">
-        {c.name}
-      </span>
+      <button
+        type="button"
+        onClick={(e) => { e.stopPropagation(); onNavigate(c.id) }}
+        className="text-left hover:bg-[#CFA7FF] rounded-lg px-2 py-0.5 transition-colors"
+      >
+        <CellText value={c.name} truncate maxWidth="200px" />
+      </button>
     ),
   },
 
@@ -67,7 +166,7 @@ export function makeContactColumns(
     render: (c) =>
       c.lastPurchase ? (
         <div className="flex items-center gap-1.5">
-          <AccessTimeOutlinedIcon sx={{ fontSize: 13, color: "#9CA3AF" }} />
+          <LastPurchaseTooltip contactId={c.id} />
           <CellText value={c.lastPurchase} variant="primary" />
         </div>
       ) : (
@@ -102,7 +201,11 @@ export function makeContactColumns(
     render: (c) => (
       <CellDouble
         top={c.email ?? "—"}
-        bottom={c.phone ?? undefined}
+        bottom={
+          c.phone
+            ? <span className="text-[#06121C]">{formatPhone(c.phone)}</span>
+            : "—"
+        }
       />
     ),
   },
@@ -113,10 +216,16 @@ export function makeContactColumns(
     header: "",
     visible: false,
     filter: {
-      type: "select",
+      type: "date-range" as const,
       label: "Data de criação",
-      options: ["2024", "2025", "2026"],
-      filterFn: (c, value) => (c.createdAt ?? "").endsWith(value),
+      filterFn: (c, from, to) => {
+        if (!c.createdAt) return true
+        const [d, m, y] = c.createdAt.split("/")
+        const iso = `${y}-${m}-${d}`
+        if (from && iso < from) return false
+        if (to   && iso > to)   return false
+        return true
+      },
     },
     render: () => null,
   },
@@ -129,15 +238,16 @@ export function makeContactColumns(
     sortable: true,
     sortValue: (c) => c.engagementScore,
     filter: {
-      type: "select",
+      type: "multi-select",
       label: "Engajamento",
       options: ["Promotor", "Neutro", "Detrator", "Nenhum NPS"],
-      filterFn: (c, value) => c.engagement === (value as EngagementType),
+      filterFn: (c, values) => values.length === 0 || values.includes(c.engagement),
     },
     render: (c) => (
       <CellTag
         label={c.engagement}
         colorClasses={ENGAGEMENT_COLORS[c.engagement]}
+        variant="badge"
       />
     ),
   },
@@ -147,13 +257,14 @@ export function makeContactColumns(
     key: "navigate",
     header: "",
     render: (c) => (
-      <div
+      <button
+        type="button"
         onClick={(e) => { e.stopPropagation(); onNavigate(c.id) }}
-        className="flex justify-center items-center w-[2.2rem] h-[2.2rem] rounded-md bg-[#F7EBFF] border border-[#D1B1E5] hover:bg-[#F0D4FF] cursor-pointer transition-colors"
+        className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D1B1E5] bg-[#F7EBFF] transition-colors hover:bg-[#F0DDFD]"
         title="Ver detalhe do contato"
       >
-        <ArrowForwardIcon sx={{ color: "#06121C" }} />
-      </div>
+        <ArrowForwardIcon sx={{ fontSize: 16, color: "#06121C" }} />
+      </button>
     ),
   },
   ]

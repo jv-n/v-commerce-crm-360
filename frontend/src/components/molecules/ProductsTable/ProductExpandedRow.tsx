@@ -70,18 +70,6 @@ export function ProductExpandedRow({ product }: { product: Product }) {
           </div>
         )}
       </div>
-
-      {/* Resumo V.IA */}
-      <div className="w-72 shrink-0">
-        <h3 className="text-sm font-bold text-gray-900 mb-2 text-center">
-          Resumo da <span className="text-green-500">V.IA</span>
-        </h3>
-        <div className="p-px rounded-lg" style={{ background: "linear-gradient(135deg, #4ade80, #2dd4bf, #818cf8)" }}>
-          <div className="bg-white rounded-lg p-3 text-xs text-gray-900 space-y-2">
-            <ProductResumoCard productId={product.id} />
-          </div>
-        </div>
-      </div>
     </div>
   )
 }

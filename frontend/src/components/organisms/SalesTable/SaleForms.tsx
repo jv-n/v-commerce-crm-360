@@ -1,4 +1,4 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import type React from "react"
 import { Sheet, SheetContent } from "@/components/atoms/sheet"
 import { Input } from "@/components/atoms/input"
@@ -10,7 +10,7 @@ import { fetchProducts } from "@/lib/api/products"
 import { fetchContacts } from "@/lib/api/contacts"
 import type { Product } from "@/types/product"
 import type { Contact } from "@/types/contact"
-import { useEffect } from "react"
+import { useAuth } from "@/contexts/auth/useAuth"
 
 const CATEGORIAS = ["Eletronicos", "Brinquedos", "Vestuario", "Esportes", "Casa", "Moveis", "Beleza", "Automotivo", "Indefinida"]
 const PAGAMENTOS = ["Boleto", "Pix", "Cartão"]
@@ -76,7 +76,7 @@ function SearchCombobox<T>({
             <li
               key={i}
               onMouseDown={() => { onSelect(item); setOpen(false) }}
-              className="px-3 py-2 cursor-pointer hover:bg-[#F7EBFF] truncate"
+              className="px-3 py-2 cursor-pointer hover:bg-[#CFA7FF] truncate"
             >
               {getLabel(item)}
             </li>
@@ -139,6 +139,7 @@ interface SaleFormContentProps {
 
 function SaleFormContent({ sale, onClose, onSuccess }: SaleFormContentProps) {
   const isEdit = Boolean(sale)
+  const { user } = useAuth()
   const [form,    setForm]    = useState<typeof EMPTY>(() =>
     sale ? saleToForm(sale) : { ...EMPTY, data_pedido: today() }
   )
@@ -165,7 +166,7 @@ function SaleFormContent({ sale, onClose, onSuccess }: SaleFormContentProps) {
           metodo_pagamento: form.metodo_pagamento,
           status:           form.status,
           data_pedido:      form.data_pedido,
-        })
+        }, user?.name ?? "Sistema")
       } else {
         await createSale({
           id_cliente:       form.id_cliente       || undefined,

@@ -4,7 +4,7 @@ import { CellTag }  from "@/components/organisms/DataTable/atoms/CellTag"
 import { StatusBadge } from "./tableComponents/badge"
 import { OpenCircleButton } from "@/components/atoms/open-circle-button"
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward"
-import AccessTimeOutlinedIcon from "@mui/icons-material/AccessTimeOutlined"
+
 import type { Sale, SaleStatus } from "@/types/sale"
 import type { ProductCategory } from "@/types/product"
 
@@ -18,15 +18,15 @@ const ALL_CATEGORIES = [
 const ALL_PAYMENT_METHODS = ["Boleto", "Pix", "Cartão"]
 
 const CATEGORY_COLORS: Record<ProductCategory, string> = {
-  "Automotivo":  "bg-slate-100 text-[#06121C]",
-  "Beleza":      "bg-pink-100 text-[#06121C]",
-  "Brinquedos":  "bg-violet-100 text-[#06121C]",
-  "Casa":        "bg-amber-100 text-[#06121C]",
-  "Eletronicos": "bg-blue-100 text-[#06121C]",
-  "Esportes":    "bg-green-100 text-[#06121C]",
-  "Indefinida":  "bg-gray-100 text-[#06121C]",
-  "Moveis":      "bg-orange-100 text-[#06121C]",
-  "Vestuario":   "bg-teal-100 text-[#06121C]",
+  "Automotivo":  "bg-slate-100 text-slate-700",
+  "Beleza":      "bg-pink-100 text-pink-700",
+  "Brinquedos":  "bg-violet-100 text-violet-700",
+  "Casa":        "bg-amber-100 text-amber-700",
+  "Eletronicos": "bg-blue-100 text-blue-700",
+  "Esportes":    "bg-green-100 text-green-700",
+  "Indefinida":  "bg-gray-100 text-gray-600",
+  "Moveis":      "bg-orange-100 text-orange-700",
+  "Vestuario":   "bg-teal-100 text-teal-700",
 }
 
 function formatBRL(value: number): string {
@@ -36,6 +36,8 @@ function formatBRL(value: number): string {
 export function getSaleColumns(
   expandedRowIds: Set<string>,
   onToggleExpand: (id: string) => void,
+  fetchClientOptions: (q: string) => Promise<string[]>,
+  fetchProductOptions: (q: string) => Promise<string[]>,
 ): Column<Sale>[] {
   return [
     {
@@ -45,7 +47,10 @@ export function getSaleColumns(
       render: (sale) => {
         const isExpanded = expandedRowIds.has(sale.id)
         return (
-          <div className={isExpanded ? "inline-flex rotate-90 transition-transform duration-200" : "inline-flex transition-transform duration-200"}>
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className={isExpanded ? "inline-flex rotate-90 transition-transform duration-200" : "inline-flex transition-transform duration-200"}
+          >
             <OpenCircleButton
               title={isExpanded ? "Fechar histórico do pedido" : "Abrir histórico do pedido"}
               onClick={() => onToggleExpand(sale.id)}
@@ -55,16 +60,38 @@ export function getSaleColumns(
       },
     },
     {
+      key: "id",
+      header: "ID do Pedido",
+      minWidth: "100px",
+      copyId: (c) => c.id,
+      render: (c) => <CellText value={c.id} truncate maxWidth="90px" />
+    },
+    {
       key: "client",
       header: "Cliente",
       minWidth: "130px",
-      copyId: (c) => c.id,
+      sortable: true,
+      sortValue: (c) => c.client,
+      filter: {
+        type: "search-select",
+        label: "Cliente",
+        fetchOptions: fetchClientOptions,
+        filterFn: (c, value) => c.client === value,
+      },
       render: (c) => <CellText value={c.client} truncate maxWidth="200px" />,
     },
     {
       key: "product",
       header: "Produto",
       minWidth: "150px",
+      sortable: true,
+      sortValue: (c) => c.product,
+      filter: {
+        type: "search-select",
+        label: "Produto",
+        fetchOptions: fetchProductOptions,
+        filterFn: (c, value) => c.product === value,
+      },
       render: (c) => <CellText value={c.product} truncate maxWidth="220px" />,
     },
     {
@@ -78,25 +105,31 @@ export function getSaleColumns(
         filterFn: (c, value) => c.categoria === value,
       },
       render: (c) => c.categoria
-        ? <CellTag label={c.categoria} colorClasses={CATEGORY_COLORS[c.categoria as ProductCategory] ?? "bg-gray-100 text-[#06121C]"} />
+        ? <CellTag label={c.categoria} colorClasses={CATEGORY_COLORS[c.categoria as ProductCategory] ?? "bg-gray-100 text-gray-600"} variant="badge" />
         : <CellText value="—" variant="muted" />,
     },
     {
       key: "amount",
       header: "Quantidade",
       minWidth: "60px",
+      sortable: true,
+      sortValue: (c) => c.amount,
       render: (c) => <CellText value={c.amount} variant="primary" />,
     },
     {
       key: "value",
       header: "Valor",
       minWidth: "100px",
+      sortable: true,
+      sortValue: (c) => c.value,
       render: (c) => <CellText value={formatBRL(c.value)} />,
     },
     {
       key: "saleDate",
       header: "Data do pedido",
       minWidth: "130px",
+      sortable: true,
+      sortValue: (c) => c.date,
       filter: {
         type: "date-range" as const,
         label: "Data do pedido",
@@ -110,14 +143,9 @@ export function getSaleColumns(
         },
       },
       render: (c) =>
-        c.date ? (
-          <div className="flex items-center gap-1.5 text-gray-600">
-            <AccessTimeOutlinedIcon sx={{ fontSize: 13, color: "#9CA3AF" }} />
-            <CellText value={c.date} variant="primary" />
-          </div>
-        ) : (
-          <CellText value="—" variant="muted" />
-        ),
+        c.date
+          ? <CellText value={c.date} variant="primary" />
+          : <CellText value="—" variant="muted" />,
     },
     {
       key: "status",
@@ -133,7 +161,7 @@ export function getSaleColumns(
     },
     {
       key: "paymentMethod",
-      header: "Método de pagamento",
+      header: "Tipo de pagamento",
       minWidth: "130px",
       filter: {
         type: "select",
@@ -146,10 +174,14 @@ export function getSaleColumns(
     {
       key: "forward",
       header: "",
-      render: () =>
-        <div className="flex justify-center items-center w-[2.2rem] h-[2.2rem] rounded-md bg-[#F7EBFF] border-[#D1B1E5] border hover:bg-[#F0D4FF] cursor-pointer transition-colors">
-          <ArrowForwardIcon sx={{ color: "#06121C" }} />
-        </div>,
+      render: () => (
+        <button
+          type="button"
+          className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#D1B1E5] bg-[#F7EBFF] transition-colors hover:bg-[#F0DDFD]"
+        >
+          <ArrowForwardIcon sx={{ fontSize: 16, color: "#06121C" }} />
+        </button>
+      ),
     },
   ]
 }

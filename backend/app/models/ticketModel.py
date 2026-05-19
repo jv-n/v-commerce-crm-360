@@ -14,6 +14,7 @@ class GoldTicket360(Base):
     tipo_problema: Mapped[str | None] = mapped_column(String, nullable=True)
     data_abertura: Mapped[str | None] = mapped_column(String, nullable=True)
     hora_abertura: Mapped[str | None] = mapped_column(String, nullable=True)
+    data_fechamento: Mapped[str | None] = mapped_column(String, nullable=True)
     agente_suporte: Mapped[str | None] = mapped_column(String, nullable=True)
     nome_cliente: Mapped[str | None] = mapped_column(String, nullable=True)
     regiao_cliente: Mapped[str | None] = mapped_column(String, nullable=True)

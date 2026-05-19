@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Header, Query
 from sqlalchemy.orm import Session
 
-from app.schemas.salesSchemas import SaleOut, SaleCreate, SaleUpdate, SalesPageOut
+from app.schemas.salesSchemas import SaleOut, SaleCreate, SaleUpdate, SalesPageOut, SaleActivityOut
 from app.services.saleService import SaleService
 from database.database import get_db
 
@@ -21,6 +21,10 @@ def get_sales(
     data_to: str = Query("", description="Format: YYYY-MM-DD"),
     search: str = Query(""),
     search_field: str = Query("all"),
+    nome_cliente: str = Query(""),
+    nome_produto: str = Query(""),
+    sort_key: str = Query(""),
+    sort_dir: str = Query("desc"),
     db: Session = Depends(get_db),
 ):
     return SaleService(db).get_sales(
@@ -35,6 +39,10 @@ def get_sales(
         data_to=data_to,
         search=search,
         search_field=search_field,
+        nome_cliente=nome_cliente,
+        nome_produto=nome_produto,
+        sort_key=sort_key,
+        sort_dir=sort_dir,
     )
 
 
@@ -49,8 +57,22 @@ def create_sale(sale_in: SaleCreate, db: Session = Depends(get_db)):
 
 
 @router.patch("/{id_pedido}", response_model=SaleOut)
-def update_sale(id_pedido: str, sale_in: SaleUpdate, db: Session = Depends(get_db)):
-    return SaleService(db).update_sale(id_pedido, sale_in)
+def update_sale(
+    id_pedido: str,
+    sale_in: SaleUpdate,
+    x_user_name: str = Header(default="Sistema", alias="X-User-Name"),
+    db: Session = Depends(get_db),
+):
+    return SaleService(db).update_sale(id_pedido, sale_in, user_name=x_user_name)
+
+
+@router.get("/{id_pedido}/activities", response_model=list[SaleActivityOut])
+def get_sale_activities(
+    id_pedido: str,
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db),
+):
+    return SaleService(db).get_sale_activities(id_pedido, limit=limit)
 
 
 @router.delete("/{id_pedido}", status_code=204)

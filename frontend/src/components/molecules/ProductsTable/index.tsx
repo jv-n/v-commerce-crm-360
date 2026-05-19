@@ -11,7 +11,8 @@ import type { AdvancedFilters } from "./AdvancedFiltersDrawer"
 import type { ProductsParams } from "@/lib/api/products"
 import type { ActiveFilters, Tab } from "@/components/organisms/DataTable/types"
 import type { Product } from "@/types/product"
-import { MdFilterList, MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md"
+import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md"
+import TuneIcon from "@mui/icons-material/Tune"
 
 const TABS: Tab[] = [
   { id: "all", label: "Todos os produtos" },
@@ -30,6 +31,7 @@ function columnFiltersToParams(cf: ActiveFilters): Partial<ProductsParams> {
 
   const cat = cf.category
   if (cat?.type === "select" && cat.value) p.category = cat.value
+  if (cat?.type === "multi-select" && cat.values.length > 0) p.category = cat.values.join(",")
 
   const price = cf.price
   if (price?.type === "number-range") {
@@ -120,6 +122,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
   const [total,          setTotal]          = useState(0)
   const [loading,        setLoading]        = useState(true)
   const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(new Set())
+  const [activeRowId,    setActiveRowId]    = useState<string | null>(null)
 
   const [advanced,       setAdvanced]       = useState<AdvancedFilters>(EMPTY_ADVANCED)
   const [drawerOpen,     setDrawerOpen]     = useState(false)
@@ -252,12 +255,21 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
     resetPage()
   }
 
-  const onToggleExpand = (id: string) =>
+  const onToggleExpand = (id: string) => {
     setExpandedRowIds(prev => {
       const next = new Set(prev)
-      next.has(id) ? next.delete(id) : next.add(id)
+      if (next.has(id)) {
+        next.delete(id)
+        if (activeRowId === id) {
+          setActiveRowId(null)
+        }
+      } else {
+        next.add(id)
+        setActiveRowId(id)
+      }
       return next
     })
+  }
 
   const onToggleAllExpand = () =>
     setExpandedRowIds(prev =>
@@ -284,11 +296,11 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
     <button
       onClick={() => setDrawerOpen(o => !o)}
       className={cn(
-        "flex items-center gap-1.5 text-sm transition-colors px-2 py-1 rounded-md",
-        advCount > 0 ? "text-purple-700 font-medium hover:bg-[#F7EBFF]" : "text-gray-900 hover:bg-[#F7EBFF]"
+        "flex items-center gap-1.5 text-sm transition-colors px-2 py-1 rounded-lg",
+        advCount > 0 ? "text-purple-700 font-medium hover:bg-[#CFA7FF]" : "text-gray-900 hover:bg-[#CFA7FF]"
       )}
     >
-      <MdFilterList size={15} />
+      <TuneIcon sx={{ fontSize: 15 }} />
       Filtros avançados
       {advCount > 0 && (
         <span className="inline-flex items-center justify-center w-4 h-4 rounded-full bg-purple-600 text-white text-[10px] font-bold leading-none">
@@ -331,6 +343,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
         columns={makeProductColumns(expandedRowIds, onToggleExpand, products.map(p => p.id), onToggleAllExpand, (id) => navigate(`/products/${id}`)
         )}
         getRowId={(p) => p.id}
+        getRowClassName={(p) => (p.id === activeRowId ? "bg-[#EACAFF] hover:bg-[#EACAFF]" : "")}
         tabs={TABS}
         activeTab={activeTab}
         onTabChange={handleTabChange}
@@ -338,6 +351,7 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
         onSearchChange={handleSearchChange}
         onFiltersChange={handleFiltersChange}
         onSelectionChange={handleSelectionChange}
+        headerClassName="bg-[#EACAFF] [&_th:not(:first-child)_button_svg]:!text-[#9F83B2] [&_th:not(:first-child)_button:hover_svg]:!text-[#6F2B90]"
         searchPlaceholder="Buscar produto..."
         noBorder
         rowsPerPageOptions={[10, 25, 50]}

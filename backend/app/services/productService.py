@@ -2,16 +2,18 @@ from datetime import date, datetime, timezone, timedelta
 
 _BRT = timezone(timedelta(hours=-3))
 
-from sqlalchemy import asc, desc, select, func
+from sqlalchemy import asc, desc, func
 from sqlalchemy.orm import Session
 
-from app.models.productModel import DimProduto, GoldDesempenhoProduto, ProductActivity
+from app.models.productModel import GoldProdutoDetalhado, GoldDesempenhoProduto, ProductActivity
+from app.models.reviewModel import GoldAvaliacao360
 from app.models.saleModel import GoldPedidoDetalhado
 from app.models.ticketModel import FtTicketSuporte
 from app.schemas.productSchemas import (
     ProductSchema, ProductCreate, ProductUpdate,
     ProductOrderOut, ProductTicketOut, ProductMonthlyRevenueOut,
     ProductActivityOut, ProductResumoOut,
+    ProductMonthlyNpsOut, ProductMonthlySalesOut,
 )
 
 
@@ -20,6 +22,8 @@ def _to_product_out(
     peso_kg: float | None = None,
     data_cadastro: str | None = None,
 ) -> ProductSchema:
+    peso_kg = peso_kg if peso_kg is not None else gold.peso_kg
+    data_cadastro = data_cadastro or gold.data_cadastro_produto
     raw_date = data_cadastro or ""
     if raw_date and "-" in raw_date:
         y, m, d = raw_date[:10].split("-")
@@ -72,12 +76,6 @@ class ProductService:
         ("status",   "ativo",       "Status"),
     ]
 
-    def _build_dim_map(self, ids: list[str]) -> dict[str, DimProduto]:
-        if not ids:
-            return {}
-        rows = self.db.query(DimProduto).filter(DimProduto.id_produto.in_(ids)).all()
-        return {r.id_produto: r for r in rows}
-
     def get_products(
         self,
         page: int = 1,
@@ -104,7 +102,8 @@ class ProductService:
         if search:
             query = query.filter(GoldDesempenhoProduto.nome_produto.ilike(f"%{search}%"))
         if category:
-            query = query.filter(GoldDesempenhoProduto.categoria.ilike(f"%{category}%"))
+            cats = [c.strip() for c in category.split(",") if c.strip()]
+            query = query.filter(GoldDesempenhoProduto.categoria.in_(cats))
         if status:
             statuses = [s.strip() for s in status.split(",") if s.strip()]
             ativo_values = []
@@ -132,22 +131,18 @@ class ProductService:
         if sales_max is not None:
             query = query.filter(GoldDesempenhoProduto.qtd_vendida <= sales_max)
 
-        # date_from / date_to: buscados no dim_produtos via subquery
-        if date_from or date_to:
-            dim_q = select(DimProduto.id_produto)
-            if date_from:
-                try:
-                    d, m, y = date_from.strip().split("/")
-                    dim_q = dim_q.where(DimProduto.data_cadastro_produto >= f"{y}-{m.zfill(2)}-{d.zfill(2)}")
-                except ValueError:
-                    pass
-            if date_to:
-                try:
-                    d, m, y = date_to.strip().split("/")
-                    dim_q = dim_q.where(DimProduto.data_cadastro_produto <= f"{y}-{m.zfill(2)}-{d.zfill(2)}")
-                except ValueError:
-                    pass
-            query = query.filter(GoldDesempenhoProduto.id_produto.in_(dim_q))
+        if date_from:
+            try:
+                d, m, y = date_from.strip().split("/")
+                query = query.filter(GoldDesempenhoProduto.data_cadastro_produto >= f"{y}-{m.zfill(2)}-{d.zfill(2)}")
+            except ValueError:
+                pass
+        if date_to:
+            try:
+                d, m, y = date_to.strip().split("/")
+                query = query.filter(GoldDesempenhoProduto.data_cadastro_produto <= f"{y}-{m.zfill(2)}-{d.zfill(2)}")
+            except ValueError:
+                pass
 
         col_fn = self._SORT_COLUMNS.get(sort_by or "")
         if col_fn:
@@ -159,17 +154,7 @@ class ProductService:
             query.offset((page - 1) * page_size).limit(page_size).all()
         )
 
-        ids = [g.id_produto for g in gold_rows]
-        dim_map = self._build_dim_map(ids)
-
-        return [
-            _to_product_out(
-                g,
-                peso_kg=dim_map[g.id_produto].peso_kg if g.id_produto in dim_map else None,
-                data_cadastro=dim_map[g.id_produto].data_cadastro_produto if g.id_produto in dim_map else None,
-            )
-            for g in gold_rows
-        ], total
+        return [_to_product_out(g) for g in gold_rows], total
 
     def get_product_by_id(self, product_id: str) -> ProductSchema | None:
         gold = self.db.query(GoldDesempenhoProduto).filter(
@@ -177,12 +162,7 @@ class ProductService:
         ).first()
         if not gold:
             return None
-        dim = self.db.query(DimProduto).filter(DimProduto.id_produto == product_id).first()
-        return _to_product_out(
-            gold,
-            peso_kg=dim.peso_kg if dim else None,
-            data_cadastro=dim.data_cadastro_produto if dim else None,
-        )
+        return _to_product_out(gold)
 
     def get_product_orders(self, product_id: str, limit: int = 10) -> list[ProductOrderOut]:
         rows = (
@@ -221,13 +201,43 @@ class ProductService:
                 id_pedido=r.id_pedido,
                 tipo_problema=r.tipo_problema,
                 data_abertura=r.data_abertura,
-                data_resolucao=r.data_resolucao,
-                resolvido=str(r.resolvido or "").lower() == "true",
+                data_resolucao=None,
+                resolvido=str(r.status_atendimento or "").lower() == "finalizado",
                 agente_suporte=r.agente_suporte,
                 nota_avaliacao=r.nota_avaliacao,
             )
             for r in rows
         ]
+
+    def get_product_monthly_nps(self, product_id: str) -> list[ProductMonthlyNpsOut]:
+        rows = (
+            self.db.query(
+                func.substr(GoldAvaliacao360.data_avaliacao, 1, 7).label("ano_mes"),
+                func.round(func.avg(GoldAvaliacao360.nota_nps), 2).label("nps_medio"),
+            )
+            .filter(
+                GoldAvaliacao360.id_produto == product_id,
+                GoldAvaliacao360.nota_nps.isnot(None),
+                GoldAvaliacao360.data_avaliacao.isnot(None),
+            )
+            .group_by("ano_mes")
+            .order_by("ano_mes")
+            .all()
+        )
+        return [ProductMonthlyNpsOut(ano_mes=r.ano_mes, nps_medio=r.nps_medio or 0) for r in rows]
+
+    def get_product_monthly_sales(self, product_id: str) -> list[ProductMonthlySalesOut]:
+        rows = (
+            self.db.query(
+                GoldPedidoDetalhado.ano_mes,
+                func.sum(GoldPedidoDetalhado.quantidade).label("quantidade"),
+            )
+            .filter(GoldPedidoDetalhado.id_produto == product_id)
+            .group_by(GoldPedidoDetalhado.ano_mes)
+            .order_by(GoldPedidoDetalhado.ano_mes)
+            .all()
+        )
+        return [ProductMonthlySalesOut(ano_mes=r.ano_mes, quantidade=r.quantidade or 0) for r in rows]
 
     def get_product_monthly_revenue(self, product_id: str) -> list[ProductMonthlyRevenueOut]:
         rows = (
@@ -271,8 +281,8 @@ class ProductService:
         ativo = "True" if body.status == "Ativo" else "False"
         today = date.today().isoformat()
 
-        # Escreve na Silver (fonte do pipeline), como dim_clientes p/ contatos
-        dim = DimProduto(
+        # Escreve em gold_produtos_detalhado (catálogo) para consistência imediata
+        dim = GoldProdutoDetalhado(
             id_produto=new_id,
             nome_produto=body.name,
             categoria=body.category,
@@ -285,21 +295,23 @@ class ProductService:
         )
         self.db.add(dim)
 
-        # Cria entrada na Gold para o produto aparecer na listagem imediatamente
+        # Cria entrada na Gold de desempenho para o produto aparecer na listagem
         gold = GoldDesempenhoProduto(
             id_produto=new_id,
             nome_produto=body.name,
             categoria=body.category,
             preco=body.price,
             fornecedor=body.supplier,
+            peso_kg=body.weight_kg,
             estoque_disponivel=float(body.stock),
             ativo=ativo,
+            data_cadastro_produto=today,
         )
         self.db.add(gold)
         self.db.commit()
         self.db.refresh(dim)
 
-        return _to_product_out(gold, peso_kg=dim.peso_kg, data_cadastro=dim.data_cadastro_produto)
+        return _to_product_out(gold)
 
     def update_product(
         self,
@@ -313,7 +325,7 @@ class ProductService:
         if not gold:
             return None
 
-        dim = self.db.query(DimProduto).filter(DimProduto.id_produto == product_id).first()
+        dim = self.db.query(GoldProdutoDetalhado).filter(GoldProdutoDetalhado.id_produto == product_id).first()
 
         # ── snapshot dos valores antigos antes de qualquer alteração ──
         now = datetime.now(_BRT).replace(tzinfo=None)
@@ -353,11 +365,11 @@ class ProductService:
                     changed_at=now,
                 ))
 
-        # weight_kg vem do DimProduto
-        if body.weight_kg is not None and dim:
-            old_w = f"{dim.peso_kg} kg" if dim.peso_kg is not None else "—"
+        if body.weight_kg is not None:
+            current_peso = gold.peso_kg if gold.peso_kg is not None else (dim.peso_kg if dim else None)
+            old_w = f"{current_peso} kg" if current_peso is not None else "—"
             new_w = f"{body.weight_kg} kg"
-            if dim.peso_kg != body.weight_kg:
+            if current_peso != body.weight_kg:
                 activities.append(ProductActivity(
                     id_produto=product_id,
                     user_name=user_name,
@@ -369,12 +381,13 @@ class ProductService:
                 ))
 
         # ── aplica as alterações ──
-        if body.name     is not None: gold.nome_produto       = body.name
-        if body.category is not None: gold.categoria          = body.category
-        if body.price    is not None: gold.preco              = body.price
-        if body.supplier is not None: gold.fornecedor         = body.supplier
-        if body.stock    is not None: gold.estoque_disponivel = float(body.stock)
-        if body.status   is not None: gold.ativo              = "True" if body.status == "Ativo" else "False"
+        if body.name      is not None: gold.nome_produto       = body.name
+        if body.category  is not None: gold.categoria          = body.category
+        if body.price     is not None: gold.preco              = body.price
+        if body.supplier  is not None: gold.fornecedor         = body.supplier
+        if body.stock     is not None: gold.estoque_disponivel = float(body.stock)
+        if body.status    is not None: gold.ativo              = "True" if body.status == "Ativo" else "False"
+        if body.weight_kg is not None: gold.peso_kg            = body.weight_kg
 
         if dim:
             if body.name      is not None: dim.nome_produto       = body.name
@@ -385,7 +398,7 @@ class ProductService:
             if body.status    is not None: dim.ativo              = "True" if body.status == "Ativo" else "False"
             if body.weight_kg is not None: dim.peso_kg            = body.weight_kg
         else:
-            dim = DimProduto(
+            dim = GoldProdutoDetalhado(
                 id_produto=product_id,
                 nome_produto=body.name or gold.nome_produto,
                 peso_kg=body.weight_kg,
@@ -400,11 +413,7 @@ class ProductService:
         if dim:
             self.db.refresh(dim)
 
-        return _to_product_out(
-            gold,
-            peso_kg=dim.peso_kg if dim else None,
-            data_cadastro=dim.data_cadastro_produto if dim else None,
-        )
+        return _to_product_out(gold)
 
     def get_product_resumo(self, product_id: str) -> ProductResumoOut | None:
         gold = self.db.query(GoldDesempenhoProduto).filter(
@@ -463,9 +472,13 @@ class ProductService:
         ).first()
         if not gold:
             return False
-        dim = self.db.query(DimProduto).filter(DimProduto.id_produto == product_id).first()
+        dim = self.db.query(GoldProdutoDetalhado).filter(GoldProdutoDetalhado.id_produto == product_id).first()
         if dim:
             self.db.delete(dim)
+        self.db.delete(gold)
+        self.db.commit()
+        return True
+
         self.db.delete(gold)
         self.db.commit()
         return True

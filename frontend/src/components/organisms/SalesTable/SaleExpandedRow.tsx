@@ -1,101 +1,109 @@
+import { useEffect, useState } from "react"
 import AddIcon from "@mui/icons-material/Add"
-import CheckIcon from "@mui/icons-material/Check"
-import ReplayOutlinedIcon from "@mui/icons-material/ReplayOutlined"
-import BlockOutlinedIcon from "@mui/icons-material/BlockOutlined"
-import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined"
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined"
-import { cn } from "@/lib/utils"
-import { StatusBadge } from "./tableComponents/badge"
+import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined"
+import { fetchSaleActivities } from "@/lib/api/sales"
+import type { SaleActivity } from "@/lib/api/sales"
 import type { Sale } from "@/types/sale"
-
-type TimelineEntry =
-  | { type: "created";  date: string; client: string }
-  | { type: "status";   status: Sale["status"] }
-  | { type: "payment";  method: string; amount: number; value: number }
-
-function getTimeline(sale: Sale): TimelineEntry[] {
-  return [
-    { type: "status",  status: sale.status },
-    { type: "payment", method: sale.payment_method, amount: sale.amount, value: sale.value },
-    { type: "created", date: sale.date, client: sale.client },
-  ]
-}
-
-function formatBRL(value: number): string {
-  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
-}
-
-function StatusIcon({ status }: { status: Sale["status"] }) {
-  if (status === "Aprovado")    return <CheckIcon sx={{ fontSize: 14, color: "#9F83B2" }} />
-  if (status === "Reembolsado") return <ReplayOutlinedIcon sx={{ fontSize: 13, color: "#9F83B2" }} />
-  if (status === "Recusado")    return <BlockOutlinedIcon  sx={{ fontSize: 13, color: "#9F83B2" }} />
-  return <CheckIcon sx={{ fontSize: 14, color: "#9F83B2" }} />
-}
 
 interface SaleExpandedRowProps {
   sale:   Sale
   onEdit: (sale: Sale) => void
 }
 
+function formatChangedAt(iso: string): string {
+  try {
+    const d = new Date(iso)
+    return d.toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit" })
+  } catch {
+    return iso
+  }
+}
+
 export function SaleExpandedRow({ sale, onEdit }: SaleExpandedRowProps) {
-  const timeline = getTimeline(sale)
+  const [activities, setActivities] = useState<SaleActivity[]>([])
+  const [loading,    setLoading]    = useState(true)
+
+  useEffect(() => {
+    setLoading(true)
+    fetchSaleActivities(sale.id)
+      .then(setActivities)
+      .catch(console.error)
+      .finally(() => setLoading(false))
+  }, [sale.id])
 
   return (
     <div className="bg-white px-8 py-5 border-t border-violet-100">
       <div className="flex items-start justify-between gap-6">
-        <div className="flex flex-col min-w-0">
-          {timeline.map((entry, index) => (
-            <div key={`${entry.type}-${index}`} className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <div
-                  className={cn(
-                    "mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
-                    entry.type === "created"
-                      ? "border-2 border-dashed border-violet-200 bg-transparent"
-                      : "bg-[#F0DDFD]"
-                  )}
-                >
-                  {entry.type === "created"  && <AddIcon sx={{ fontSize: 13, color: "#9F83B2" }} />}
-                  {entry.type === "status"   && <StatusIcon status={entry.status} />}
-                  {entry.type === "payment"  && <PaymentsOutlinedIcon sx={{ fontSize: 13, color: "#9F83B2" }} />}
-                </div>
-                {index < timeline.length - 1 && (
-                  <div className="my-1 w-px flex-1 bg-[#9F83B2]" />
-                )}
-              </div>
 
-              <div className="flex flex-wrap items-center gap-1 pb-6 text-sm">
-                {entry.type === "created" && (
-                  <>
-                    <span className="font-semibold text-gray-800">{entry.client}</span>
+        <div className="flex flex-col min-w-0 flex-1">
+          <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Histórico de edições</p>
+
+          {loading ? (
+            <div className="flex flex-col gap-3">
+              {[1, 2].map(i => (
+                <div key={i} className="flex gap-3 animate-pulse">
+                  <div className="mt-0.5 h-6 w-6 rounded-full bg-gray-200 shrink-0" />
+                  <div className="flex flex-col gap-1.5 py-1">
+                    <div className="h-3 w-48 rounded bg-gray-200" />
+                    <div className="h-3 w-32 rounded bg-gray-200" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col">
+              {activities.map((act, index) => {
+                const isLast = index === activities.length - 1
+                return (
+                  <div key={act.id} className="flex gap-3">
+                    <div className="flex flex-col items-center">
+                      <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#F0DDFD]">
+                        <PaymentsOutlinedIcon sx={{ fontSize: 13, color: "#9F83B2" }} />
+                      </div>
+                      {(!isLast || sale.date) && (
+                        <div className="my-1 w-px flex-1 bg-[#9F83B2]" />
+                      )}
+                    </div>
+                    <div className="flex flex-col pb-5 text-sm gap-0.5">
+                      <span className="font-semibold text-gray-800">
+                        {act.field_name}
+                        <span className="font-normal text-gray-500"> alterado de </span>
+                        <span className="text-red-400 line-through">{act.old_value ?? "—"}</span>
+                        <span className="font-normal text-gray-500"> para </span>
+                        <span className="text-violet-600 font-medium">{act.new_value ?? "—"}</span>
+                      </span>
+                      <span className="text-xs text-gray-400">
+                        {act.change_method} por <span className="font-medium text-gray-600">{act.user_name}</span>
+                        {" · "}{formatChangedAt(act.changed_at)}
+                      </span>
+                    </div>
+                  </div>
+                )
+              })}
+
+              {activities.length === 0 && (
+                <p className="text-sm text-gray-400 mb-4">Nenhuma edição registrada.</p>
+              )}
+
+              {/* creation entry always at the bottom */}
+              {sale.date && (
+                <div className="flex gap-3">
+                  <div className="flex flex-col items-center">
+                    <div className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-full border-2 border-dashed border-violet-200 bg-transparent">
+                      <AddIcon sx={{ fontSize: 13, color: "#9F83B2" }} />
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-1 pb-5 text-sm">
+                    <span className="font-semibold text-gray-800">{sale.client}</span>
                     <span className="text-gray-500">realizou o</span>
                     <span className="font-medium text-violet-600">pedido</span>
-                    {entry.date && (
-                      <span className="ml-0.5 text-xs text-gray-400">- {entry.date}</span>
-                    )}
-                  </>
-                )}
-
-                {entry.type === "status" && (
-                  <>
-                    <span className="text-gray-500">Status atual:</span>
-                    <StatusBadge status={entry.status} />
-                  </>
-                )}
-
-                {entry.type === "payment" && (
-                  <>
-                    <span className="text-gray-500">Pagamento via</span>
-                    <span className="font-semibold text-gray-800">{entry.method}</span>
-                    <span className="text-gray-400">·</span>
-                    <span className="text-gray-500">{entry.amount} un.</span>
-                    <span className="text-gray-400">·</span>
-                    <span className="font-medium text-gray-800">{formatBRL(entry.value)}</span>
-                  </>
-                )}
-              </div>
+                    <span className="ml-0.5 text-xs text-gray-400">- {sale.date}</span>
+                  </div>
+                </div>
+              )}
             </div>
-          ))}
+          )}
         </div>
 
         <button
@@ -106,6 +114,7 @@ export function SaleExpandedRow({ sale, onEdit }: SaleExpandedRowProps) {
           <EditOutlinedIcon sx={{ fontSize: 15 }} />
           Editar pedido
         </button>
+
       </div>
     </div>
   )

@@ -7,7 +7,7 @@ export interface Contact {
   id: string
   name: string | null
   email: string | null
-  phone: string | null
+  phone: string | null        // gold_cliente_360.telefone
 
   // Segmentação
   clientStatus: ClientStatusType | null

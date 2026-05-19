@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
-from app.schemas.contactSchemas import ContactsPageOut, ContactOut, ContactCreate, ContactUpdate, ContactResumoOut
+from app.schemas.contactSchemas import ContactsPageOut, ContactOut, ContactCreate, ContactUpdate, ContactResumoOut, ContactPedidoOut
 from app.services.contactService import ContactService
 from database.database import get_db
 
@@ -15,7 +15,8 @@ def export_contacts_csv(
     search: str = Query(""),
     purchases_min: int | None = Query(None, ge=0),
     purchases_max: int | None = Query(None, ge=0),
-    created_year: str = Query(""),
+    created_from: str = Query(""),
+    created_to: str = Query(""),
     engagement: str = Query(""),
     client_status: list[str] = Query(default=[]),
     regioes: list[str] = Query(default=[]),
@@ -60,7 +61,7 @@ def export_contacts_csv(
     stream = ContactService(db).export_contacts_csv(
         tab=tab, search=search,
         purchases_min=purchases_min, purchases_max=purchases_max,
-        created_year=created_year, engagement=engagement,
+        created_from=created_from, created_to=created_to, engagement=engagement,
         client_status=client_status,
         regioes=regioes, origens=origens, pagamentos=pagamentos,
         receita_min=receita_min, receita_max=receita_max,
@@ -85,6 +86,15 @@ def export_contacts_csv(
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f"attachment; filename={filename}"},
     )
+
+
+@router.get("/{contact_id}/pedidos", response_model=list[ContactPedidoOut])
+def get_contact_pedidos(
+    contact_id: str,
+    limit: int = Query(3, ge=1, le=10),
+    db: Session = Depends(get_db),
+):
+    return ContactService(db).get_last_pedidos(contact_id, limit=limit)
 
 
 @router.get("/{contact_id}/resumo", response_model=ContactResumoOut)
@@ -122,9 +132,11 @@ def get_contacts(
     pageSize: int = Query(20, ge=1, le=500000),
     tab: str = Query("all"),
     search: str = Query(""),
+    search_field: str = Query(""),
     purchases_min: int | None = Query(None, ge=0),
     purchases_max: int | None = Query(None, ge=0),
-    created_year: str = Query(""),
+    created_from: str = Query(""),
+    created_to: str = Query(""),
     engagement: str = Query(""),
     client_status: list[str] = Query(default=[]),
     sort_by: str = Query(""),
@@ -175,9 +187,11 @@ def get_contacts(
         page_size=pageSize,
         tab=tab,
         search=search,
+        search_field=search_field,
         purchases_min=purchases_min,
         purchases_max=purchases_max,
-        created_year=created_year,
+        created_from=created_from,
+        created_to=created_to,
         engagement=engagement,
         client_status=client_status,
         sort_by=sort_by,

@@ -40,12 +40,20 @@ export interface DateRangeFilterDef<T> {
   filterFn: (row: T, from: string | null, to: string | null) => boolean
 }
 
+export interface SearchSelectFilterDef<T> {
+  type: "search-select"
+  label: string
+  fetchOptions: (q: string) => Promise<string[]>
+  filterFn: (row: T, value: string) => boolean
+}
+
 export type FilterDef<T> =
   | SelectFilterDef<T>
   | NumberRangeFilterDef<T>
   | ToggleFilterDef<T>
   | MultiSelectFilterDef<T>
   | DateRangeFilterDef<T>
+  | SearchSelectFilterDef<T>
 
 // ─── Active filter state ──────────────────────────────────────────────────────
 
@@ -73,12 +81,15 @@ export type DateRangeActiveFilter = {
   to:   string | null
 }
 
+export type SearchSelectActiveFilter = { type: "search-select"; value: string }
+
 export type ActiveFilter =
   | SelectActiveFilter
   | NumberRangeActiveFilter
   | ToggleActiveFilter
   | MultiSelectActiveFilter
   | DateRangeActiveFilter
+  | SearchSelectActiveFilter
 
 export type ActiveFilters = Record<string, ActiveFilter>
 
@@ -132,6 +143,7 @@ export interface DataTableProps<T> {
   noBorder?: boolean
   headerClassName?: string
   rowClassName?: string
+  getRowClassName?: (row: T) => string
   expandedRowClassName?: string
   dividersClassName?: string
   expandedRowIds?: Set<string>
@@ -156,4 +168,8 @@ export interface DataTableProps<T> {
 
   /** Disparado sempre que o conjunto de linhas selecionadas muda. */
   onSelectionChange?: (ids: Set<string>) => void
+
+  /** Pré-preenche a barra de busca ao montar o componente. */
+  initialSearchQuery?: string
+  initialSearchOpen?: boolean
 }

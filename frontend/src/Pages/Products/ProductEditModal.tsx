@@ -45,6 +45,7 @@ export function ProductEditModal({ open, product, onClose, onSuccess, onDeleted 
   const [loading,         setLoading]         = useState(false)
   const [deleting,        setDeleting]        = useState(false)
   const [error,           setError]           = useState("")
+  const [confirmOpen,     setConfirmOpen]     = useState(false)
   const [suppliers,       setSuppliers]       = useState<string[]>([])
   const [showSuggestions, setShowSuggestions] = useState(false)
   const supplierRef = useRef<HTMLDivElement>(null)
@@ -108,8 +109,10 @@ export function ProductEditModal({ open, product, onClose, onSuccess, onDeleted 
     }
   }
 
-  const handleDelete = async () => {
-    if (!window.confirm(`Remover "${product.name}"? Esta ação não pode ser desfeita.`)) return
+  const handleDelete = () => setConfirmOpen(true)
+
+  const handleConfirmDelete = async () => {
+    setConfirmOpen(false)
     setDeleting(true)
     try {
       await deleteProduct(product.id)
@@ -121,6 +124,7 @@ export function ProductEditModal({ open, product, onClose, onSuccess, onDeleted 
   }
 
   return (
+    <>
     <Dialog.Root open={open} onOpenChange={(v) => !v && onClose()}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 bg-black/40 z-40" />
@@ -272,27 +276,14 @@ export function ProductEditModal({ open, product, onClose, onSuccess, onDeleted 
 
             {error && <p className="text-sm text-red-500">{error}</p>}
 
-            {/* Remover produto */}
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={deleting || loading}
-              className={cn(
-                "w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-[#D1B1E5]",
-                "bg-[#F7EBFF] text-gray-800 text-sm font-medium hover:bg-[#edd9ff] transition-colors",
-                (deleting || loading) && "opacity-60 cursor-not-allowed"
-              )}
-            >
-              <Trash2 size={16} />
-              {deleting ? "Removendo..." : "Remover produto"}
-            </button>
+            <hr className="border-gray-200" />
 
-            <div className="flex justify-center gap-6">
+            <div className="flex items-center justify-center gap-8">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={loading || deleting}
-                className="px-6 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
               >
                 Cancelar
               </button>
@@ -300,7 +291,7 @@ export function ProductEditModal({ open, product, onClose, onSuccess, onDeleted 
                 type="submit"
                 disabled={loading || deleting}
                 className={cn(
-                  "px-8 py-2 rounded-xl text-sm font-semibold border transition-colors",
+                  "px-10 py-2.5 rounded-full text-sm font-semibold border transition-colors",
                   "bg-[#F7EBFF] border-[#D1B1E5] text-gray-900 hover:bg-[#edd9ff]",
                   (loading || deleting) && "opacity-60 cursor-not-allowed"
                 )}
@@ -308,10 +299,66 @@ export function ProductEditModal({ open, product, onClose, onSuccess, onDeleted 
                 {loading ? "Salvando..." : "Confirmar"}
               </button>
             </div>
+
+            <hr className="border-gray-200" />
+
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting || loading}
+                className={cn(
+                  "flex items-center gap-2 px-6 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors",
+                  (deleting || loading) && "opacity-60 cursor-not-allowed"
+                )}
+              >
+                <Trash2 size={16} />
+                {deleting ? "Removendo..." : "Remover produto"}
+              </button>
+            </div>
           </form>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>
+
+    <Dialog.Root open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 bg-black/40 z-50" />
+        <Dialog.Content
+          className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 bg-white rounded-2xl shadow-xl w-full max-w-sm p-8 focus:outline-none"
+          aria-describedby={undefined}
+        >
+          <div className="flex flex-col items-center gap-4 text-center">
+            <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100">
+              <Trash2 size={22} className="text-red-500" />
+            </div>
+            <Dialog.Title className="text-lg font-bold text-gray-900">
+              Remover produto
+            </Dialog.Title>
+            <p className="text-sm text-gray-500">
+              Tem certeza que deseja remover{" "}
+              <span className="font-semibold text-gray-800">"{product.name}"</span>?
+              <br />Esta ação não pode ser desfeita.
+            </p>
+            <div className="flex gap-3 w-full mt-2">
+              <button
+                onClick={() => setConfirmOpen(false)}
+                className="flex-1 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 py-2.5 rounded-xl bg-red-500 text-sm font-semibold text-white hover:bg-red-600 transition-colors"
+              >
+                Remover
+              </button>
+            </div>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
+    </>
   )
 }
 

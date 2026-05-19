@@ -1,10 +1,10 @@
 import { cn } from "@/lib/utils"
 
 const VARIANTS = {
-  /** Todos os valores reais — texto preto, tamanho base */
-  primary: "text-sm text-[#06121C]",
+  /** Todos os valores reais — texto preto, 12px/18px conforme design system */
+  primary: "text-xs leading-[18px] text-[#06121C]",
   /** Valores nulos, placeholders, metadados — cinza pequeno */
-  muted:   "text-xs text-gray-400",
+  muted:   "text-xs leading-[18px] text-gray-400",
 } as const
 
 interface CellTextProps {

@@ -6,6 +6,8 @@ from typing import Generator
 
 from fastapi import Depends
 
+from fastapi import Depends
+
 from sqlalchemy.orm import Session
 from sqlalchemy import asc, desc, func
 
@@ -56,7 +58,7 @@ def _to_contact_out(g: GoldCliente360) -> ContactOut:
         id=g.id_cliente,
         name=g.nome_completo,
         email=g.email,
-        phone=None,
+        phone=str(g.telefone) if g.telefone is not None else None,
         clientStatus=g.segmento_cliente,
         region=g.regiao,
         origin=g.origem,
@@ -81,8 +83,28 @@ class ContactService:
     def __init__(self, db: Session = Depends(get_db)):
         self.db = db
 
+    def get_last_pedidos(self, id_cliente: str, limit: int = 3) -> list[dict]:
+        rows = (
+            self.db.query(GoldPedidoDetalhado)
+            .filter(GoldPedidoDetalhado.id_cliente == id_cliente)
+            .order_by(GoldPedidoDetalhado.data_pedido.desc())
+            .limit(limit)
+            .all()
+        )
+        return [
+            {
+                "id_pedido": r.id_pedido,
+                "nome_produto": r.nome_produto,
+                "quantidade": float(r.quantidade) if r.quantidade is not None else None,
+                "valor_pedido": float(r.valor_pedido) if r.valor_pedido is not None else None,
+                "metodo_pagamento": r.metodo_pagamento,
+                "data_pedido": _fmt_date(r.data_pedido),
+            }
+            for r in rows
+        ]
+
     def _apply_filters(self, query, tab, search, purchases_min, purchases_max,
-                       created_year, engagement, client_status,
+                       created_from, created_to, engagement, client_status,
                        regioes, origens, pagamentos,
                        receita_min, receita_max, ticket_medio_min, ticket_medio_max,
                        primeira_compra_from, primeira_compra_to,
@@ -96,7 +118,8 @@ class ContactService:
                        taxa_conversao_min, taxa_conversao_max,
                        total_sessoes_min, total_sessoes_max,
                        abandono_carrinho_min, abandono_carrinho_max,
-                       nps_recente_min, nps_recente_max):
+                       nps_recente_min, nps_recente_max,
+                       search_field: str = ""):
         """Aplica todos os filtros em GoldCliente360."""
         if tab == "clients":
             query = query.filter(GoldCliente360.segmento_cliente.in_(["Ativo", "Inativo", "VIP"]))
@@ -105,18 +128,23 @@ class ContactService:
 
         if search:
             term = f"%{search}%"
-            query = query.filter(
-                GoldCliente360.nome_completo.ilike(term)
-                | GoldCliente360.email.ilike(term)
-            )
+            if search_field == "id":
+                query = query.filter(GoldCliente360.id_cliente.ilike(term))
+            else:
+                query = query.filter(
+                    GoldCliente360.nome_completo.ilike(term)
+                    | GoldCliente360.email.ilike(term)
+                )
 
         if purchases_min is not None:
             query = query.filter(GoldCliente360.total_pedidos >= purchases_min)
         if purchases_max is not None:
             query = query.filter(GoldCliente360.total_pedidos <= purchases_max)
 
-        if created_year:
-            query = query.filter(GoldCliente360.data_primeiro_pedido.like(f"{created_year}%"))
+        if created_from:
+            query = query.filter(GoldCliente360.data_primeiro_pedido >= created_from)
+        if created_to:
+            query = query.filter(GoldCliente360.data_primeiro_pedido <= created_to)
 
         if engagement:
             if engagement == "Nenhum NPS":
@@ -227,7 +255,10 @@ class ContactService:
             id_cliente=contact_id,
             nome_completo=data.name,
             email=data.email,
-            segmento_cliente="Ativo",
+            telefone=data.phone,
+            segmento_cliente=data.clientStatus or "Inativo",
+            regiao=data.region,
+            origem=data.origin,
             total_pedidos=0,
             total_produtos_distintos=0,
             receita_total=0,
@@ -240,7 +271,7 @@ class ContactService:
         self.db.add(gold)
         self.db.commit()
         self.db.refresh(gold)
-        return _to_contact_out(gold, phone=None)
+        return _to_contact_out(gold)
 
     def update_contact(self, contact_id: str, data: ContactUpdate) -> ContactOut | None:
         gold = self.db.query(GoldCliente360).filter(GoldCliente360.id_cliente == contact_id).first()
@@ -264,9 +295,11 @@ class ContactService:
         page_size: int = 20,
         tab: str = "all",
         search: str = "",
+        search_field: str = "",
         purchases_min: int | None = None,
         purchases_max: int | None = None,
-        created_year: str = "",
+        created_from: str = "",
+        created_to: str = "",
         engagement: str = "",
         client_status: list[str] | None = None,
         sort_by: str = "",
@@ -309,7 +342,7 @@ class ContactService:
         nps_recente_max: float | None = None,
     ) -> ContactsPageOut:
         filter_args = (
-            tab, search, purchases_min, purchases_max, created_year, engagement,
+            tab, search, purchases_min, purchases_max, created_from, created_to, engagement,
             client_status, regioes, origens, pagamentos,
             receita_min, receita_max, ticket_medio_min, ticket_medio_max,
             primeira_compra_from, primeira_compra_to, ultima_compra_from, ultima_compra_to,
@@ -325,7 +358,7 @@ class ContactService:
         )
 
         # ── Count: só em GoldCliente360, sem join ─────────────────────────────
-        count_q = self._apply_filters(self.db.query(GoldCliente360), *filter_args)
+        count_q = self._apply_filters(self.db.query(GoldCliente360), *filter_args, search_field=search_field)
         total = count_q.count()
 
         # ── Dados paginados: ORDER BY + LIMIT em GoldCliente360 ───────────────
@@ -340,6 +373,7 @@ class ContactService:
             .all()
         )
 
+        # .add_columns() faz com que cada row seja (GoldCliente360, telefone)
         return ContactsPageOut(
             data=[_to_contact_out(g) for g in rows],
             total=total,
@@ -351,7 +385,7 @@ class ContactService:
         self,
         tab: str = "all", search: str = "",
         purchases_min: int | None = None, purchases_max: int | None = None,
-        created_year: str = "", engagement: str = "",
+        created_from: str = "", created_to: str = "", engagement: str = "",
         client_status: list[str] | None = None,
         regioes: list[str] | None = None, origens: list[str] | None = None,
         pagamentos: list[str] | None = None,
@@ -398,7 +432,7 @@ class ContactService:
 
         query = self._apply_filters(
             self.db.query(GoldCliente360),
-            tab, search, purchases_min, purchases_max, created_year, engagement,
+            tab, search, purchases_min, purchases_max, created_from, created_to, engagement,
             client_status, regioes, origens, pagamentos,
             receita_min, receita_max, ticket_medio_min, ticket_medio_max,
             primeira_compra_from, primeira_compra_to, ultima_compra_from, ultima_compra_to,
