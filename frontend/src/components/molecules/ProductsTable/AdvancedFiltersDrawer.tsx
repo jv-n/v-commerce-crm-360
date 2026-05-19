@@ -193,7 +193,7 @@ export function AdvancedFiltersDrawer({
           <button
             disabled={hasError}
             onClick={() => { onChange(draft); onClose() }}
-            className="w-full bg-[#EACAFF] border border-[#B899CC] text-black rounded-md py-2 text-sm font-medium hover:bg-[#d9adff] hover:border-[#9e72b8] active:bg-[#c99aee] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#EACAFF] disabled:hover:border-[#B899CC]"
+            className="w-full bg-[#F7EBFF] border border-[#D1B1E5] text-black rounded-md py-2 text-sm font-medium hover:bg-[#F0DDFD] hover:border-[#D1B1E5] active:bg-[#c99aee] transition-colors disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-[#EACAFF] disabled:hover:border-[#B899CC]"
           >
             Aplicar filtros
           </button>
