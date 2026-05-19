@@ -1,4 +1,9 @@
-export type ContactType = "Lead" | "Cliente"
+export type ContactPeriod =
+  | "current_month"
+  | "last_3_months"
+  | "current_semester"
+  | "current_year"
+  | "all_time"
 
 export interface ContactDetails {
   id: string
@@ -16,8 +21,41 @@ export interface ContactDetails {
   country: string | null
   origin: string | null
   clientStatus: string | null
-  contactType: ContactType
+  contactType: string
   responsible: string | null
+}
+
+export interface ContactCategoryMetric {
+  categoria: string
+  quantidade_total: number
+  receita_total: number
+  total_pedidos: number
+}
+
+export interface ContactMetrics {
+  contactType: string
+
+  period: ContactPeriod
+  periodLabel: string
+  periodStart: string | null
+  periodEnd: string | null
+
+  comprasMes: number
+  mediaNps: number | null
+  categoriaNpsRecente: string | null
+
+  origemLead: string | null
+  produtoMaisVisualizado: string | null
+  categoriaMaisVisualizada: string | null
+
+  totalSessoes: number
+  totalVisualizacoes: number
+  totalCarrinho: number
+  totalCheckouts: number
+  totalAbandonoCarrinho: number
+  taxaConversaoPct: number
+
+  categoriasMaisCompradas: ContactCategoryMetric[]
 }
 
 export interface ContactOrderProduct {
@@ -70,33 +108,6 @@ export interface ContactTicketsPage {
   pageSize: number
 }
 
-export interface ContactCategoryMetric {
-  categoria: string
-  quantidade_total: number
-  receita_total: number
-  total_pedidos: number
-}
-
-export interface ContactMetrics {
-  contactType: ContactType
-  comprasMes: number
-  mediaNps: number | null
-  categoriaNpsRecente: string | null
-
-  origemLead: string | null
-  produtoMaisVisualizado: string | null
-  categoriaMaisVisualizada: string | null
-
-  totalSessoes: number
-  totalVisualizacoes: number
-  totalCarrinho: number
-  totalCheckouts: number
-  totalAbandonoCarrinho: number
-  taxaConversaoPct: number
-
-  categoriasMaisCompradas: ContactCategoryMetric[]
-}
-
 export interface ContactViewedProduct {
   id_produto: string | null
   nome_produto: string | null
@@ -107,4 +118,11 @@ export interface ContactViewedProduct {
   canal: string | null
   dispositivo: string | null
   observacao: string | null
+}
+
+export interface ContactDashboard {
+  metrics: ContactMetrics
+  orders: ContactOrdersPage
+  tickets: ContactTicketsPage
+  viewedProducts: ContactViewedProduct[]
 }

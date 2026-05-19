@@ -1,7 +1,7 @@
 from pydantic import BaseModel
 
 
-class ContactDetailsOut(BaseModel):
+class ContactDetailOut(BaseModel):
     id: str
     name: str | None
     email: str | None
@@ -80,6 +80,12 @@ class ContactCategoryMetricOut(BaseModel):
 
 class ContactMetricsOut(BaseModel):
     contactType: str
+
+    period: str
+    periodLabel: str
+    periodStart: str | None
+    periodEnd: str | None
+
     comprasMes: float
     mediaNps: float | None
     categoriaNpsRecente: str | None
@@ -108,3 +114,10 @@ class ContactViewedProductOut(BaseModel):
     canal: str | None
     dispositivo: str | None
     observacao: str | None = None
+
+
+class ContactDashboardOut(BaseModel):
+    metrics: ContactMetricsOut
+    orders: ContactOrdersPageOut
+    tickets: ContactTicketsPageOut
+    viewedProducts: list[ContactViewedProductOut]

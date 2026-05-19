@@ -57,10 +57,10 @@ USERS = [
 # Necessárias para o mentionRouter (dim_clientes, dim_produtos, ft_pedidos,
 # dim_agentes_suporte) e para joins internos do agente de IA.
 SILVER_TABLES = [
-    ("dim_clientes",       "dim_clientes"),
-    ("dim_produtos",       "dim_produtos"),
-    ("dim_agentes_suporte","dim_agentes_suporte"),
-    ("ft_pedidos",         "ft_pedidos"),
+    ("dim_clientes",        "dim_clientes"),
+    ("dim_produtos",        "dim_produtos"),
+    ("dim_agentes_suporte", "dim_agentes_suporte"),
+    ("ft_pedidos",          "ft_pedidos"),
 ]
 
 # ── Tabelas Gold ──────────────────────────────────────────────────────────────
@@ -81,7 +81,7 @@ GOLD_TABLES = [
 ]
 
 # ── Tipos explícitos por tabela ───────────────────────────────────────────────
-# Evita inferência errada do pandas em colunas booleanas/numéricas ambíguas
+# Evita inferência errada do pandas em colunas booleanas/numéricas ambíguas.
 DTYPE_OVERRIDES: dict[str, dict] = {
     "gold_desempenho_produto": {
         "ativo": str,
@@ -110,7 +110,7 @@ DTYPE_OVERRIDES: dict[str, dict] = {
 
 # ── Índices ───────────────────────────────────────────────────────────────────
 INDEXES = [
-    # gold_pedidos_detalhado
+    # ── gold_pedidos_detalhado: filtros gerais de vendas/pedidos ──────────────
     "CREATE INDEX IF NOT EXISTS idx_gpedidos_data_pedido  ON gold_pedidos_detalhado(data_pedido DESC)",
     "CREATE INDEX IF NOT EXISTS idx_gpedidos_status       ON gold_pedidos_detalhado(status)",
     "CREATE INDEX IF NOT EXISTS idx_gpedidos_categoria    ON gold_pedidos_detalhado(categoria)",
@@ -118,7 +118,17 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_gpedidos_ano_mes      ON gold_pedidos_detalhado(ano_mes)",
     "CREATE INDEX IF NOT EXISTS idx_gpedidos_status_data  ON gold_pedidos_detalhado(status, data_pedido DESC)",
 
-    # gold_cliente_360
+    # ── gold_pedidos_detalhado: contact-details / mini dashboard ──────────────
+    # Usados por:
+    # - histórico de pedidos do contato
+    # - compras no período
+    # - gráfico de valor comprado por categoria
+    # - cálculo de data de referência do cliente
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_cliente_data ON gold_pedidos_detalhado(id_cliente, data_pedido DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_cliente_categoria_data ON gold_pedidos_detalhado(id_cliente, categoria, data_pedido DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_cliente_pedido ON gold_pedidos_detalhado(id_cliente, id_pedido)",
+
+    # ── gold_cliente_360 ──────────────────────────────────────────────────────
     "CREATE INDEX IF NOT EXISTS idx_g360_email            ON gold_cliente_360(email)",
     "CREATE INDEX IF NOT EXISTS idx_g360_regiao           ON gold_cliente_360(regiao)",
     "CREATE INDEX IF NOT EXISTS idx_g360_segmento         ON gold_cliente_360(segmento_cliente)",
@@ -129,7 +139,10 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_g360_receita          ON gold_cliente_360(receita_total)",
     "CREATE INDEX IF NOT EXISTS idx_g360_ticket_medio     ON gold_cliente_360(ticket_medio)",
 
-    # gold_tickets_360
+    # Índice principal para busca do contato específico.
+    "CREATE INDEX IF NOT EXISTS idx_g360_id_cliente       ON gold_cliente_360(id_cliente)",
+
+    # ── gold_tickets_360: filtros gerais de suporte ───────────────────────────
     "CREATE INDEX IF NOT EXISTS idx_gtickets_ticket_id       ON gold_tickets_360(ticket_id)",
     "CREATE INDEX IF NOT EXISTS idx_gtickets_id_cliente      ON gold_tickets_360(id_cliente)",
     "CREATE INDEX IF NOT EXISTS idx_gtickets_id_pedido       ON gold_tickets_360(id_pedido)",
@@ -146,30 +159,41 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_gtickets_agente_status   ON gold_tickets_360(agente_suporte, status_atendimento)",
     "CREATE INDEX IF NOT EXISTS idx_gtickets_problema_status ON gold_tickets_360(tipo_problema, status_atendimento)",
 
-    # dim_clientes (busca de menções no chat IA)
+    # ── gold_tickets_360: contact-details ─────────────────────────────────────
+    # Usados por:
+    # - histórico de tickets do contato
+    # - cálculo de data de referência
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_cliente_data ON gold_tickets_360(id_cliente, data_abertura DESC)",
+    "CREATE INDEX IF NOT EXISTS idx_gtickets_cliente_data_hora ON gold_tickets_360(id_cliente, data_abertura DESC, hora_abertura DESC)",
+
+    # ── dim_clientes ──────────────────────────────────────────────────────────
+    # Busca de menções no chat IA + fallback de dados cadastrais no detalhe.
     "CREATE INDEX IF NOT EXISTS idx_dimcli_nome_completo  ON dim_clientes(nome_completo)",
     "CREATE INDEX IF NOT EXISTS idx_dimcli_id_cliente     ON dim_clientes(id_cliente)",
+    "CREATE INDEX IF NOT EXISTS idx_dimcli_id_cliente_details ON dim_clientes(id_cliente)",
 
-    # dim_produtos (busca de menções no chat IA)
+    # ── dim_produtos ──────────────────────────────────────────────────────────
+    # Busca de menções no chat IA.
     "CREATE INDEX IF NOT EXISTS idx_dimprod_nome_produto  ON dim_produtos(nome_produto)",
     "CREATE INDEX IF NOT EXISTS idx_dimprod_categoria     ON dim_produtos(categoria)",
 
-    # ft_pedidos (busca de menções no chat IA)
+    # ── ft_pedidos ────────────────────────────────────────────────────────────
+    # Busca de menções no chat IA.
     "CREATE INDEX IF NOT EXISTS idx_ftpedidos_id_pedido   ON ft_pedidos(id_pedido)",
 
-    # gold_kpis_vendas_mensal
+    # ── gold_kpis_vendas_mensal ───────────────────────────────────────────────
     "CREATE INDEX IF NOT EXISTS idx_gkpis_ano_mes         ON gold_kpis_vendas_mensal(ano_mes)",
 
-    # gold_vendas_por_dimensao
+    # ── gold_vendas_por_dimensao ──────────────────────────────────────────────
     "CREATE INDEX IF NOT EXISTS idx_gdim_ano_mes          ON gold_vendas_por_dimensao(ano_mes)",
     "CREATE INDEX IF NOT EXISTS idx_gdim_regiao           ON gold_vendas_por_dimensao(regiao)",
     "CREATE INDEX IF NOT EXISTS idx_gdim_categoria        ON gold_vendas_por_dimensao(categoria)",
 
-    # gold_desempenho_produto
+    # ── gold_desempenho_produto ───────────────────────────────────────────────
     "CREATE INDEX IF NOT EXISTS idx_gprod_categoria       ON gold_desempenho_produto(categoria)",
     "CREATE INDEX IF NOT EXISTS idx_gprod_ativo           ON gold_desempenho_produto(ativo)",
 
-    # gold_satisfacao_nps
+    # ── gold_satisfacao_nps ───────────────────────────────────────────────────
     "CREATE INDEX IF NOT EXISTS idx_gnps_ano_mes          ON gold_satisfacao_nps(ano_mes)",
     "CREATE INDEX IF NOT EXISTS idx_gnps_categoria        ON gold_satisfacao_nps(categoria)",
 ]
@@ -177,18 +201,23 @@ INDEXES = [
 
 def load_csv(csv_dir: Path, stem: str) -> pd.DataFrame | None:
     path = csv_dir / f"{stem}.csv"
+
     if not path.exists():
         print(f"  ⚠  {stem}.csv não encontrado — pulando.")
         return None
+
     dtypes = DTYPE_OVERRIDES.get(stem, {})
     df = pd.read_csv(path, dtype=dtypes, low_memory=False)
+
     return df
 
 
 def insert_table(conn: sqlite3.Connection, df: pd.DataFrame, table_name: str) -> None:
     """Insere um DataFrame no SQLite respeitando o limite de variáveis."""
-    # SQLite tem limite de 32766 variáveis por statement.
+    # SQLite tem limite de variáveis por statement.
+    # Esse cálculo evita erro quando a tabela tem muitas colunas.
     safe_chunk = max(1, 32766 // len(df.columns))
+
     df.to_sql(
         name=table_name,
         con=conn,
@@ -201,12 +230,34 @@ def insert_table(conn: sqlite3.Connection, df: pd.DataFrame, table_name: str) ->
 
 def create_indexes(conn: sqlite3.Connection) -> None:
     cursor = conn.cursor()
+
+    ignored = 0
+
     for sql in INDEXES:
         try:
             cursor.execute(sql)
-        except sqlite3.OperationalError:
-            pass  # tabela não existe ainda — ignora silenciosamente
+        except sqlite3.OperationalError as exc:
+            ignored += 1
+            print(f"\n  ⚠ Índice ignorado:")
+            print(f"    SQL   : {sql}")
+            print(f"    Motivo: {exc}")
+
+    # Atualiza estatísticas internas do SQLite para melhorar o plano das queries.
+    try:
+        cursor.execute("ANALYZE")
+    except sqlite3.OperationalError as exc:
+        print(f"\n  ⚠ ANALYZE ignorado: {exc}")
+
+    # Ajuda o SQLite a otimizar estatísticas/índices quando aplicável.
+    try:
+        cursor.execute("PRAGMA optimize")
+    except sqlite3.OperationalError:
+        pass
+
     conn.commit()
+
+    if ignored:
+        print(f"  ⚠ {ignored} índice(s) foram ignorados.")
 
 
 def seed_users(conn: sqlite3.Connection) -> None:
@@ -220,14 +271,21 @@ def seed_users(conn: sqlite3.Connection) -> None:
             role     TEXT NOT NULL
         )
     """)
+
     cursor = conn.cursor()
+
     for user in USERS:
         user_id = str(uuid.uuid4())
         hashed = _password_hasher.hash(user["password"])
+
         cursor.execute(
-            "INSERT OR IGNORE INTO users (id, name, email, password, role) VALUES (?, ?, ?, ?, ?)",
+            """
+            INSERT OR IGNORE INTO users (id, name, email, password, role)
+            VALUES (?, ?, ?, ?, ?)
+            """,
             (user_id, user["name"], user["email"], hashed, user["role"]),
         )
+
     conn.commit()
     print(f"   {'users':<30} {len(USERS):>8,} linhas  [seed estático]")
 
@@ -249,37 +307,58 @@ def seed() -> None:
         raise SystemExit(1)
 
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
     conn = sqlite3.connect(DB_PATH)
+
+    # PRAGMAs voltados para acelerar o processo de carga e melhorar leituras.
     conn.execute("PRAGMA journal_mode = WAL")
     conn.execute("PRAGMA synchronous = NORMAL")
     conn.execute("PRAGMA cache_size = -64000")
+    conn.execute("PRAGMA temp_store = MEMORY")
     conn.execute("PRAGMA foreign_keys = OFF")
+
+    # mmap_size pode ajudar leituras em bases maiores.
+    # Se o ambiente não suportar, o SQLite apenas ignora ou limita.
+    try:
+        conn.execute("PRAGMA mmap_size = 268435456")  # 256 MB
+    except sqlite3.OperationalError:
+        pass
 
     total_rows = 0
     start_total = time.time()
 
     # ── Camada Silver ─────────────────────────────────────────────────────────
     print("  [ Silver ]")
+
     for stem, table_name in SILVER_TABLES:
         t0 = time.time()
         df = load_csv(SILVER_DIR, stem)
+
         if df is None:
             continue
+
         print(f"   {table_name:<35} {len(df):>8,} linhas", end="", flush=True)
+
         insert_table(conn, df, table_name)
+
         print(f"  [{time.time() - t0:.1f}s]")
         total_rows += len(df)
 
     # ── Camada Gold ───────────────────────────────────────────────────────────
     print()
     print("  [ Gold ]")
+
     for stem, table_name in GOLD_TABLES:
         t0 = time.time()
         df = load_csv(GOLD_DIR, stem)
+
         if df is None:
             continue
+
         print(f"   {table_name:<35} {len(df):>8,} linhas", end="", flush=True)
+
         insert_table(conn, df, table_name)
+
         print(f"  [{time.time() - t0:.1f}s]")
         total_rows += len(df)
 
@@ -289,7 +368,7 @@ def seed() -> None:
     seed_users(conn)
 
     # ── Índices ───────────────────────────────────────────────────────────────
-    print(f"\n  Criando índices...", end=" ", flush=True)
+    print(f"\n  Criando índices e estatísticas...", end=" ", flush=True)
     create_indexes(conn)
     print("OK")
 

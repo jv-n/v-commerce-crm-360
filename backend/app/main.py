@@ -3,7 +3,7 @@ import os
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.routes import userRouter, contactRouter, contactDetailsRouter, agentRouter, productRouter, saleRouter, ticketRouter
+from app.routes import userRouter, contactRouter, agentRouter, productRouter, saleRouter, ticketRouter, contactDetailRouter
 from app.routes import conversationRouter, mentionRouter, reviewRouter, authRouter
 
 # Injeta a GEMINI_API_KEY no ambiente para o PydanticAI/Google SDK
@@ -39,10 +39,10 @@ app.add_middleware(
 
 app.include_router(userRouter.router)
 app.include_router(contactRouter.router)
+app.include_router(contactDetailRouter.router)
 app.include_router(agentRouter.router)
 app.include_router(saleRouter.router)
 app.include_router(productRouter.router)
-app.include_router(contactDetailsRouter.router)
 app.include_router(conversationRouter.router)
 app.include_router(mentionRouter.router)
 app.include_router(reviewRouter.router)

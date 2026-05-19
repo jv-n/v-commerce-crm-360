@@ -1,7 +1,9 @@
 import type {
+  ContactDashboard,
   ContactDetails,
   ContactMetrics,
   ContactOrdersPage,
+  ContactPeriod,
   ContactTicketsPage,
   ContactViewedProduct,
 } from "@/types/contactDetails"
@@ -9,83 +11,101 @@ import type {
 interface PageParams {
   page?: number
   pageSize?: number
+  period?: ContactPeriod
 }
 
-function buildPageQuery(params?: PageParams) {
-  const query = new URLSearchParams()
+function buildQuery(params: Record<string, string | number | undefined | null>) {
+  const searchParams = new URLSearchParams()
 
-  query.set("page", String(params?.page ?? 1))
-  query.set("pageSize", String(params?.pageSize ?? 10))
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined && value !== null && value !== "") {
+      searchParams.set(key, String(value))
+    }
+  })
 
-  return query.toString()
+  const query = searchParams.toString()
+  return query ? `?${query}` : ""
 }
 
-export async function fetchContactDetails(id: string): Promise<ContactDetails> {
-  const res = await fetch(`/api/contacts/${id}/details`)
+async function getJson<T>(url: string): Promise<T> {
+  const response = await fetch(url)
 
-  if (!res.ok) {
-    throw new Error(`Erro ao buscar detalhes do contato: ${res.status}`)
+  if (!response.ok) {
+    throw new Error(`Erro na requisição ${url}: ${response.status}`)
   }
 
-  return res.json() as Promise<ContactDetails>
+  return response.json() as Promise<T>
+}
+
+export async function fetchContactDetails(
+  contactId: string
+): Promise<ContactDetails> {
+  return getJson<ContactDetails>(`/api/contact-details/${contactId}/details`)
+}
+
+export async function fetchContactDashboard(
+  contactId: string,
+  params: PageParams = {}
+): Promise<ContactDashboard> {
+  const query = buildQuery({
+    period: params.period ?? "current_month",
+    page: params.page ?? 1,
+    pageSize: params.pageSize ?? 5,
+  })
+
+  return getJson<ContactDashboard>(
+    `/api/contact-details/${contactId}/dashboard${query}`
+  )
 }
 
 export async function fetchContactMetrics(
-  id: string,
-  anoMes?: string
+  contactId: string,
+  period: ContactPeriod = "current_month"
 ): Promise<ContactMetrics> {
-  const query = new URLSearchParams()
+  const query = buildQuery({ period })
 
-  if (anoMes) {
-    query.set("ano_mes", anoMes)
-  }
-
-  const suffix = query.toString() ? `?${query.toString()}` : ""
-  const res = await fetch(`/api/contacts/${id}/metrics${suffix}`)
-
-  if (!res.ok) {
-    throw new Error(`Erro ao buscar métricas do contato: ${res.status}`)
-  }
-
-  return res.json() as Promise<ContactMetrics>
+  return getJson<ContactMetrics>(
+    `/api/contact-details/${contactId}/metrics${query}`
+  )
 }
 
 export async function fetchContactOrders(
-  id: string,
-  params?: PageParams
+  contactId: string,
+  params: PageParams = {}
 ): Promise<ContactOrdersPage> {
-  const query = buildPageQuery(params)
-  const res = await fetch(`/api/contacts/${id}/orders?${query}`)
+  const query = buildQuery({
+    page: params.page ?? 1,
+    pageSize: params.pageSize ?? 20,
+    period: params.period ?? "current_month",
+  })
 
-  if (!res.ok) {
-    throw new Error(`Erro ao buscar pedidos do contato: ${res.status}`)
-  }
-
-  return res.json() as Promise<ContactOrdersPage>
+  return getJson<ContactOrdersPage>(
+    `/api/contact-details/${contactId}/orders${query}`
+  )
 }
 
 export async function fetchContactTickets(
-  id: string,
-  params?: PageParams
+  contactId: string,
+  params: PageParams = {}
 ): Promise<ContactTicketsPage> {
-  const query = buildPageQuery(params)
-  const res = await fetch(`/api/contacts/${id}/tickets?${query}`)
+  const query = buildQuery({
+    page: params.page ?? 1,
+    pageSize: params.pageSize ?? 20,
+    period: params.period ?? "current_month",
+  })
 
-  if (!res.ok) {
-    throw new Error(`Erro ao buscar tickets do contato: ${res.status}`)
-  }
-
-  return res.json() as Promise<ContactTicketsPage>
+  return getJson<ContactTicketsPage>(
+    `/api/contact-details/${contactId}/tickets${query}`
+  )
 }
 
 export async function fetchContactViewedProducts(
-  id: string
+  contactId: string,
+  period: ContactPeriod = "current_month"
 ): Promise<ContactViewedProduct[]> {
-  const res = await fetch(`/api/contacts/${id}/viewed-products`)
+  const query = buildQuery({ period })
 
-  if (!res.ok) {
-    throw new Error(`Erro ao buscar produtos visualizados: ${res.status}`)
-  }
-
-  return res.json() as Promise<ContactViewedProduct[]>
+  return getJson<ContactViewedProduct[]>(
+    `/api/contact-details/${contactId}/viewed-products${query}`
+  )
 }
