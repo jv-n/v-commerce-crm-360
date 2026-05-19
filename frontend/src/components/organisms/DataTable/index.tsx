@@ -97,7 +97,7 @@ export function DataTable<T,>({
   }, [selection.selectedRows])
 
   const [shownOptionalKeys, setShownOptionalKeys] = useState<Set<string>>(
-    new Set()
+    () => new Set(columns.filter(c => c.filter && c.filterOptional).map(c => c.key))
   )
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
@@ -165,7 +165,7 @@ export function DataTable<T,>({
   const clearAllFilters = () => {
     filters.clearAllFilters()
     pagination.resetPage()
-    setShownOptionalKeys(new Set())
+    setShownOptionalKeys(new Set(columns.filter(c => c.filter && c.filterOptional).map(c => c.key)))
     onClearExtraFilters?.()
   }
 
@@ -174,7 +174,7 @@ export function DataTable<T,>({
     filters.clearAllFilters()
     pagination.resetPage()
     selection.clearSelection()
-    setShownOptionalKeys(new Set())
+    setShownOptionalKeys(new Set(columns.filter(c => c.filter && c.filterOptional).map(c => c.key)))
     setSortKey(null)
     setSortDir("asc")
     onClearExtraFilters?.()

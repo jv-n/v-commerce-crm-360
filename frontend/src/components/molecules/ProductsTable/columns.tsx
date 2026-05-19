@@ -47,10 +47,6 @@ export function makeProductColumns(
           onClick={(e) => e.stopPropagation()}
           className={allExpanded ? "inline-flex rotate-90 transition-transform duration-200" : "inline-flex transition-transform duration-200"}
         >
-          <OpenCircleButton
-            title={allExpanded ? "Fechar todos" : "Abrir todos"}
-            onClick={() => onToggleAll()}
-          />
         </div>
       ),
       render: (p) => (
