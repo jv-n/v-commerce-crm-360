@@ -61,13 +61,13 @@ export default function AppFrame() {
     const itemActive = (path: string) => pathname === path ? "bg-primary" : "bg-background";
 
     const sidebarItems1 = [
-        { name: "Home", nav: true, path: "/" },
+        { name: "Menu", nav: true, path: "/" },
     ];
 
     const allSidebarItems2 = [
-        { name: "Contacts",  nav: true,  path: "/contacts",  roles: ["admin", "sales"] },
-        { name: "Sales",     nav: true,  path: "/sales",     roles: ["admin", "sales"] },
-        { name: "Products",  nav: true,  path: "/products",  roles: [] },
+        { name: "Contatos",  nav: true,  path: "/contacts",  roles: ["admin", "sales"] },
+        { name: "Pedidos",     nav: true,  path: "/sales",     roles: ["admin", "sales"] },
+        { name: "Produtos",  nav: true,  path: "/products",  roles: [] },
         { name: "Dashboard", nav: true,  path: "/dashboard", roles: ["admin"] },
         { name: "Tickets",   nav: true,  path: "/tickets",   roles: ["admin", "support"] },
     ];
@@ -90,13 +90,13 @@ export default function AppFrame() {
 
     const setIcon = (title: string): React.ReactNode => {
         switch (title) {
-            case "Home":
+            case "Menu":
                 return <HomeOutlinedIcon sx={{ color: iconColor("/")} }/>;
-            case "Contacts":
+            case "Contatos":
                 return <ContactPageOutlinedIcon sx={{ color: iconColor("/contacts")} }/>;
-            case "Sales":
+            case "Pedidos":
                 return <RequestQuoteOutlinedIcon sx={{ color: iconColor("/sales")} }/>;
-            case "Products":
+            case "Produtos":
                 return <Inventory2OutlinedIcon sx={{ color: iconColor("/products")} }/>;
             case "Dashboard":
                 return <LeaderboardIcon sx={{ color: iconColor("/dashboard")} }/>;
@@ -132,7 +132,7 @@ export default function AppFrame() {
                                                         </NavLink>
                                                     </SidebarMenuButton>
                                                 </TooltipTrigger>
-                                                <TooltipContent side="right" className="bg-background text-primary rounded-lg" arrowClassName="bg-background fill-background">
+                                                <TooltipContent side="right" className="bg-background text-white rounded-lg" arrowClassName="bg-background fill-background">
                                                     <p>{item.name}</p>
                                                 </TooltipContent>
                                             </Tooltip>
@@ -155,7 +155,7 @@ export default function AppFrame() {
                                                         </NavLink>
                                                     </SidebarMenuButton>
                                                 </TooltipTrigger>
-                                                <TooltipContent side="right" className="bg-background text-primary rounded-lg" arrowClassName="bg-background fill-background">
+                                                <TooltipContent side="right" className="bg-background text-white rounded-lg" arrowClassName="bg-background fill-background">
                                                     <p>{item.name}</p>
                                                 </TooltipContent>
                                             </Tooltip>
@@ -190,7 +190,7 @@ export default function AppFrame() {
                                                         </SidebarMenuButton>
                                                     )}
                                                 </TooltipTrigger>
-                                                <TooltipContent side="right" className="bg-background text-primary rounded-lg" arrowClassName="bg-background fill-background">
+                                                <TooltipContent side="right" className="bg-background text-white rounded-lg" arrowClassName="bg-background fill-background">
                                                     <p>{item.name === "Chat" ? "Assistente V.IA" : item.name}</p>
                                                 </TooltipContent>
                                             </Tooltip>
