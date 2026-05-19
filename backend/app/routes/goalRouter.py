@@ -17,6 +17,11 @@ def get_goals_progress(db: Session = Depends(get_db)):
     return GoalService(db).get_progress()
 
 
+@router.get("/{goal_id}/progress")
+def get_single_goal_progress(goal_id: str, db: Session = Depends(get_db)):
+    return GoalService(db).get_single_progress(goal_id)
+
+
 @router.post("/", response_model=GoalOut)
 def add_goal(data: GoalCreate, db: Session = Depends(get_db)):
     return GoalService(db).add(data)

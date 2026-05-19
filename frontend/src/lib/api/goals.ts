@@ -66,6 +66,13 @@ export async function fetchGoalsProgress(): Promise<GoalsProgressResult> {
   return { progress, referenceMonth }
 }
 
+export async function fetchGoalProgress(id: string): Promise<{ current: number; referenceMonth: string }> {
+  const res = await fetch(`/api/goals/${id}/progress`)
+  if (!res.ok) throw new Error("Failed to fetch goal progress")
+  const data: { current: number; reference_month: string } = await res.json()
+  return { current: data.current, referenceMonth: data.reference_month }
+}
+
 export async function deleteGoal(id: string): Promise<void> {
   await fetch(`/api/goals/${id}`, { method: "DELETE" })
 }

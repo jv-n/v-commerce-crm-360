@@ -108,6 +108,16 @@ class GoalService:
         currents, ref_month = self._compute_all_currents(rows)
         return {**currents, "_reference_month": ref_month}
 
+    def get_single_progress(self, goal_id: str) -> dict:
+        """Calcula o progresso de uma única meta.
+        Retorna {"current": int, "reference_month": "YYYY-MM"}.
+        """
+        row = self.db.query(GoalItem).filter(GoalItem.id == goal_id).first()
+        if not row:
+            return {"current": 0, "reference_month": ""}
+        currents, ref_month = self._compute_all_currents([row])
+        return {"current": currents.get(goal_id, 0), "reference_month": ref_month}
+
     def add(self, data: GoalCreate) -> GoalOut:
         row = GoalItem(
             id=str(uuid.uuid4()),

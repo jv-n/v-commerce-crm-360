@@ -113,8 +113,7 @@ export default function AppFrame() {
 
     return (
         <SidebarProvider defaultOpen={true} className="!h-svh overflow-hidden">
-            {!isOnHome && ( 
-                <Sidebar variant="inset" >
+            <Sidebar variant="inset" >
                     <SidebarHeader className="w-full align-center justify-center">
                         <img src="vcom360_icon.svg" alt="CRM Icon" height={80} width={80}/> 
                     </SidebarHeader>
@@ -203,12 +202,8 @@ export default function AppFrame() {
                         </TooltipProvider>
                     </SidebarContent>
                 </Sidebar>
-            )}
             <SidebarInset className="m-2 ml-0 rounded-xl overflow-hidden flex flex-col transition-all duration-300">
                 <div className="flex items-center">
-                    {isOnHome && ( 
-                        <img src="vcom360_icon.svg" alt="Logo" className="w-15 h-15 ml-3 flex-shrink-0" />
-                    )}
                     <div className="flex-1">
                         <AppNavbar onOpenAI={() => { if (!isOnChat) setIsAIOpen((prev) => !prev); }} />
                     </div>

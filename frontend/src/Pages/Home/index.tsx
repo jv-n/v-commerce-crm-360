@@ -2,19 +2,13 @@ import { useState, useEffect } from "react"
 import { useNavigate, useOutletContext } from "react-router-dom"
 import { Dialog as DialogPrimitive } from "radix-ui"
 import { X } from "lucide-react"
-import { MOCKED_SHORTCUTS } from "@/lib/mocks/home"
 import { fetchBookmarks, saveBookmark, deleteBookmark } from "@/lib/api/bookmarks"
-import { fetchGoals, fetchGoalsProgress, saveGoal, deleteGoal } from "@/lib/api/goals"
-import type { ShortcutItem, Bookmark, ContactBookmark, ProductBookmark, Goal, GoalKind } from "@/types/home"
+import { fetchGoals, fetchGoalsProgress, fetchGoalProgress, saveGoal, deleteGoal } from "@/lib/api/goals"
+import type { Bookmark, ContactBookmark, ProductBookmark, Goal, GoalKind } from "@/types/home"
 import { fetchContactById } from "@/lib/api/contacts"
 import { fetchProductById } from "@/lib/api/products"
 import {
-  ContactPageOutlined as ContactPageOutlinedIcon,
-  ConfirmationNumberOutlined as ConfirmationNumberOutlinedIcon,
-  BarChartOutlined as BarChartOutlinedIcon,
-  RequestQuoteOutlined as RequestQuoteOutlinedIcon,
   Inventory2Outlined as Inventory2OutlinedIcon,
-  FlagOutlined,
   BookmarkBorderOutlined,
   PersonOutlined,
   AddOutlined,
@@ -34,14 +28,6 @@ import {
 import { useAuth } from "@/contexts/auth/useAuth"
 
 // ── Mapas de ícones ───────────────────────────────────────────────────────────
-
-const SHORTCUT_ICON_MAP: Record<string, React.ElementType> = {
-  ContactPage:        ContactPageOutlinedIcon,
-  ConfirmationNumber: ConfirmationNumberOutlinedIcon,
-  BarChart:           BarChartOutlinedIcon,
-  RequestQuote:       RequestQuoteOutlinedIcon,
-  Inventory2Outlined: Inventory2OutlinedIcon,
-}
 
 const CATEGORY_ICON_MAP: Record<string, React.ElementType> = {
   Automotivo:  DirectionsCarOutlined,
@@ -70,64 +56,19 @@ function fmtCurrency(v: number | null) {
 
 // ── Componentes de card ───────────────────────────────────────────────────────
 
-function ShortcutCard({ shortcut, onClick }: { shortcut: ShortcutItem; onClick: () => void }) {
-  const IconComponent = SHORTCUT_ICON_MAP[shortcut.icon]
-  const disabled = shortcut.disabled ?? false
-
-  return (
-    <button
-      onClick={onClick}
-      disabled={disabled}
-      className={`
-        flex flex-col items-center justify-center gap-3
-        border-[6px] border-[#D1B1E5] rounded-xl
-        py-6 px-3 flex-1 min-w-0 shadow-md
-        transition-all duration-150
-        ${disabled ? "bg-[#F7EBFF] cursor-not-allowed opacity-60" : "bg-[#F7EBFF] hover:bg-[#F0DDFD] active:scale-95"}
-      `}
-    >
-      {IconComponent && (
-        <IconComponent sx={{ fontSize: 48, color: disabled ? "#9CA3AF" : "#2E0E55" }} />
-      )}
-      <span className={`text-base font-semibold text-center leading-tight ${disabled ? "text-gray-400" : "text-[#2E0E55]"}`}>
-        {shortcut.label}
-      </span>
-    </button>
-  )
-}
-
-function AICard({ onClick }: { onClick: () => void }) {
-  return (
-    <button
-      onClick={onClick}
-      className="
-        flex flex-col items-center justify-center gap-3
-        border-[6px] border-[#D1B1E5] bg-[#F7EBFF] rounded-xl
-        py-6 px-3 flex-1 min-w-0 shadow-md
-        transition-all duration-150 hover:bg-[#F0DDFD] active:scale-95
-      "
-    >
-      <img src="/v_ai.svg" alt="Assistente V.IA" className="w-12 h-12" />
-      <span className="text-base font-semibold text-center leading-tight text-[#2E0E55]">
-        Assistente V.IA
-      </span>
-    </button>
-  )
-}
-
 const contactCardClass = `
   group relative flex items-center gap-4
-  border-[6px] border-[#A8C7FA] bg-[#EEF4FF] rounded-xl
-  py-5 px-5 shadow-md flex-1 min-w-0
-  transition-all duration-150 hover:bg-[#DCEAFF] active:scale-95
+  border-2 border-gray-200 bg-white rounded-xl
+  py-5 px-5 shadow-sm flex-1 min-w-0
+  transition-all duration-150 hover:bg-[#EEF4FF] active:scale-95
   cursor-pointer
 `
 
 const productCardClass = `
   group relative flex items-center gap-4
-  border-[6px] border-[#86EFAC] bg-[#F0FDF4] rounded-xl
-  py-5 px-5 shadow-md flex-1 min-w-0
-  transition-all duration-150 hover:bg-[#DCFCE7] active:scale-95
+  border-2 border-gray-200 bg-white rounded-xl
+  py-5 px-5 shadow-sm flex-1 min-w-0
+  transition-all duration-150 hover:bg-[#F0FDF4] active:scale-95
   cursor-pointer
 `
 
@@ -143,7 +84,7 @@ function ContactBookmarkCard({ item, onClick, onDelete }: { item: ContactBookmar
         <span className="text-[11px] font-mono text-[#1a3a6b]/50 mt-0.5 truncate">ID: {item.id}</span>
       </div>
       <button
-        className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-[#A8C7FA]/40 hover:bg-red-100 text-[#1a3a6b]/50 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+        className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-gray-200/70 hover:bg-red-100 text-gray-400 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
         onClick={(e) => { e.stopPropagation(); onDelete() }}
         title="Remover bookmark"
       >
@@ -167,7 +108,7 @@ function ProductBookmarkCard({ item, onClick, onDelete }: { item: ProductBookmar
         <span className="text-[11px] font-mono text-[#14532d]/50 mt-0.5 truncate">ID: {item.id}</span>
       </div>
       <button
-        className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-[#86EFAC]/40 hover:bg-red-100 text-[#14532d]/50 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
+        className="absolute top-2 right-2 w-6 h-6 flex items-center justify-center rounded-full bg-gray-200/70 hover:bg-red-100 text-gray-400 hover:text-red-500 transition-all opacity-0 group-hover:opacity-100"
         onClick={(e) => { e.stopPropagation(); onDelete() }}
         title="Remover bookmark"
       >
@@ -189,15 +130,15 @@ function AddBookmarkButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       className="
         flex items-center gap-4
-        border-[6px] border-dashed border-[#D1B1E5] rounded-xl
-        py-5 px-5 flex-1 min-w-0
-        transition-all duration-150 hover:bg-[#F7EBFF] active:scale-95
+        border-2 border-dashed border-gray-300 rounded-xl
+        py-6 px-6 flex-1 min-w-0
+        transition-all duration-150 hover:bg-gray-50 active:scale-95
       "
     >
-      <div className="flex-shrink-0 w-12 h-12 rounded-full border-2 border-[#D1B1E5] flex items-center justify-center">
-        <AddOutlined sx={{ fontSize: 24, color: "#2E0E55" }} />
+      <div className="flex-shrink-0 w-12 h-12 rounded-full border-2 border-gray-300 flex items-center justify-center">
+        <AddOutlined sx={{ fontSize: 24, color: "#111827" }} />
       </div>
-      <span className="text-sm text-[#2E0E55]/60">Adicionar bookmark</span>
+      <span className="text-sm font-medium text-gray-900">Adicionar bookmark</span>
     </button>
   )
 }
@@ -214,8 +155,8 @@ const GOAL_CONFIG: Record<GoalKind, {
     Icon: Inventory2OutlinedIcon, label: "Vendas de produto",
   },
   new_clients: {
-    border: "#6EE7B7", bg: "#ECFDF5", hover: "#D1FAE5",
-    text: "#064E3B", subtext: "#064E3B99", deleteBg: "#6EE7B766",
+    border: "#A8C7FA", bg: "#EEF4FF", hover: "#DCEAFF",
+    text: "#1a3a6b", subtext: "#1a3a6b99", deleteBg: "#A8C7FA66",
     Icon: PeopleAltOutlined, label: "Novos clientes",
   },
   category_sales: {
@@ -305,15 +246,15 @@ function AddGoalButton({ onClick }: { onClick: () => void }) {
       onClick={onClick}
       className="
         flex items-center gap-4
-        border-[6px] border-dashed border-[#D1B1E5] rounded-xl
+        border-2 border-dashed border-gray-300 rounded-xl
         py-5 px-5 flex-1 min-w-0
-        transition-all duration-150 hover:bg-[#F7EBFF] active:scale-95
+        transition-all duration-150 hover:bg-gray-50 active:scale-95
       "
     >
-      <div className="flex-shrink-0 w-10 h-10 rounded-full border-2 border-[#D1B1E5] flex items-center justify-center">
-        <AddOutlined sx={{ fontSize: 20, color: "#2E0E55" }} />
+      <div className="flex-shrink-0 w-10 h-10 rounded-full border-2 border-gray-300 flex items-center justify-center">
+        <AddOutlined sx={{ fontSize: 20, color: "#111827" }} />
       </div>
-      <span className="text-sm text-[#2E0E55]/60">Adicionar meta</span>
+      <span className="text-sm font-medium text-gray-900">Adicionar meta</span>
     </button>
   )
 }
@@ -377,7 +318,7 @@ function AddGoalModal({ open, onAdd, onClose }: { open: boolean; onAdd: (g: Omit
             <DialogPrimitive.Title className="text-lg font-bold text-gray-900">
               Adicionar Meta
             </DialogPrimitive.Title>
-            <DialogPrimitive.Close className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition">
+            <DialogPrimitive.Close className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-900 hover:text-gray-700 transition">
               <X size={16} />
             </DialogPrimitive.Close>
           </div>
@@ -386,7 +327,7 @@ function AddGoalModal({ open, onAdd, onClose }: { open: boolean; onAdd: (g: Omit
 
             {/* Tipo de meta */}
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-gray-500">Tipo de meta</label>
+              <label className="text-xs font-medium text-gray-900">Tipo de meta</label>
               <div className="grid grid-cols-3 gap-2">
                 {(["product_sales", "new_clients", "category_sales"] as GoalKind[]).map(k => {
                   const cfg = GOAL_CONFIG[k]
@@ -402,8 +343,8 @@ function AddGoalModal({ open, onAdd, onClose }: { open: boolean; onAdd: (g: Omit
                         background:  active ? cfg.bg    : "white",
                       }}
                     >
-                      <cfg.Icon sx={{ fontSize: 22, color: active ? cfg.text : "#9CA3AF" }} />
-                      <span className="text-[10px] font-medium leading-tight" style={{ color: active ? cfg.text : "#6B7280" }}>
+                      <cfg.Icon sx={{ fontSize: 22, color: active ? cfg.text : "#111827" }} />
+                      <span className="text-[10px] font-medium leading-tight" style={{ color: active ? cfg.text : "#111827" }}>
                         {cfg.label}
                       </span>
                     </button>
@@ -415,7 +356,7 @@ function AddGoalModal({ open, onAdd, onClose }: { open: boolean; onAdd: (g: Omit
             {/* Campos específicos por tipo */}
             {kind === "product_sales" && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-gray-500">ID do produto</label>
+                <label className="text-xs font-medium text-gray-900">ID do produto</label>
                 <input
                   autoFocus
                   value={productId}
@@ -428,7 +369,7 @@ function AddGoalModal({ open, onAdd, onClose }: { open: boolean; onAdd: (g: Omit
 
             {kind === "category_sales" && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-gray-500">Categoria</label>
+                <label className="text-xs font-medium text-gray-900">Categoria</label>
                 <select
                   value={category}
                   onChange={e => { setCategory(e.target.value); setStatus("idle") }}
@@ -442,7 +383,7 @@ function AddGoalModal({ open, onAdd, onClose }: { open: boolean; onAdd: (g: Omit
 
             {kind && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-xs font-medium text-gray-500">Meta (quantidade)</label>
+                <label className="text-xs font-medium text-gray-900">Meta (quantidade)</label>
                 <input
                   value={target}
                   onChange={e => { setTarget(e.target.value); setStatus("idle") }}
@@ -460,9 +401,9 @@ function AddGoalModal({ open, onAdd, onClose }: { open: boolean; onAdd: (g: Omit
               </span>
             )}
 
-            <div className="flex items-center justify-center gap-8 pt-2 border-t border-gray-100">
+            <div className="flex items-center justify-center gap-8 pt-4 mt-2 border-t border-gray-100">
               <DialogPrimitive.Close asChild>
-                <button type="button" className="text-sm text-gray-500 hover:text-gray-700 transition-colors">
+                <button type="button" className="text-sm text-gray-900 hover:text-gray-700 transition-colors">
                   Cancelar
                 </button>
               </DialogPrimitive.Close>
@@ -522,32 +463,33 @@ function AddBookmarkModal({ open, onAdd, onClose }: { open: boolean; onAdd: (b: 
             <DialogPrimitive.Title className="text-lg font-bold text-gray-900">
               Adicionar Bookmark
             </DialogPrimitive.Title>
-            <DialogPrimitive.Close className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-400 hover:text-gray-600 transition">
+            <DialogPrimitive.Close className="w-7 h-7 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-900 hover:text-gray-700 transition">
               <X size={16} />
             </DialogPrimitive.Close>
           </div>
 
           <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <div className="flex flex-col gap-1.5">
-              <label className="text-xs font-medium text-gray-500">ID do cliente ou produto</label>
+              <label className="text-xs font-medium text-gray-900">ID do cliente ou produto</label>
+
               <input
                 autoFocus
                 value={id}
                 onChange={e => { setId(e.target.value); setStatus("idle") }}
                 placeholder="Ex: PROD-0023 ou UUID do contato..."
                 disabled={status === "loading"}
-                className="h-9 w-full rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-800 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary"
+                className="h-9 w-full rounded-md border border-gray-200 bg-gray-50 px-3 text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-primary"
               />
               {status === "error" && (
                 <span className="text-xs text-red-500">ID não encontrado. Verifique e tente novamente.</span>
               )}
             </div>
 
-            <div className="flex items-center justify-center gap-8 pt-2 border-t border-gray-100">
+            <div className="flex items-center justify-center gap-8 pt-4 mt-4 border-t border-gray-100">
               <DialogPrimitive.Close asChild>
                 <button
                   type="button"
-                  className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+                  className="text-sm text-gray-900 hover:text-gray-700 transition-colors"
                 >
                   Cancelar
                 </button>
@@ -579,6 +521,7 @@ export default function Home() {
   const [addingBookmark, setAddingBookmark] = useState(false)
   const [goals, setGoals]                       = useState<Goal[]>([])
   const [goalsProgressLoading, setGoalsProgressLoading] = useState(false)
+  const [loadingGoalIds, setLoadingGoalIds]     = useState<Set<string>>(new Set())
   const [addingGoal, setAddingGoal]             = useState(false)
 
   useEffect(() => {
@@ -620,14 +563,14 @@ export default function Home() {
   const addGoal = async (g: Omit<Goal, "id" | "current">) => {
     const created = await saveGoal(g)
     setGoals(prev => [...prev, created])
-    // Busca progresso para a nova meta também
-    setGoalsProgressLoading(true)
-    fetchGoalsProgress()
-      .then(({ progress, referenceMonth }) => {
-        setGoals(prev => prev.map(x => ({ ...x, current: progress[x.id] ?? x.current, referenceMonth })))
+    // Anima e busca progresso apenas do card recém-criado
+    setLoadingGoalIds(prev => new Set(prev).add(created.id))
+    fetchGoalProgress(created.id)
+      .then(({ current, referenceMonth }) => {
+        setGoals(prev => prev.map(x => x.id === created.id ? { ...x, current, referenceMonth } : x))
       })
       .catch(console.error)
-      .finally(() => setGoalsProgressLoading(false))
+      .finally(() => setLoadingGoalIds(prev => { const n = new Set(prev); n.delete(created.id); return n }))
   }
 
   const removeGoal = async (id: string) => {
@@ -652,21 +595,22 @@ export default function Home() {
         </h1>
       </div>
 
-      {/* Funções do sistema */}
+      {/* Metas */}
       <section className="flex flex-col gap-3">
         <div className="flex items-center gap-2">
-          <FlagOutlined sx={{ fontSize: 24, color: "#374151" }} />
-          <h2 className="text-xl font-bold text-gray-900">Funções Do Sistema</h2>
+          <TrackChangesOutlined sx={{ fontSize: 24, color: "#374151" }} />
+          <h2 className="text-xl font-bold text-gray-900">Metas do Mês</h2>
         </div>
-        <div className="flex flex-row gap-4">
-          {MOCKED_SHORTCUTS.map((shortcut) => (
-            <ShortcutCard
-              key={shortcut.id}
-              shortcut={shortcut}
-              onClick={() => navigate(shortcut.route)}
-            />
+        <div className="grid grid-cols-5 gap-4">
+          {goals.map((goal) => (
+            <GoalCard key={goal.id} goal={goal} progressLoading={goalsProgressLoading || loadingGoalIds.has(goal.id)} onDelete={() => removeGoal(goal.id)} />
           ))}
-          <AICard onClick={() => onOpenAI()} />
+          <AddGoalButton onClick={() => setAddingGoal(true)} />
+          <AddGoalModal
+            open={addingGoal}
+            onAdd={addGoal}
+            onClose={() => setAddingGoal(false)}
+          />
         </div>
       </section>
 
@@ -685,25 +629,6 @@ export default function Home() {
             open={addingBookmark}
             onAdd={(b) => { addBookmark(b); setAddingBookmark(false) }}
             onClose={() => setAddingBookmark(false)}
-          />
-        </div>
-      </section>
-
-      {/* Metas */}
-      <section className="flex flex-col gap-3">
-        <div className="flex items-center gap-2">
-          <TrackChangesOutlined sx={{ fontSize: 24, color: "#374151" }} />
-          <h2 className="text-xl font-bold text-gray-900">Metas do Mês</h2>
-        </div>
-        <div className="grid grid-cols-5 gap-4">
-          {goals.map((goal) => (
-            <GoalCard key={goal.id} goal={goal} progressLoading={goalsProgressLoading} onDelete={() => removeGoal(goal.id)} />
-          ))}
-          <AddGoalButton onClick={() => setAddingGoal(true)} />
-          <AddGoalModal
-            open={addingGoal}
-            onAdd={addGoal}
-            onClose={() => setAddingGoal(false)}
           />
         </div>
       </section>
