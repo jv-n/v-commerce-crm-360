@@ -6,6 +6,7 @@ import type {
   SelectFilterDef,
   NumberRangeFilterDef,
   MultiSelectFilterDef,
+  SearchSelectFilterDef,
   ServerPagination,
 } from "./types"
 import {
@@ -26,6 +27,7 @@ import { SelectDropdown } from "./atoms/SelectDropdown"
 import { NumberRangeDropdown } from "./atoms/NumberRangeDropdown"
 import { MultiSelectDropdown } from "./atoms/MultiSelectDropdown"
 import { DateRangeDropdown } from "./atoms/DateRangeDropdown"
+import { SearchSelectDropdown } from "./atoms/SearchSelectDropdown"
 
 function buildServerPageInfo(sp: ServerPagination, dataLength: number) {
   const totalPages = Math.max(1, Math.ceil(sp.total / sp.pageSize))
@@ -97,7 +99,7 @@ export function DataTable<T,>({
   }, [selection.selectedRows])
 
   const [shownOptionalKeys, setShownOptionalKeys] = useState<Set<string>>(
-    new Set()
+    () => new Set(columns.filter(c => c.filter && c.filterOptional).map(c => c.key))
   )
   const [sortKey, setSortKey] = useState<string | null>(null)
   const [sortDir, setSortDir] = useState<"asc" | "desc">("asc")
@@ -165,7 +167,7 @@ export function DataTable<T,>({
   const clearAllFilters = () => {
     filters.clearAllFilters()
     pagination.resetPage()
-    setShownOptionalKeys(new Set())
+    setShownOptionalKeys(new Set(columns.filter(c => c.filter && c.filterOptional).map(c => c.key)))
     onClearExtraFilters?.()
   }
 
@@ -174,7 +176,7 @@ export function DataTable<T,>({
     filters.clearAllFilters()
     pagination.resetPage()
     selection.clearSelection()
-    setShownOptionalKeys(new Set())
+    setShownOptionalKeys(new Set(columns.filter(c => c.filter && c.filterOptional).map(c => c.key)))
     setSortKey(null)
     setSortDir("asc")
     onClearExtraFilters?.()
@@ -271,6 +273,18 @@ export function DataTable<T,>({
           }
           onApply={(from, to) => {
             filters.setFilter(colKey, { type: "date-range", from, to })
+            pagination.resetPage()
+          }}
+          onClear={handleClear}
+        />
+      )
+    } else if (def.type === "search-select") {
+      content = (
+        <SearchSelectDropdown
+          def={def as SearchSelectFilterDef<T>}
+          activeValue={active?.type === "search-select" ? active.value : ""}
+          onSelect={val => {
+            filters.setFilter(colKey, { type: "search-select", value: val })
             pagination.resetPage()
           }}
           onClear={handleClear}

@@ -8,20 +8,116 @@ Plataforma integrada de CRM para a V-Commerce, construída sobre a arquitetura M
 
 ```
 v-commerce-crm-360/
-├── data-engineering/          # Notebooks PySpark (Databricks)
+├── data-engineering/                   # Notebooks PySpark (Databricks)
 │   ├── 01_bronze_vcommerce.ipynb
 │   ├── 02_silver_vcommerce.ipynb
 │   ├── 03_gold_vcommerce.ipynb
-│   ├── silver-data-csvs/      # gerado pelo pipeline, não versionado
-│   └── gold-data-csvs/        # gerado pelo pipeline, não versionado
-├── backend/                   # FastAPI (Python)
+│   ├── silver-data-csvs/               # gerado pelo pipeline, não versionado
+│   └── gold-data-csvs/                 # gerado pelo pipeline, não versionado
+│
+├── backend/                            # FastAPI (Python)
+│   ├── alembic/                        # Migrations do banco de dados
 │   ├── app/
+│   │   ├── core/
+│   │   │   └── security.py
+│   │   ├── models/                     # Models SQLAlchemy
+│   │   │   ├── contactModel.py
+│   │   │   ├── conversationModel.py
+│   │   │   ├── orderModel.py
+│   │   │   ├── productModel.py
+│   │   │   ├── reviewModel.py
+│   │   │   ├── saleModel.py
+│   │   │   └── userModel.py
+│   │   ├── routes/                     # Routers FastAPI
+│   │   │   ├── agentRouter.py
+│   │   │   ├── contactRouter.py
+│   │   │   ├── conversationRouter.py
+│   │   │   ├── mentionRouter.py
+│   │   │   ├── productRouter.py
+│   │   │   ├── reviewRouter.py
+│   │   │   ├── saleRouter.py
+│   │   │   └── userRouter.py
+│   │   ├── schemas/                    # Schemas Pydantic
+│   │   │   ├── agentSchemas.py
+│   │   │   ├── contactSchemas.py
+│   │   │   ├── conversationSchemas.py
+│   │   │   ├── orderSchemas.py
+│   │   │   ├── productSchemas.py
+│   │   │   ├── reviewSchemas.py
+│   │   │   ├── salesSchemas.py
+│   │   │   └── userSchemas.py
+│   │   ├── services/                   # Lógica de negócio
+│   │   │   ├── contactService.py
+│   │   │   ├── conversationService.py
+│   │   │   ├── orderService.py
+│   │   │   ├── productService.py
+│   │   │   ├── reviewService.py
+│   │   │   ├── saleService.py
+│   │   │   └── userService.py
+│   │   ├── config.py
+│   │   └── main.py
 │   ├── database/
-│   │   └── seed.py            # Script de população do banco
+│   │   ├── database.py
+│   │   └── seed.py                     # Script de população do banco
+│   ├── .env.example
+│   ├── Dockerfile
+│   ├── alembic.ini
 │   └── requirements.txt
-├── frontend/                  # React + TypeScript (Vite)
+│
+├── frontend/                           # React + TypeScript (Vite)
+│   ├── public/
+│   ├── src/
+│   │   ├── Pages/                      # Páginas da aplicação
+│   │   │   ├── Chat/
+│   │   │   ├── Contacts/
+│   │   │   ├── Home/
+│   │   │   ├── Login/
+│   │   │   ├── Products/
+│   │   │   └── Sales/
+│   │   ├── components/
+│   │   │   ├── atoms/                  # Componentes base (Button, Input, Label...)
+│   │   │   ├── molecules/              # Composições (ContactsTable, ProductsTable...)
+│   │   │   └── organisms/             # Estruturas completas (DataTable, AppFrame...)
+│   │   ├── contexts/
+│   │   │   └── AuthContext.tsx
+│   │   ├── hooks/
+│   │   ├── lib/
+│   │   │   ├── api/                    # Clientes HTTP por entidade
+│   │   │   └── mocks/
+│   │   └── types/
+│   ├── Dockerfile
+│   └── package.json
+│
+├── ai-agent/                           # Agente de IA Text-to-SQL
+│   ├── agent.py                        # Definição do agente e ferramentas
+│   ├── database_tools.py               # Conexão e execução de queries
+│   ├── prompts.py                      # System prompt e instruções
+│   └── test_agent.py                   # Script de testes interativo
+│
+├── docs/                               # Documentação técnica por módulo
+│   ├── data-engineering_doc/
+│   │   └── README.md
+│   ├── backend_doc/
+│   │   └── README.md
+│   ├── frontend_doc/
+│   │   └── README.md
+│   ├── ai-agent_doc/
+│   │   └── README.md
+│   └── decisions-doc.md
+│
+├── docker-compose.yml
 └── README.md
 ```
+
+---
+
+## Documentação
+
+- [Documentação Frontend](./docs/frontend_doc/README.md)
+- [Documentação Backend](./docs/backend_doc/README.md)
+- [Documentação Data Engineering](./docs/data-engineering_doc/README.md)
+- [Documentação Agente de IA](./docs/ai-agent_doc/README.md)
+- [Decisões Arquiteturais](./docs/decisions-doc.md)
 
 ---
 

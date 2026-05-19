@@ -40,12 +40,20 @@ export interface DateRangeFilterDef<T> {
   filterFn: (row: T, from: string | null, to: string | null) => boolean
 }
 
+export interface SearchSelectFilterDef<T> {
+  type: "search-select"
+  label: string
+  fetchOptions: (q: string) => Promise<string[]>
+  filterFn: (row: T, value: string) => boolean
+}
+
 export type FilterDef<T> =
   | SelectFilterDef<T>
   | NumberRangeFilterDef<T>
   | ToggleFilterDef<T>
   | MultiSelectFilterDef<T>
   | DateRangeFilterDef<T>
+  | SearchSelectFilterDef<T>
 
 // ─── Active filter state ──────────────────────────────────────────────────────
 
@@ -73,12 +81,15 @@ export type DateRangeActiveFilter = {
   to:   string | null
 }
 
+export type SearchSelectActiveFilter = { type: "search-select"; value: string }
+
 export type ActiveFilter =
   | SelectActiveFilter
   | NumberRangeActiveFilter
   | ToggleActiveFilter
   | MultiSelectActiveFilter
   | DateRangeActiveFilter
+  | SearchSelectActiveFilter
 
 export type ActiveFilters = Record<string, ActiveFilter>
 

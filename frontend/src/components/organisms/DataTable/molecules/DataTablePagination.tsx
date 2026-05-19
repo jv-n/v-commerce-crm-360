@@ -108,8 +108,8 @@ export function DataTablePagination({
             className={cn(
               "w-8 h-8 text-sm rounded transition-colors",
               currentPage === page
-                ? "bg-[#F7EBFF] border border-[#D1B1E5] text-black"
-                : "text-black hover:bg-[#CFA7FF]"
+                ? "bg-[#EACAFF] border border-[#B899CC] text-black"
+                : "text-black hover:bg-[#F0DDFD]"
             )}
           >
             {page}

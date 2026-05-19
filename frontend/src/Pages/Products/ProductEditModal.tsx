@@ -276,27 +276,14 @@ export function ProductEditModal({ open, product, onClose, onSuccess, onDeleted 
 
             {error && <p className="text-sm text-red-500">{error}</p>}
 
-            {/* Remover produto */}
-            <button
-              type="button"
-              onClick={handleDelete}
-              disabled={deleting || loading}
-              className={cn(
-                "w-full flex items-center justify-center gap-2 py-3 rounded-xl border border-[#D1B1E5]",
-                "bg-[#F7EBFF] text-gray-800 text-sm font-medium hover:bg-[#edd9ff] transition-colors",
-                (deleting || loading) && "opacity-60 cursor-not-allowed"
-              )}
-            >
-              <Trash2 size={16} />
-              {deleting ? "Removendo..." : "Remover produto"}
-            </button>
+            <hr className="border-gray-200" />
 
-            <div className="flex justify-center gap-6">
+            <div className="flex items-center justify-center gap-8">
               <button
                 type="button"
                 onClick={onClose}
                 disabled={loading || deleting}
-                className="px-6 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
+                className="text-sm font-medium text-gray-700 hover:text-gray-900 transition-colors"
               >
                 Cancelar
               </button>
@@ -304,12 +291,29 @@ export function ProductEditModal({ open, product, onClose, onSuccess, onDeleted 
                 type="submit"
                 disabled={loading || deleting}
                 className={cn(
-                  "px-8 py-2 rounded-xl text-sm font-semibold border transition-colors",
+                  "px-10 py-2.5 rounded-full text-sm font-semibold border transition-colors",
                   "bg-[#F7EBFF] border-[#D1B1E5] text-gray-900 hover:bg-[#edd9ff]",
                   (loading || deleting) && "opacity-60 cursor-not-allowed"
                 )}
               >
                 {loading ? "Salvando..." : "Confirmar"}
+              </button>
+            </div>
+
+            <hr className="border-gray-200" />
+
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={handleDelete}
+                disabled={deleting || loading}
+                className={cn(
+                  "flex items-center gap-2 px-6 py-2.5 rounded-xl bg-red-500 text-white text-sm font-semibold hover:bg-red-600 transition-colors",
+                  (deleting || loading) && "opacity-60 cursor-not-allowed"
+                )}
+              >
+                <Trash2 size={16} />
+                {deleting ? "Removendo..." : "Remover produto"}
               </button>
             </div>
           </form>

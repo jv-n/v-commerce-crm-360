@@ -1,13 +1,12 @@
 """
 seed.py — Cria e popula o banco SQLite do V-Commerce CRM 360
-a partir dos CSVs exportados das camadas Silver e Gold do Databricks.
+a partir dos CSVs exportados da camada Gold do Databricks.
 
 Uso:
     python backend/database/seed.py
 
 O banco é criado em backend/database/vcommerce.db
 Os CSVs Gold devem estar em data-engineering/gold-data-csvs/
-Os CSVs Silver devem estar em data-engineering/silver-data-csvs/
 """
 
 import sqlite3
@@ -22,7 +21,6 @@ _password_hasher = PasswordHash.recommended()
 # ── Caminhos ──────────────────────────────────────────────────────────────────
 ROOT       = Path(__file__).resolve().parents[2]
 GOLD_DIR   = ROOT / "data-engineering" / "gold-data-csvs"
-SILVER_DIR = ROOT / "data-engineering" / "silver-data-csvs"
 DB_PATH    = Path(__file__).resolve().parent / "vcommerce.db"
 
 # ── Usuários ──────────────────────────────────────────────────────────────────
@@ -53,16 +51,6 @@ USERS = [
     },
 ]
 
-# ── Tabelas Silver ────────────────────────────────────────────────────────────
-# Necessárias para o mentionRouter (dim_clientes, dim_produtos, ft_pedidos,
-# dim_agentes_suporte) e para joins internos do agente de IA.
-SILVER_TABLES = [
-    ("dim_clientes",       "dim_clientes"),
-    ("dim_produtos",       "dim_produtos"),
-    ("dim_agentes_suporte","dim_agentes_suporte"),
-    ("ft_pedidos",         "ft_pedidos"),
-]
-
 # ── Tabelas Gold ──────────────────────────────────────────────────────────────
 # (nome_do_arquivo_sem_extensao, nome_da_tabela_no_banco)
 GOLD_TABLES = [
@@ -70,9 +58,12 @@ GOLD_TABLES = [
     ("gold_kpis_vendas_mensal",         "gold_kpis_vendas_mensal"),
     ("gold_vendas_por_dimensao",        "gold_vendas_por_dimensao"),
     ("gold_desempenho_produto",         "gold_desempenho_produto"),
+    ("gold_produtos_detalhado",         "gold_produtos_detalhado"),
+    ("gold_dim_agentes_suporte",        "gold_dim_agentes_suporte"),
     ("gold_analise_suporte_por_tipo",   "gold_analise_suporte_por_tipo"),
     ("gold_analise_suporte_por_agente", "gold_analise_suporte_por_agente"),
     ("gold_analise_suporte_cliente",    "gold_analise_suporte_cliente"),
+    ("gold_avaliacoes_360",              "gold_avaliacoes_360"),
     ("gold_satisfacao_nps",             "gold_satisfacao_nps"),
     ("gold_pedidos_detalhado",          "gold_pedidos_detalhado"),
     ("gold_pedidos_por_status",         "gold_pedidos_por_status"),
@@ -151,16 +142,19 @@ INDEXES = [
     "CREATE INDEX IF NOT EXISTS idx_gtickets_agente_status   ON gold_tickets_360(agente_suporte, status_atendimento)",
     "CREATE INDEX IF NOT EXISTS idx_gtickets_problema_status ON gold_tickets_360(tipo_problema, status_atendimento)",
 
-    # dim_clientes (busca de menções no chat IA)
-    "CREATE INDEX IF NOT EXISTS idx_dimcli_nome_completo  ON dim_clientes(nome_completo)",
-    "CREATE INDEX IF NOT EXISTS idx_dimcli_id_cliente     ON dim_clientes(id_cliente)",
+    # gold_cliente_360 (busca de menções no chat IA)
+    "CREATE INDEX IF NOT EXISTS idx_g360_mention_nome     ON gold_cliente_360(nome_completo)",
 
-    # dim_produtos (busca de menções no chat IA)
-    "CREATE INDEX IF NOT EXISTS idx_dimprod_nome_produto  ON dim_produtos(nome_produto)",
-    "CREATE INDEX IF NOT EXISTS idx_dimprod_categoria     ON dim_produtos(categoria)",
+    # gold_produtos_detalhado (busca de menções no chat IA)
+    "CREATE INDEX IF NOT EXISTS idx_gproddet_nome_produto ON gold_produtos_detalhado(nome_produto)",
+    "CREATE INDEX IF NOT EXISTS idx_gproddet_categoria    ON gold_produtos_detalhado(categoria)",
+    "CREATE INDEX IF NOT EXISTS idx_gproddet_id_produto   ON gold_produtos_detalhado(id_produto)",
 
-    # ft_pedidos (busca de menções no chat IA)
-    "CREATE INDEX IF NOT EXISTS idx_ftpedidos_id_pedido   ON ft_pedidos(id_pedido)",
+    # gold_pedidos_detalhado (busca de menções no chat IA)
+    "CREATE INDEX IF NOT EXISTS idx_gpedidos_id_pedido    ON gold_pedidos_detalhado(id_pedido)",
+
+    # gold_dim_agentes_suporte (busca de menções no chat IA)
+    "CREATE INDEX IF NOT EXISTS idx_gagentes_nome         ON gold_dim_agentes_suporte(agente_suporte)",
 
     # gold_kpis_vendas_mensal
     "CREATE INDEX IF NOT EXISTS idx_gkpis_ano_mes         ON gold_kpis_vendas_mensal(ano_mes)",
@@ -195,6 +189,10 @@ def load_csv(csv_dir: Path, stem: str) -> pd.DataFrame | None:
 
 def insert_table(conn: sqlite3.Connection, df: pd.DataFrame, table_name: str) -> None:
     """Insere um DataFrame no SQLite respeitando o limite de variáveis."""
+    # Drop explícito garante que tabelas criadas pelo ORM (SQLAlchemy) antes do
+    # seed não causem conflito com o if_exists="replace" do pandas.
+    conn.execute(f'DROP TABLE IF EXISTS "{table_name}"')
+    conn.commit()
     # SQLite tem limite de 32766 variáveis por statement.
     safe_chunk = max(1, 32766 // len(df.columns))
     df.to_sql(
@@ -244,16 +242,11 @@ def seed() -> None:
     print(f"\n{'='*60}")
     print("  V-Commerce CRM 360 — Seed do banco SQLite")
     print(f"{'='*60}")
-    print(f"  Silver: {SILVER_DIR}")
     print(f"  Gold  : {GOLD_DIR}")
     print(f"  Banco : {DB_PATH}\n")
 
     if not GOLD_DIR.exists():
         print(f"ERRO: Pasta Gold não encontrada em {GOLD_DIR}")
-        raise SystemExit(1)
-
-    if not SILVER_DIR.exists():
-        print(f"ERRO: Pasta Silver não encontrada em {SILVER_DIR}")
         raise SystemExit(1)
 
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -266,20 +259,7 @@ def seed() -> None:
     total_rows = 0
     start_total = time.time()
 
-    # ── Camada Silver ─────────────────────────────────────────────────────────
-    print("  [ Silver ]")
-    for stem, table_name in SILVER_TABLES:
-        t0 = time.time()
-        df = load_csv(SILVER_DIR, stem)
-        if df is None:
-            continue
-        print(f"   {table_name:<35} {len(df):>8,} linhas", end="", flush=True)
-        insert_table(conn, df, table_name)
-        print(f"  [{time.time() - t0:.1f}s]")
-        total_rows += len(df)
-
     # ── Camada Gold ───────────────────────────────────────────────────────────
-    print()
     print("  [ Gold ]")
     for stem, table_name in GOLD_TABLES:
         t0 = time.time()

@@ -82,10 +82,6 @@ export function DataTableTabs({
             <SearchOutlinedIcon sx={{ fontSize: 18 }} />
           </button>
         )}
-
-        <button className="p-1.5 text-gray-700">
-          <MdOutlineTableChart />
-        </button>
       </div>
     </div>
   )

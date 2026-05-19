@@ -1,6 +1,5 @@
 import type { ReactNode } from "react"
-import { cn } from "@/lib/utils"
-import CheckIcon from "@mui/icons-material/Check"
+import { Checkbox } from "@/components/atoms/checkbox"
 
 interface MultiSelectDropdownProps {
   options: string[]
@@ -28,12 +27,10 @@ export function MultiSelectDropdown({
               onClick={e => { e.stopPropagation(); onToggle(opt) }}
               className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-[#CFA7FF] text-left transition-colors"
             >
-              <div className={cn(
-                "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0",
-                checked ? "bg-purple-600 border-purple-600" : "border-gray-300"
-              )}>
-                {checked && <CheckIcon sx={{ fontSize: 11, color: "white" }} />}
-              </div>
+              <Checkbox
+                checked={checked}
+                className="border-purple-300 pointer-events-none accent-purple-800"
+              />
               {renderOption ? renderOption(opt) : <span className="text-sm text-gray-700">{opt}</span>}
             </button>
           )

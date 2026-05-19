@@ -6,8 +6,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from database.database import Base
 
 
-class DimProduto(Base):
-    __tablename__ = "dim_produtos"
+class GoldProdutoDetalhado(Base):
+    __tablename__ = "gold_produtos_detalhado"
 
     id_produto: Mapped[str] = mapped_column(String, primary_key=True)
     nome_produto: Mapped[str] = mapped_column(String)
@@ -18,6 +18,8 @@ class DimProduto(Base):
     estoque_disponivel: Mapped[float | None] = mapped_column(Float, nullable=True)
     ativo: Mapped[str | None] = mapped_column(String, nullable=True)
     data_cadastro_produto: Mapped[str | None] = mapped_column(String, nullable=True)
+    avaliacao_media: Mapped[float | None] = mapped_column(Float, nullable=True)
+    timestamp_ingestion: Mapped[str | None] = mapped_column(String, nullable=True)
 
 
 class GoldDesempenhoProduto(Base):
@@ -67,5 +69,5 @@ class ProductActivity(Base):
     field_name: Mapped[str] = mapped_column(String(100), nullable=False)
     old_value: Mapped[str | None] = mapped_column(String, nullable=True)
     new_value: Mapped[str | None] = mapped_column(String, nullable=True)
-    change_method: Mapped[str] = mapped_column(String(100), nullable=False, default="Edição direta")
+    change_method: Mapped[str] = mapped_column(String(100), nullable=False, default="Edicao direta")
     changed_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
