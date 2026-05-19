@@ -34,7 +34,7 @@ const ALL_SCORES = [
 ]
 
 const idButtonClassName =
-  "block truncate rounded-full px-2 py-0.5 text-[13px] font-medium text-gray-900 transition-colors hover:bg-[#F7EBFF]"
+  "block truncate rounded-lg px-2 py-0.5 text-[13px] font-medium text-gray-900 transition-colors hover:bg-[#CFA7FF]"
 
 function getProblemIcon(problem: TicketProblem): ReactNode {
   const iconStyle = { fontSize: 18, color: "#A855F7" }
@@ -198,7 +198,7 @@ export function getTicketColumns(
       render: ticket => (
         <button
           type="button"
-          className="flex max-w-[140px] items-center gap-1.5 rounded-full px-1.5 py-0.5 text-left transition-colors hover:bg-[#F7EBFF]"
+          className="flex max-w-[140px] items-center gap-1.5 rounded-lg px-1.5 py-0.5 text-left transition-colors hover:bg-[#CFA7FF]"
           title={ticket.responsible.name}
         >
           <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#F0DDFD] text-[11px] text-[#6F2B90]">

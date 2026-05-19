@@ -27,7 +27,7 @@ export function useContactsFetch({ page, pageSize, activeTab, nameSearch, server
   const [fetchError, setFetchError] = useState(false)
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
-  const { purchasesMin, purchasesMax, createdFrom, createdTo, engagement, clientStatuses } = serverFilters
+  const { purchasesMin, purchasesMax, createdFrom, createdTo, engagements, clientStatuses } = serverFilters
 
   useEffect(() => {
     const hasText =
@@ -52,7 +52,7 @@ export function useContactsFetch({ page, pageSize, activeTab, nameSearch, server
       fetchContacts({
         page, pageSize, tab: activeTab,
         search: nameSearch || undefined,
-        purchasesMin, purchasesMax, createdFrom, createdTo, engagement, clientStatuses,
+        purchasesMin, purchasesMax, createdFrom, createdTo, engagements, clientStatuses,
         sortBy, sortDir,
         regioes:                advanced.regioes,
         origens:                advanced.origens,
@@ -106,7 +106,7 @@ export function useContactsFetch({ page, pageSize, activeTab, nameSearch, server
     }
   }, [
     page, pageSize, activeTab,
-    purchasesMin, purchasesMax, createdFrom, createdTo, engagement, clientStatuses,
+    purchasesMin, purchasesMax, createdFrom, createdTo, engagements, clientStatuses,
     sortBy, sortDir, refetchKey, nameSearch,
     advanced,
   ])

@@ -295,8 +295,8 @@ export const ProductsTable = forwardRef<ProductsTableHandle, { onCanUndoChange?:
     <button
       onClick={() => setDrawerOpen(o => !o)}
       className={cn(
-        "flex items-center gap-1.5 text-sm transition-colors px-2 py-1 rounded-full",
-        advCount > 0 ? "text-purple-700 font-medium hover:bg-[#F7EBFF]" : "text-gray-900 hover:bg-[#F7EBFF]"
+        "flex items-center gap-1.5 text-sm transition-colors px-2 py-1 rounded-lg",
+        advCount > 0 ? "text-purple-700 font-medium hover:bg-[#CFA7FF]" : "text-gray-900 hover:bg-[#CFA7FF]"
       )}
     >
       <TuneIcon sx={{ fontSize: 15 }} />

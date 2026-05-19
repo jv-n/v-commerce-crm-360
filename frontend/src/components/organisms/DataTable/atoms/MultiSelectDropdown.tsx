@@ -26,7 +26,7 @@ export function MultiSelectDropdown({
             <button
               key={opt}
               onClick={e => { e.stopPropagation(); onToggle(opt) }}
-              className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-[#EACAFF] text-left transition-colors"
+              className="w-full flex items-center gap-2.5 px-3 py-2 hover:bg-[#CFA7FF] text-left transition-colors"
             >
               <div className={cn(
                 "w-4 h-4 rounded border flex items-center justify-center flex-shrink-0",

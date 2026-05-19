@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react"
 import LocationOnOutlinedIcon from "@mui/icons-material/LocationOnOutlined"
-import CloseIcon from "@mui/icons-material/Close"
 import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md"
 import {
   DropdownMenu,
@@ -9,7 +8,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/atoms/dropdown-menu"
-import { cn } from "@/lib/utils"
 import type { MapView } from "./atoms/PeriodToggle"
 import { MapLegend } from "./atoms/MapLegend"
 import { StateRankingList } from "./molecules/StateRankingList"
@@ -93,22 +91,14 @@ export function BrazilMapCard({ period }: BrazilMapCardProps) {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1.5 text-[#A195A9] text-[1rem] font-bold">
-          <LocationOnOutlinedIcon style={{ fontSize: 16 }} />
+          <LocationOnOutlinedIcon style={{ fontSize: 22 }} />
           Estados com mais vendas
         </div>
         <DropdownMenu open={mapMenuOpen} onOpenChange={setMapMenuOpen}>
           <DropdownMenuTrigger asChild>
-            <button className={cn(
-              "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl border transition-colors whitespace-nowrap",
-              view !== "estados"
-                ? "bg-purple-100 border-purple-300 text-gray-900 font-medium"
-                : "border-transparent text-gray-900 hover:bg-purple-100 hover:border-purple-300"
-            )}>
+            <button className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl border border-transparent text-gray-900 hover:bg-purple-100 hover:border-purple-300 transition-colors whitespace-nowrap">
               {view === "estados" ? "Estados" : "Regiões"}
-              {view !== "estados"
-                ? <CloseIcon sx={{ fontSize: 13 }} onClick={(e) => { e.stopPropagation(); setView("estados") }} />
-                : mapMenuOpen ? <MdKeyboardArrowUp size={14} /> : <MdKeyboardArrowDown size={14} />
-              }
+              {mapMenuOpen ? <MdKeyboardArrowUp size={14} /> : <MdKeyboardArrowDown size={14} />}
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">

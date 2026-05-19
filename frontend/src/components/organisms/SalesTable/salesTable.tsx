@@ -290,7 +290,7 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
                 value={searchScope}
                 onChange={e => { setSearchScope(e.target.value as typeof searchScope); setPage(1) }}
                 className={cn(
-                  "appearance-none text-xs bg-transparent pl-2 pr-5 py-0.5 rounded cursor-pointer outline-none transition-colors hover:bg-[#F7EBFF]",
+                  "appearance-none text-xs bg-transparent pl-2 pr-5 py-0.5 rounded cursor-pointer outline-none transition-colors hover:bg-[#CFA7FF]",
                   searchScope !== "all" ? "text-purple-700 font-medium" : "text-gray-700"
                 )}
               >

@@ -62,7 +62,7 @@ export function DataTableFilterBar({
                 <button
                   key={f.key}
                   onClick={() => { onAddFilter(f.key); setDropdownOpen(false) }}
-                  className="w-full text-left px-3 py-2 text-sm text-gray-900 hover:bg-[#F7EBFF] transition-colors"
+                  className="w-full text-left px-3 py-2 text-sm text-gray-900 hover:bg-[#CFA7FF] transition-colors"
                 >
                   {f.label}
                 </button>

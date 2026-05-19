@@ -180,7 +180,7 @@ export function ProductFormModal({ open, onClose, onSuccess }: ProductFormModalP
                             setShowSuggestions(false)
                           }}
                           className={cn(
-                            "px-3 py-2 text-sm text-gray-700 cursor-pointer hover:bg-[#F7EBFF] transition-colors",
+                            "px-3 py-2 text-sm text-gray-700 cursor-pointer hover:bg-[#CFA7FF] transition-colors",
                             form.supplier === s && "bg-[#F7EBFF] font-medium"
                           )}
                         >
@@ -326,7 +326,7 @@ function SelectDropdown({
           {placeholder && (
             <li
               onMouseDown={e => { e.preventDefault(); onChange(""); setOpen(false) }}
-              className="px-4 py-2 text-sm text-gray-400 cursor-pointer hover:bg-[#F7EBFF] transition-colors"
+              className="px-4 py-2 text-sm text-gray-400 cursor-pointer hover:bg-[#CFA7FF] transition-colors"
             >
               {placeholder}
             </li>
@@ -336,7 +336,7 @@ function SelectDropdown({
               key={opt}
               onMouseDown={e => { e.preventDefault(); onChange(opt); setOpen(false) }}
               className={cn(
-                "px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-[#F7EBFF] transition-colors",
+                "px-4 py-2 text-sm text-gray-700 cursor-pointer hover:bg-[#CFA7FF] transition-colors",
                 value === opt && "bg-[#F7EBFF] font-medium"
               )}
             >

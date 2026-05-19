@@ -11,11 +11,11 @@ export interface ServerFilters {
   purchasesMax:   number | null
   createdFrom:    string
   createdTo:      string
-  engagement:     string
+  engagements:    string[]
   clientStatuses: string[]
 }
 
 export const EMPTY_FILTERS: ServerFilters = {
   purchasesMin: null, purchasesMax: null,
-  createdFrom: "", createdTo: "", engagement: "", clientStatuses: [],
+  createdFrom: "", createdTo: "", engagements: [], clientStatuses: [],
 }

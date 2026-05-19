@@ -134,7 +134,7 @@ export function makeContactColumns(
       <button
         type="button"
         onClick={(e) => { e.stopPropagation(); onNavigate(c.id) }}
-        className="text-left hover:bg-[#F7EBFF] rounded-full px-2 py-0.5 transition-colors"
+        className="text-left hover:bg-[#CFA7FF] rounded-lg px-2 py-0.5 transition-colors"
       >
         <CellText value={c.name} truncate maxWidth="200px" />
       </button>
@@ -237,10 +237,10 @@ export function makeContactColumns(
     sortable: true,
     sortValue: (c) => c.engagementScore,
     filter: {
-      type: "select",
+      type: "multi-select",
       label: "Engajamento",
       options: ["Promotor", "Neutro", "Detrator", "Nenhum NPS"],
-      filterFn: (c, value) => c.engagement === (value as EngagementType),
+      filterFn: (c, values) => values.length === 0 || values.includes(c.engagement),
     },
     render: (c) => (
       <CellTag

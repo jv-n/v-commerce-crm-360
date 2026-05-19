@@ -3,7 +3,6 @@ import type { ReactNode } from "react"
 import type { Tab } from "../types"
 import { TabButton } from "../atoms/TabButton"
 import { MdOutlineTableChart } from "react-icons/md"
-import AddIcon from "@mui/icons-material/Add"
 import SearchOutlinedIcon from "@mui/icons-material/SearchOutlined"
 import CloseIcon from "@mui/icons-material/Close"
 
@@ -51,9 +50,6 @@ export function DataTableTabs({
             onClick={() => onTabChange(tab.id)}
           />
         ))}
-        <button className="p-2 ml-1 text-black hover:text-gray-600 rounded-full hover:bg-[#F7EBFF]">
-          <AddIcon sx={{ fontSize: 16 }} />
-        </button>
       </div>
 
       <div className="flex items-center gap-2 relative z-50">
@@ -81,7 +77,7 @@ export function DataTableTabs({
         ) : (
           <button
             onClick={onSearchOpen}
-            className="p-1.5 text-black hover:text-gray-700 hover:bg-[#F7EBFF] rounded-full"
+            className="p-1.5 text-black hover:text-gray-700 hover:bg-[#CFA7FF] rounded-lg"
           >
             <SearchOutlinedIcon sx={{ fontSize: 18 }} />
           </button>
