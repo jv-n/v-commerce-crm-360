@@ -16,7 +16,12 @@ import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined"
 import ReplayOutlinedIcon from "@mui/icons-material/ReplayOutlined"
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined"
 
+import { fetchContactActivities } from "@/lib/api/contacts"
+import type { ContactActivity } from "@/lib/api/contacts"
+import { CustomScrollArea } from "@/components/atoms/CustomScrollArea"
 import { ClientStatusBadge } from "@/components/molecules/ContactsTable/ClientStatusBadge"
+import { ContactEditModal } from "./ContactEditModal"
+
 import type { ClientStatusType } from "@/types/contact"
 import type {
   ContactDashboard,
@@ -366,9 +371,11 @@ function ContactIdentityCard({
 function ContactInfoCard({
   details,
   metrics,
+  onEditClick,
 }: {
   details: ContactDetails
   metrics: ContactMetrics | null
+  onEditClick: () => void
 }) {
   const npsLabel = metrics?.categoriaNpsRecente
 
@@ -403,6 +410,7 @@ function ContactInfoCard({
 
           <button
             type="button"
+            onClick={onEditClick}
             className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-700 hover:text-purple-700 transition-colors"
             aria-label="Editar informações do contato"
           >
@@ -990,6 +998,8 @@ export default function ContactDetail() {
   const [tab, setTab] = useState<TabType>("informacoes")
   const [selectedPeriod, setSelectedPeriod] =
     useState<ContactPeriod>("current_month")
+  const [isEditOpen, setIsEditOpen] = useState(false)
+  const [activities, setActivities] = useState<ContactActivity[]>([])
 
   const [dashboardCache, setDashboardCache] = useState<
     Partial<Record<ContactPeriod, ContactDashboard>>
@@ -1007,6 +1017,7 @@ export default function ContactDetail() {
         setError(false)
 
         const contactDetails = await fetchContactDetails(contactId)
+        fetchContactActivities(contactId).then(setActivities).catch(() => {})
 
         if (!active) return
 
@@ -1143,8 +1154,9 @@ export default function ContactDetail() {
   }
 
   return (
-    <div className="p-6 h-full min-h-0 overflow-hidden bg-white rounded-xl">
-      <div className="grid grid-cols-[340px_minmax(560px,620px)_320px] justify-center gap-5 h-full min-h-0 overflow-hidden">
+    <>
+      <div className="p-6 h-full min-h-0 overflow-hidden bg-white rounded-xl">
+        <div className="grid grid-cols-[340px_minmax(560px,620px)_320px] justify-center gap-5 h-full min-h-0 overflow-hidden">
         <div className="flex flex-col gap-4 min-h-0 overflow-hidden">
           <ContactIdentityCard
             details={details}
@@ -1152,7 +1164,7 @@ export default function ContactDetail() {
           />
 
           <div className="flex-1 min-h-0 overflow-hidden">
-            <ContactInfoCard details={details} metrics={summaryMetrics} />
+            <ContactInfoCard details={details} metrics={summaryMetrics} onEditClick={() => setIsEditOpen(true)} />
           </div>
         </div>
 
@@ -1231,10 +1243,66 @@ export default function ContactDetail() {
               </div>
             </>
           ) : (
-            <ActivitiesPlaceholder />
+            <div className="h-full rounded-xl border border-[#E5E5E5] shadow-[0_0_4px_rgba(0,0,0,0.35)] flex flex-col overflow-hidden bg-white">
+              <div className="flex items-center justify-center gap-2 px-5 py-4 shrink-0">
+                <span className="text-base font-bold text-gray-900">Atividades</span>
+              </div>
+              <hr className="border-[#E5E5E5] shrink-0 mx-5" />
+              <CustomScrollArea className="flex-1"><div className="p-3 flex flex-col gap-3">
+                {activities.length === 0 ? (
+                  <p className="text-xs text-gray-400 text-center py-4">Sem atividades registradas.</p>
+                ) : activities.map(act => {
+                  const dtPart = act.changed_at.includes("T") ? act.changed_at.split("T") : act.changed_at.split(" ")
+                  const [y, m, d] = dtPart[0].split("-")
+                  const actDate = `${d}/${m}/${y}`
+                  const actTime = (dtPart[1] ?? "").slice(0, 5)
+                  return (
+                    <div key={act.id} className="rounded-xl border border-gray-200 p-4 flex flex-col gap-1.5 bg-white">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 text-purple-700 text-xs font-bold shrink-0">
+                          {initials(act.user_name)}
+                        </span>
+                        <span className="text-sm font-semibold text-gray-800">{act.user_name}</span>
+                      </div>
+                      <span className="text-sm text-gray-600">
+                        {"• "}Data da Alteração:{" "}
+                        <span className="text-purple-600 font-medium">{actDate}</span>
+                        {actTime && <> - {actTime}</>}
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {"• "}Campo alterado:{" "}
+                        <span className="text-purple-600 font-medium">{act.field_name}</span>
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {"• "}Alteração: {act.old_value ?? "—"} para{" "}
+                        <span className="font-semibold text-gray-900">{act.new_value ?? "—"}</span>
+                      </span>
+                      <span className="text-sm text-gray-600">
+                        {"• "}Método: <span className="font-medium text-gray-800">{act.change_method}</span>
+                      </span>
+                    </div>
+                  )
+                })}
+              </div></CustomScrollArea>
+            </div>
           )}
         </div>
       </div>
-    </div>
+      </div>
+      {isEditOpen && (
+        <ContactEditModal
+          open={isEditOpen}
+          details={details}
+          onClose={() => setIsEditOpen(false)}
+          onSuccess={(updated) => {
+            setDetails(updated)
+            setIsEditOpen(false)
+            if (id) {
+              fetchContactActivities(id).then(setActivities).catch(() => {})
+            }
+          }}
+        />
+      )}
+    </>
   )
 }

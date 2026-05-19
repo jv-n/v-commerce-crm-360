@@ -124,8 +124,16 @@ export interface ContactFormData {
   email?: string
   phone?: string
   clientStatus?: string
-  region?: string
+  gender?: string
+  birthDate?: string
+  age?: number
+  responsible?: string
+  createdAt?: string
   origin?: string
+  country?: string
+  state?: string
+  region?: string
+  city?: string
 }
 
 export async function createContact(data: ContactFormData): Promise<Contact> {
@@ -138,10 +146,13 @@ export async function createContact(data: ContactFormData): Promise<Contact> {
   return toContact(await res.json() as RawContact)
 }
 
-export async function updateContact(id: string, data: Partial<ContactFormData & { clientStatus?: string }>): Promise<Contact> {
+export async function updateContact(id: string, data: Partial<ContactFormData & { clientStatus?: string }>, userName = "Sistema"): Promise<Contact> {
   const res = await fetch(`/api/contacts/${id}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-User-Name": userName,
+    },
     body: JSON.stringify(data),
   })
   if (!res.ok) throw new Error(`Erro ao atualizar contato: ${res.status}`)

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Header
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session
 
@@ -127,8 +127,13 @@ def create_contact(body: ContactCreate, db: Session = Depends(get_db)):
 
 
 @router.put("/{contact_id}", response_model=ContactOut)
-def update_contact(contact_id: str, body: ContactUpdate, db: Session = Depends(get_db)):
-    result = ContactService(db).update_contact(contact_id, body)
+def update_contact(
+    contact_id: str,
+    body: ContactUpdate,
+    x_user_name: str = Header(default="Sistema", alias="X-User-Name"),
+    db: Session = Depends(get_db)
+):
+    result = ContactService(db).update_contact(contact_id, body, user_name=x_user_name)
     if not result:
         raise HTTPException(status_code=404, detail="Contact not found")
     return result

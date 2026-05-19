@@ -283,41 +283,64 @@ class ContactService:
         now = datetime.now(_BRT).replace(tzinfo=None)
         activities: list[ContactActivity] = []
 
-        if data.name is not None and gold.nome_completo != data.name:
-            activities.append(ContactActivity(
-                id_cliente=contact_id,
-                user_name=user_name,
-                field_name="Nome",
-                old_value=gold.nome_completo or "—",
-                new_value=data.name,
-                change_method="Edição direta",
-                changed_at=now,
-            ))
-            gold.nome_completo = data.name
-            
-        if data.email is not None and gold.email != data.email:
-            activities.append(ContactActivity(
-                id_cliente=contact_id,
-                user_name=user_name,
-                field_name="Email",
-                old_value=gold.email or "—",
-                new_value=data.email,
-                change_method="Edição direta",
-                changed_at=now,
-            ))
-            gold.email = data.email
-            
-        if data.clientStatus is not None and data.clientStatus in _VALID_STATUSES and gold.segmento_cliente != data.clientStatus:
-            activities.append(ContactActivity(
-                id_cliente=contact_id,
-                user_name=user_name,
-                field_name="Status",
-                old_value=gold.segmento_cliente or "—",
-                new_value=data.clientStatus,
-                change_method="Edição direta",
-                changed_at=now,
-            ))
-            gold.segmento_cliente = data.clientStatus
+        def _track(field_label: str, old_val, new_val, db_attr: str):
+            old_str = str(old_val) if old_val is not None else "—"
+            new_str = str(new_val) if new_val is not None else "—"
+            if old_str != new_str:
+                activities.append(ContactActivity(
+                    id_cliente=contact_id,
+                    user_name=user_name,
+                    field_name=field_label,
+                    old_value=old_str,
+                    new_value=new_str,
+                    change_method="Edição direta",
+                    changed_at=now,
+                ))
+                setattr(gold, db_attr, new_val)
+
+        if data.name is not None:
+            _track("Nome", gold.nome_completo, data.name, "nome_completo")
+
+        if data.email is not None:
+            _track("Email", gold.email, data.email, "email")
+
+        if data.phone is not None:
+            _track("Telefone", gold.telefone, data.phone, "telefone")
+
+        if data.clientStatus is not None and data.clientStatus in _VALID_STATUSES:
+            _track("Status", gold.segmento_cliente, data.clientStatus, "segmento_cliente")
+
+        if data.gender is not None:
+            _track("Gênero", gold.genero, data.gender, "genero")
+
+        if data.birthDate is not None:
+            _track("Data de nascimento", gold.data_nascimento, data.birthDate, "data_nascimento")
+
+        if data.age is not None:
+            _track("Idade", gold.idade, data.age, "idade")
+
+        if data.responsible is not None:
+            # 'responsible' is not a native Gold column – store in segmento_cliente metadata
+            # For now we keep it tracked but there's no dedicated DB column; we skip setattr.
+            pass
+
+        if data.createdAt is not None:
+            _track("Data de cadastro", gold.data_cadastro, data.createdAt, "data_cadastro")
+
+        if data.origin is not None:
+            _track("Origem", gold.origem, data.origin, "origem")
+
+        if data.country is not None:
+            _track("País", gold.pais, data.country, "pais")
+
+        if data.state is not None:
+            _track("Estado", gold.estado, data.state, "estado")
+
+        if data.region is not None:
+            _track("Região", gold.regiao, data.region, "regiao")
+
+        if data.city is not None:
+            _track("Cidade", gold.cidade, data.city, "cidade")
 
         for act in activities:
             self.db.add(act)

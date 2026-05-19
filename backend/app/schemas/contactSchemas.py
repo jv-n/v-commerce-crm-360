@@ -14,7 +14,18 @@ class ContactCreate(BaseModel):
 class ContactUpdate(BaseModel):
     name: str | None = None
     email: str | None = None
+    phone: str | None = None
     clientStatus: str | None = None
+    gender: str | None = None
+    birthDate: str | None = None
+    age: int | None = None
+    responsible: str | None = None
+    createdAt: str | None = None
+    origin: str | None = None
+    country: str | None = None
+    state: str | None = None
+    region: str | None = None
+    city: str | None = None
 
 
 class ContactOut(BaseModel):
