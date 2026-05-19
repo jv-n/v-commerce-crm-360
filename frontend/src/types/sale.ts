@@ -5,6 +5,7 @@ export type SaleStatus =
 export interface Sale {
   id: string
   product: string
+  client_id: string | null
   client: string
   categoria: string | null
   amount: number

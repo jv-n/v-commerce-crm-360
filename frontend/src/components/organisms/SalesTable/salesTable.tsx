@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle, useMemo } from "react"
-import { useLocation } from "react-router-dom"
+import { useLocation, useNavigate } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { getSaleColumns } from "./columns"
 import { fetchSales } from "@/lib/api/sales"
@@ -58,6 +58,7 @@ export type SalesTableHandle = {
 export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can: boolean) => void }>(
   ({ onCanUndoChange }, ref) => {
     const location   = useLocation()
+    const navigate = useNavigate()
     const navState   = location.state as { search?: string; searchField?: string } | null
     const initSearch = navState?.search ?? ""
     const initField  = (navState?.searchField ?? "all") as "all" | "client" | "product" | "client_id"
@@ -115,7 +116,13 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
       return res.data.map(p => p.name).filter(Boolean)
     }, [])
 
-    const columns = getSaleColumns(expandedRowIds, handleToggleExpand, fetchClientOptions, fetchProductOptions)
+    const columns = getSaleColumns(
+      expandedRowIds,
+      handleToggleExpand,
+      fetchClientOptions,
+      fetchProductOptions,
+      (clientId) => navigate(`/contacts/${clientId}`)
+    )
 
     const [exportOpen,    setExportOpen]    = useState(false)
     const [exportLoading, setExportLoading] = useState(false)

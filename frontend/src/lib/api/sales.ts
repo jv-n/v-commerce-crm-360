@@ -27,6 +27,7 @@ interface SalesParams {
 interface RawSale {
   id_pedido: string
   nome_produto: string | null
+  id_cliente: string | null
   nome_cliente: string | null
   categoria: string | null
   quantidade: number | null
@@ -55,6 +56,7 @@ function toSale(raw: RawSale): Sale {
   return {
     id:             raw.id_pedido,
     product:        raw.nome_produto ?? "",
+    client_id:      raw.id_cliente,
     client:         raw.nome_cliente ?? "",
     categoria:      raw.categoria,
     amount:         raw.quantidade ?? 0,
