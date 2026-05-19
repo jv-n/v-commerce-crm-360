@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHand
 import { useNavigate } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { makeContactColumns } from "./columns"
-import { ContactFormSheet } from "./ContactFormSheet"
+import { ContactModal } from "./ContactModal"
 import { ContactExpandedRow } from "./ContactExpandedRow"
 import { ContactAdvancedFiltersDrawer, EMPTY_CONTACT_ADVANCED, contactAdvancedActiveCount } from "./AdvancedFiltersDrawer"
 import { ExportPopover } from "@/components/molecules/ExportPopover"
@@ -207,10 +207,9 @@ export const ContactsTable = forwardRef<ContactsTableHandle, { onCanUndoChange?:
         }}
       />
 
-      <ContactFormSheet
+      <ContactModal
         open={formOpen}
         onClose={() => setFormOpen(false)}
-        contact={null}
         onSuccess={() => setRefetchKey(k => k + 1)}
       />
     </>
