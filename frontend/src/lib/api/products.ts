@@ -108,6 +108,16 @@ export interface MonthlyRevenue {
   receita: number
 }
 
+export interface MonthlyNps {
+  ano_mes: string
+  nps_medio: number
+}
+
+export interface MonthlySales {
+  ano_mes: string
+  quantidade: number
+}
+
 export async function fetchProductById(id: string): Promise<Product> {
   const res = await fetch(`/api/products/${id}`)
   if (!res.ok) throw new Error(`Produto não encontrado: ${res.status}`)
@@ -129,6 +139,18 @@ export async function fetchProductTickets(id: string): Promise<ProductTicket[]> 
 export async function fetchProductMonthlyRevenue(id: string): Promise<MonthlyRevenue[]> {
   const res = await fetch(`/api/products/${id}/monthly-revenue`)
   if (!res.ok) throw new Error(`Erro ao buscar receita: ${res.status}`)
+  return res.json()
+}
+
+export async function fetchProductMonthlyNps(id: string): Promise<MonthlyNps[]> {
+  const res = await fetch(`/api/products/${id}/monthly-nps`)
+  if (!res.ok) throw new Error(`Erro ao buscar NPS: ${res.status}`)
+  return res.json()
+}
+
+export async function fetchProductMonthlySales(id: string): Promise<MonthlySales[]> {
+  const res = await fetch(`/api/products/${id}/monthly-sales`)
+  if (!res.ok) throw new Error(`Erro ao buscar vendas mensais: ${res.status}`)
   return res.json()
 }
 
