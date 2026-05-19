@@ -89,10 +89,10 @@ export function makeProductColumns(
       header: "Categoria",
       minWidth: "140px",
       filter: {
-        type: "select",
+        type: "multi-select",
         label: "Categoria",
         options: ALL_CATEGORIES,
-        filterFn: (p, value) => p.category === (value as ProductCategory),
+        filterFn: (p, values) => values.includes(p.category),
       },
       render: (p) => (
         <CellTag label={p.category} colorClasses={CATEGORY_COLORS[p.category]} variant="badge" />

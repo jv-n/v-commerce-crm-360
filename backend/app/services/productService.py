@@ -100,7 +100,8 @@ class ProductService:
         if search:
             query = query.filter(GoldDesempenhoProduto.nome_produto.ilike(f"%{search}%"))
         if category:
-            query = query.filter(GoldDesempenhoProduto.categoria.ilike(f"%{category}%"))
+            cats = [c.strip() for c in category.split(",") if c.strip()]
+            query = query.filter(GoldDesempenhoProduto.categoria.in_(cats))
         if status:
             statuses = [s.strip() for s in status.split(",") if s.strip()]
             ativo_values = []

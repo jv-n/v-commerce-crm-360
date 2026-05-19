@@ -47,6 +47,8 @@ function buildPills(
   const cat = colFilters.category
   if (cat?.type === "select" && cat.value)
     pills.push({ label: "Categoria", value: cat.value })
+  if (cat?.type === "multi-select" && cat.values.length > 0)
+    pills.push({ label: "Categoria", value: cat.values.join(", ") })
 
   const price = colFilters.price
   if (price?.type === "number-range" && (price.min != null || price.max != null)) {
@@ -58,6 +60,10 @@ function buildPills(
   const stock = colFilters.stock
   if (stock?.type === "number-range" && (stock.min != null || stock.max != null))
     pills.push({ label: "Estoque", value: `${stock.min ?? "—"} – ${stock.max ?? "—"}` })
+
+  const rating = colFilters.rating
+  if (rating?.type === "number-range" && (rating.min != null || rating.max != null))
+    pills.push({ label: "Avaliação", value: `${rating.min ?? "—"} – ${rating.max ?? "—"}` })
 
   const sales = colFilters.totalSales
   if (sales?.type === "number-range" && (sales.min != null || sales.max != null))
