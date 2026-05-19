@@ -1,11 +1,8 @@
 import ExpandMoreOutlinedIcon from '@mui/icons-material/ExpandMoreOutlined';
-import PersonOutlinedIcon from '@mui/icons-material/PersonOutlined';
 import LogoutOutlinedIcon from '@mui/icons-material/LogoutOutlined';
-import BadgeOutlinedIcon from '@mui/icons-material/BadgeOutlined';
 import {
     DropdownMenu,
     DropdownMenuContent,
-    DropdownMenuGroup,
     DropdownMenuItem,
     DropdownMenuSeparator,
     DropdownMenuTrigger,
@@ -13,6 +10,7 @@ import {
 
 interface UserMenuProps {
     name: string
+    email?: string
     role?: string
     avatarSrc?: string
     onLogout?: () => void
@@ -27,16 +25,18 @@ function getInitials(name: string) {
         .toUpperCase()
 }
 
-function getRoleLabel(role?: string) {
+function getRoleBadge(role?: string) {
     switch (role) {
-        case "admin":   return "Liderança"
-        case "sales":   return "Vendedor"
-        case "support": return "Agente de Suporte"
-        default:        return role ?? ""
+        case "admin":   return { label: "Admin",     bg: "#A760FF", color: "#431977" }
+        case "sales":   return { label: "Comercial", bg: "#388FD6", color: "#0B2337" }
+        case "support": return { label: "Suporte",   bg: "#FF84FD", color: "#992697" }
+        default:        return null
     }
 }
 
-export default function UserMenu({ name, role, avatarSrc, onLogout }: UserMenuProps) {
+export default function UserMenu({ name, email, role, avatarSrc, onLogout }: UserMenuProps) {
+    const badge = getRoleBadge(role)
+
     return (
         <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -54,19 +54,29 @@ export default function UserMenu({ name, role, avatarSrc, onLogout }: UserMenuPr
                     </span>
                 </button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-                <DropdownMenuGroup>
-                    {role && (
-                        <DropdownMenuItem disabled>
-                            <BadgeOutlinedIcon sx={{ color: "#0a0a0a" }} />
-                            {getRoleLabel(role)}
-                        </DropdownMenuItem>
+            <DropdownMenuContent align="end" sideOffset={10} className="min-w-40 w-fit bg-white text-black">
+                {/* Cabeçalho: email e badge de cargo */}
+                <div className="px-3 py-3">
+                    {email && (
+                        <p className="text-xs text-black font-bold">{email}</p>
                     )}
-                </DropdownMenuGroup>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem variant="destructive" onSelect={onLogout}>
+                    {badge && (
+                        <span
+                            className="inline-flex items-center gap-1.5 mt-2.5 px-2.5 py-1 rounded-full text-xs font-semibold"
+                            style={{ background: badge.bg, color: badge.color }}
+                        >
+                            <span
+                                className="w-1.5 h-1.5 rounded-full shrink-0"
+                                style={{ background: badge.color }}
+                            />
+                            {badge.label}
+                        </span>
+                    )}
+                </div>
+                <DropdownMenuSeparator className="bg-black/10" />
+                <DropdownMenuItem variant="destructive" onSelect={onLogout} className="text-red-500 focus:text-red-500 focus:bg-red-50">
                     <LogoutOutlinedIcon />
-                    Logout
+                    Sair da conta
                 </DropdownMenuItem>
             </DropdownMenuContent>
         </DropdownMenu>
