@@ -223,6 +223,138 @@ def create_indexes(conn: sqlite3.Connection) -> None:
     conn.commit()
 
 
+# ── Demo de ordens com status de entrega ──────────────────────────────────────
+# Não existe dado de entrega no dataset original (pedidos.csv só tem status de
+# pagamento). Esses registros permitem visualizar e testar os novos status no CRM.
+# Formato: (status, nome_completo, email, estado, regiao, nome_produto, categoria,
+#           metodo_pagamento, quantidade, valor_pedido, data_pedido_iso)
+_DEMO_ORDERS: list[tuple] = [
+    # ── Em rota ──────────────────────────────────────────────────────────────
+    ("Em rota", "Ana Lima",          "ana.lima@email.com",       "SP", "Sudeste",  "Smart TV 55\"",       "Eletronicos", "Pix",    1, 2499.90, "2025-04-20"),
+    ("Em rota", "Carlos Souza",      "carlos.s@email.com",       "RJ", "Sudeste",  "Cadeira Gamer",       "Moveis",      "Cartão", 1,  899.00, "2025-04-21"),
+    ("Em rota", "Fernanda Costa",    "fecosta@email.com",        "MG", "Sudeste",  "Tênis Running",       "Esportes",    "Pix",    2,  349.90, "2025-04-22"),
+    ("Em rota", "Bruno Oliveira",    "b.oliveira@email.com",     "BA", "Nordeste", "Perfume Importado",   "Beleza",      "Boleto", 1,  289.00, "2025-04-23"),
+    ("Em rota", "Juliana Martins",   "ju.martins@email.com",     "SC", "Sul",      "Notebook Pro 15",     "Eletronicos", "Cartão", 1, 4799.00, "2025-04-24"),
+    ("Em rota", "Pedro Henrique",    "pedro.h@email.com",        "RS", "Sul",      "Mochila Térmica",     "Esportes",    "Pix",    3,  149.90, "2025-04-25"),
+    # ── Entregue ─────────────────────────────────────────────────────────────
+    ("Entregue", "Mariana Ferreira", "mari.fe@email.com",        "SP", "Sudeste",  "Fone Bluetooth",      "Eletronicos", "Pix",    1,  199.90, "2025-03-10"),
+    ("Entregue", "Roberto Alves",    "r.alves@email.com",        "RJ", "Sudeste",  "Mesa de Escritório",  "Moveis",      "Boleto", 1,  699.00, "2025-03-12"),
+    ("Entregue", "Camila Santos",    "cami.s@email.com",         "CE", "Nordeste", "Vestido Floral",      "Vestuario",   "Cartão", 2,  189.90, "2025-03-14"),
+    ("Entregue", "Lucas Pereira",    "lucas.p@email.com",        "PR", "Sul",      "Kit Churrasco",       "Casa",        "Pix",    1,  259.00, "2025-03-16"),
+    ("Entregue", "Beatriz Rocha",    "bea.rocha@email.com",      "AM", "Norte",    "Creme Hidratante",    "Beleza",      "Cartão", 4,   89.90, "2025-03-18"),
+    ("Entregue", "Diego Nascimento", "diego.n@email.com",        "GO", "Centro-Oeste","Raquete de Tênis", "Esportes",    "Boleto", 1,  320.00, "2025-03-20"),
+    # ── Entregue com Atraso ───────────────────────────────────────────────────
+    ("Entregue com Atraso", "Aline Barbosa",   "aline.b@email.com",  "SP", "Sudeste",     "Tablet 10\"",        "Eletronicos", "Cartão", 1, 1299.00, "2025-02-05"),
+    ("Entregue com Atraso", "Rodrigo Lima",    "rod.lima@email.com", "MG", "Sudeste",     "Sofá 3 Lugares",     "Moveis",      "Boleto", 1, 2199.00, "2025-02-07"),
+    ("Entregue com Atraso", "Tatiane Mendes",  "tati.m@email.com",   "PE", "Nordeste",    "Jaqueta de Couro",   "Vestuario",   "Pix",    1,  459.00, "2025-02-10"),
+    ("Entregue com Atraso", "Vinícius Torres", "vini.t@email.com",   "RS", "Sul",         "Bicicleta MTB",      "Esportes",    "Cartão", 1, 1850.00, "2025-02-12"),
+    ("Entregue com Atraso", "Larissa Pinto",   "la.pinto@email.com", "PA", "Norte",       "Conjunto de Panelas","Casa",        "Boleto", 1,  399.00, "2025-02-14"),
+    ("Entregue com Atraso", "Thiago Carvalho", "thiago.c@email.com", "DF", "Centro-Oeste","Mouse Gamer",        "Eletronicos", "Pix",    1,  249.00, "2025-02-17"),
+    # ── Cancelado ─────────────────────────────────────────────────────────────
+    ("Cancelado", "Renata Moura",    "renata.m@email.com",       "SP", "Sudeste",  "Smartwatch Pro",      "Eletronicos", "Cartão", 1,  799.00, "2025-03-25"),
+    ("Cancelado", "Felipe Araújo",   "felipe.a@email.com",       "RJ", "Sudeste",  "Cama Box Casal",      "Moveis",      "Boleto", 1, 1599.00, "2025-03-27"),
+    ("Cancelado", "Isabela Fonseca", "isa.f@email.com",          "BA", "Nordeste", "Calça Jeans",         "Vestuario",   "Pix",    2,  219.90, "2025-03-29"),
+    ("Cancelado", "Gustavo Lima",    "gus.lima@email.com",       "SC", "Sul",      "Kit Skincare",        "Beleza",      "Cartão", 1,  349.00, "2025-04-01"),
+    ("Cancelado", "Priscila Nunes",  "pri.n@email.com",          "MG", "Sudeste",  "Esteira Elétrica",    "Esportes",    "Boleto", 1, 3299.00, "2025-04-03"),
+    ("Cancelado", "André Batista",   "andre.b@email.com",        "PR", "Sul",      "Luminária LED",       "Casa",        "Pix",    3,  129.90, "2025-04-05"),
+]
+
+# Activity chains per final status (list of (days_offset, old, new) from order date)
+_ACTIVITY_CHAINS: dict[str, list[tuple[int, str | None, str]]] = {
+    "Em rota": [
+        (0,  None,          "Processando"),
+        (1,  "Processando", "Aprovado"),
+        (2,  "Aprovado",    "Em rota"),
+    ],
+    "Entregue": [
+        (0,  None,          "Processando"),
+        (1,  "Processando", "Aprovado"),
+        (2,  "Aprovado",    "Em rota"),
+        (7,  "Em rota",     "Entregue"),
+    ],
+    "Entregue com Atraso": [
+        (0,  None,          "Processando"),
+        (1,  "Processando", "Aprovado"),
+        (2,  "Aprovado",    "Em rota"),
+        (18, "Em rota",     "Entregue com Atraso"),  # expected ~7 days, arrived in 18
+    ],
+    "Cancelado": [
+        (0,  None,          "Processando"),
+        (1,  "Processando", "Aprovado"),
+        (3,  "Aprovado",    "Cancelado"),
+    ],
+}
+
+_DEMO_USERS = ["Joao Vendas", "Caio Vendas", "Gustavo Admin"]
+
+
+def seed_demo_delivery_orders(conn: sqlite3.Connection) -> None:
+    from datetime import date, timedelta
+
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS ft_sale_activities (
+            id            INTEGER PRIMARY KEY AUTOINCREMENT,
+            id_pedido     TEXT    NOT NULL,
+            user_name     TEXT    NOT NULL,
+            field_name    TEXT    NOT NULL,
+            old_value     TEXT,
+            new_value     TEXT,
+            change_method TEXT    NOT NULL DEFAULT 'Edição direta',
+            changed_at    TEXT    NOT NULL
+        )
+    """)
+
+    cursor = conn.cursor()
+    order_ids: list[str] = []
+
+    for i, row in enumerate(_DEMO_ORDERS):
+        status, nome, email, estado, regiao, produto, categoria, pagamento, qtd, valor, data_str = row
+        order_id   = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"demo-delivery-{i}"))
+        cliente_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"demo-client-{i}"))
+        produto_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, f"demo-product-{i}"))
+        ano_mes    = data_str[:7]  # "2025-04"
+
+        cursor.execute("""
+            INSERT OR REPLACE INTO gold_pedidos_detalhado
+            (id_pedido, id_cliente, estado, regiao, nome_completo, email, telefone,
+             id_produto, nome_produto, categoria, ativo, data_pedido, ano_mes,
+             metodo_pagamento, status, quantidade, valor_pedido, receita_bruta,
+             valor_reembolsado, timestamp_ingestion)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+        """, (
+            order_id, cliente_id, estado, regiao, nome, email, "(11) 99999-0000",
+            produto_id, produto, categoria, 1, data_str, ano_mes,
+            pagamento, status, qtd, valor, valor, 0.0,
+            "2025-05-01T00:00:00",
+        ))
+
+        order_ids.append(order_id)
+
+    # ── Activity logs ─────────────────────────────────────────────────────────
+    # Delete any previous demo activity logs to make seed idempotent
+    cursor.execute(
+        f"DELETE FROM ft_sale_activities WHERE id_pedido IN ({','.join('?' * len(order_ids))})",
+        order_ids,
+    )
+
+    for i, (order_id, (status, *_rest, data_str)) in enumerate(zip(order_ids, _DEMO_ORDERS)):
+        order_date = date.fromisoformat(data_str)
+        chain      = _ACTIVITY_CHAINS[status]
+        user       = _DEMO_USERS[i % len(_DEMO_USERS)]
+
+        for days_offset, old_val, new_val in chain:
+            changed_at = f"{order_date + timedelta(days=days_offset)} 10:{(i * 7 % 50):02d}:00"
+            cursor.execute("""
+                INSERT INTO ft_sale_activities
+                (id_pedido, user_name, field_name, old_value, new_value, change_method, changed_at)
+                VALUES (?,?,?,?,?,?,?)
+            """, (order_id, user, "Status", old_val, new_val, "Edição direta", changed_at))
+
+    conn.commit()
+    print(f"   {'demo delivery orders':<35} {len(_DEMO_ORDERS):>8,} linhas  [seed estático]")
+    print(f"   {'demo activity logs':<35} {sum(len(_ACTIVITY_CHAINS[r[0]]) for r in _DEMO_ORDERS):>8,} linhas  [seed estático]")
+
+
 def seed_users(conn: sqlite3.Connection) -> None:
     conn.execute("DROP TABLE IF EXISTS users")
     conn.execute("""
@@ -300,6 +432,11 @@ def seed() -> None:
 
         print(f"  [{time.time() - t0:.1f}s]")
         total_rows += len(df)
+
+    # ── Demo: ordens com status de entrega ───────────────────────────────────
+    print()
+    print("  [ Demo — status de entrega ]")
+    seed_demo_delivery_orders(conn)
 
     # ── Usuários ──────────────────────────────────────────────────────────────
     print()

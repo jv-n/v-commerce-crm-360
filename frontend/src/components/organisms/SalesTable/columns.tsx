@@ -8,7 +8,10 @@ import ArrowForwardIcon from "@mui/icons-material/ArrowForward"
 import type { Sale, SaleStatus } from "@/types/sale"
 import type { ProductCategory } from "@/types/product"
 
-const ALL_STATUSES: SaleStatus[] = ["Aprovado", "Processando", "Recusado", "Reembolsado"]
+const ALL_STATUSES: SaleStatus[] = [
+  "Processando", "Aprovado", "Em rota", "Entregue",
+  "Entregue com Atraso", "Recusado", "Cancelado", "Reembolsado",
+]
 
 const ALL_CATEGORIES = [
   "Eletronicos", "Brinquedos", "Vestuario", "Esportes",

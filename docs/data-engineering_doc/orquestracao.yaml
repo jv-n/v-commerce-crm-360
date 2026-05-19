@@ -1,0 +1,34 @@
+resources:
+  jobs:
+    Orquestração_Vcommerce_Hexatech:
+      name: Orquestração - Vcommerce Hexatech
+      schedule:
+        quartz_cron_expression: 42 0 22 * * ?
+        timezone_id: America/Sao_Paulo
+        pause_status: UNPAUSED
+      tasks:
+        - task_key: Bronze_layer
+          notebook_task:
+            notebook_path: /Workspace/Users/joaoricardolopes2013@gmail.com/v-commerce-crm-360/data-engineering/01_bronze_vcommerce
+            source: WORKSPACE
+          environment_key: Default
+        - task_key: Silver_layer
+          depends_on:
+            - task_key: Bronze_layer
+          notebook_task:
+            notebook_path: /Workspace/Users/joaoricardolopes2013@gmail.com/v-commerce-crm-360/data-engineering/02_silver_vcommerce
+            source: WORKSPACE
+          environment_key: Default
+        - task_key: Gold_layer
+          depends_on:
+            - task_key: Silver_layer
+          notebook_task:
+            notebook_path: /Workspace/Users/joaoricardolopes2013@gmail.com/v-commerce-crm-360/data-engineering/03_gold_vcommerce
+            source: WORKSPACE
+      queue:
+        enabled: true
+      environments:
+        - environment_key: Default
+          spec:
+            environment_version: "5"
+      performance_target: PERFORMANCE_OPTIMIZED

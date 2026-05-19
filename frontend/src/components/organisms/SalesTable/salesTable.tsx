@@ -16,9 +16,10 @@ import { MdKeyboardArrowDown } from "react-icons/md"
 // ── Table ──────────────────────────────────────────────────────────────────────
 
 const TABS: Tab[] = [
-  { id: "all",       label: "Todos os pedidos"    },
-  { id: "concluded", label: "Pedidos concluídos"  },
-  { id: "returned",  label: "Pedidos devolvidos"  },
+  { id: "all",       label: "Todos os pedidos"   },
+  { id: "concluded", label: "Pedidos concluídos" },
+  { id: "pending",   label: "Pedidos pendentes"  },
+  { id: "failed",    label: "Pedidos falhos"      },
 ]
 
 const DEFAULT_PAGE_SIZE = 10
