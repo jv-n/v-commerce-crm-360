@@ -174,6 +174,9 @@ export function DataTableRows<T,>({
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
+      {/* Overlay que garante bordas laterais na altura total, inclusive no espaço vazio abaixo das linhas */}
+      <div className="absolute inset-0 pointer-events-none border-l-2 border-r-2 border-[#E5E5E5]" />
+
       {/* Tabela — scrollbar nativo oculto, ocupa 100% da largura */}
       <div
         ref={scrollRef}

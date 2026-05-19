@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, useRef, forwardRef, useImperativeHandle, useMemo } from "react"
+import { useLocation } from "react-router-dom"
 import { DataTable } from "@/components/organisms/DataTable"
 import { getSaleColumns } from "./columns"
 import { fetchSales } from "@/lib/api/sales"
@@ -9,6 +10,8 @@ import type { Sale } from "@/types/sale"
 import type { Tab, ActiveFilters } from "@/components/organisms/DataTable/types"
 import { SaleFormSheet } from "./SaleForms"
 import { SaleExpandedRow } from "./SaleExpandedRow"
+import { cn } from "@/lib/utils"
+import { MdKeyboardArrowDown } from "react-icons/md"
 
 // ── Table ──────────────────────────────────────────────────────────────────────
 
@@ -53,6 +56,11 @@ export type SalesTableHandle = {
 
 export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can: boolean) => void }>(
   ({ onCanUndoChange }, ref) => {
+    const location   = useLocation()
+    const navState   = location.state as { search?: string; searchField?: string } | null
+    const initSearch = navState?.search ?? ""
+    const initField  = (navState?.searchField ?? "all") as "all" | "client" | "product" | "client_id"
+
     const [activeTab,      setActiveTab]      = useState("all")
     const [page,           setPage]           = useState(1)
     const [pageSize,       setPageSize]       = useState(DEFAULT_PAGE_SIZE)
@@ -64,9 +72,10 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
     const [formOpen,       setFormOpen]       = useState(false)
     const [editSale,       setEditSale]       = useState<Sale | undefined>(undefined)
     const [refetchKey,     setRefetchKey]     = useState(0)
-    const [search,         setSearch]         = useState("")
+    const [search,         setSearch]         = useState(initSearch)
     const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(new Set())
     const [sort,           setSort]           = useState<SaleSort>(null)
+    const [searchScope,    setSearchScope]    = useState<"all" | "client" | "product" | "client_id">(initField)
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const searchRef   = useRef("")
 
@@ -207,7 +216,7 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
         page, pageSize, tab: activeTab,
         status, metodo_pagamento, categoria, data_from, data_to,
         nome_cliente, nome_produto,
-        search, search_field: search ? "sale_id" : undefined,
+        search, search_field: search ? searchScope : undefined,
         sortKey: sort?.key, sortDir: sort?.direction,
       })
         .then((res) => {
@@ -218,7 +227,7 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
         .catch(console.error)
         .finally(() => { if (!cancelled) setLoading(false) })
       return () => { cancelled = true }
-    }, [page, pageSize, activeTab, status, metodo_pagamento, categoria, data_from, data_to, nome_cliente, nome_produto, search, sort, refetchKey])
+    }, [page, pageSize, activeTab, status, metodo_pagamento, categoria, data_from, data_to, nome_cliente, nome_produto, search, searchScope, sort, refetchKey])
 
     // ── Handlers ──────────────────────────────────────────────────────────────
     const handleTabChange = (tabId: string) => {
@@ -314,6 +323,7 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
           onTabChange={handleTabChange}
           onFiltersChange={handleFiltersChange}
           onSearchChange={handleSearchChange}
+          onSortChange={handleSortChange}
           searchPlaceholder={
             searchScope === "client"    ? "Buscar por cliente..."
             : searchScope === "product" ? "Buscar por produto..."
