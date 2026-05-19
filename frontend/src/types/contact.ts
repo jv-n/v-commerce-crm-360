@@ -33,6 +33,6 @@ export interface Contact {
   engagementScore: number
   productRating: number | null
 
-  // Compat. (aponta para firstPurchase)
+  // Compat. com a tabela atual
   createdAt: string | null
 }

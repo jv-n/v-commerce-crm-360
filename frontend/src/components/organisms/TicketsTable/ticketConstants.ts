@@ -3,7 +3,7 @@ import type { Tab } from "@/components/organisms/DataTable/types"
 export const TABS: Tab[] = [
   { id: "all", label: "Todos os Tickets" },
   { id: "my-attending", label: "Meus Tickets em Atendimento" },
-  { id: "waiting", label: "Tickets Aguardando..." },
+  { id: "waiting", label: "Tickets Aguardando" },
 ]
 
 export const DEFAULT_PAGE_SIZE = 10
