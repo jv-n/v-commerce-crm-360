@@ -12,6 +12,7 @@ from app.schemas.contactDetailSchemas import (
     ContactCategoryMetricOut,
     ContactDashboardOut,
     ContactDetailOut,
+    ContactDetailPatchIn,
     ContactMetricsOut,
     ContactOrderOut,
     ContactOrderProductOut,
@@ -50,6 +51,28 @@ def _fmt_date(raw: str | None) -> str | None:
         return f"{d}/{m}/{y}"
     except Exception:
         return str(raw)
+
+
+def _display_date_to_iso(raw: str | None) -> str | None:
+    if raw is None:
+        return None
+
+    value = str(raw).strip()
+
+    if not value:
+        return None
+
+    try:
+        if "/" in value:
+            d, m, y = value.split("/")
+            return f"{y}-{m.zfill(2)}-{d.zfill(2)}"
+
+        if "-" in value:
+            return value[:10]
+    except Exception:
+        return value
+
+    return value
 
 
 def _fmt_phone(raw) -> str | None:
@@ -259,8 +282,73 @@ class ContactDetailService:
             origin=gold.origem,
             clientStatus=gold.segmento_cliente,
             contactType=_contact_type(gold),
-            responsible=None,
         )
+
+    def patch_contact_details(
+        self,
+        contact_id: str,
+        payload: ContactDetailPatchIn,
+    ) -> ContactDetailOut | None:
+        gold = (
+            self.db.query(GoldCliente360)
+            .filter(GoldCliente360.id_cliente == contact_id)
+            .first()
+        )
+
+        if not gold:
+            return None
+
+        try:
+            update_data = payload.model_dump(exclude_unset=True)
+        except AttributeError:
+            update_data = payload.dict(exclude_unset=True)
+
+        field_mapping = {
+            "name": "nome_completo",
+            "email": "email",
+            "phone": "telefone",
+            "gender": "genero",
+            "birthDate": "data_nascimento",
+            "age": "idade",
+            "createdAt": "data_cadastro",
+            "city": "cidade",
+            "state": "estado",
+            "region": "regiao",
+            "country": "pais",
+            "origin": "origem",
+            "clientStatus": "segmento_cliente",
+        }
+
+        for field_name, value in update_data.items():
+            model_field = field_mapping.get(field_name)
+
+            if not model_field:
+                continue
+
+            if field_name in {"birthDate", "createdAt"}:
+                value = _display_date_to_iso(value)
+
+            setattr(gold, model_field, value)
+
+        self.db.commit()
+        self.db.refresh(gold)
+
+        return self.get_contact_details(contact_id)
+
+    def delete_contact_details(self, contact_id: str) -> bool:
+        gold = (
+            self.db.query(GoldCliente360)
+            .filter(GoldCliente360.id_cliente == contact_id)
+            .first()
+        )
+
+        if not gold:
+            return False
+
+        self.db.delete(gold)
+        self.db.commit()
+
+        return True
 
     def _build_metrics(
         self,
@@ -306,8 +394,7 @@ class ContactDetailService:
         )
 
         cat_rows = (
-            cat_query
-            .group_by(GoldPedidoDetalhado.categoria)
+            cat_query.group_by(GoldPedidoDetalhado.categoria)
             .order_by(desc("receita_total"))
             .limit(8)
             .all()
@@ -365,8 +452,7 @@ class ContactDetailService:
         total = query.count()
 
         rows = (
-            query
-            .order_by(desc(GoldPedidoDetalhado.data_pedido))
+            query.order_by(desc(GoldPedidoDetalhado.data_pedido))
             .offset((page - 1) * page_size)
             .limit(page_size)
             .all()
@@ -440,8 +526,7 @@ class ContactDetailService:
         total = query.count()
 
         rows = (
-            query
-            .order_by(
+            query.order_by(
                 desc(GoldTicket360.data_abertura),
                 desc(GoldTicket360.hora_abertura),
             )

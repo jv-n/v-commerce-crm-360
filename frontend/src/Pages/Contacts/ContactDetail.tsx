@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react"
+import { type ChangeEvent, useEffect, useState } from "react"
 import { useNavigate, useOutletContext, useParams } from "react-router-dom"
 
 import ArrowBackIosNewIcon from "@mui/icons-material/ArrowBackIosNew"
@@ -15,6 +15,8 @@ import LocalShippingOutlinedIcon from "@mui/icons-material/LocalShippingOutlined
 import PaymentsOutlinedIcon from "@mui/icons-material/PaymentsOutlined"
 import ReplayOutlinedIcon from "@mui/icons-material/ReplayOutlined"
 import Inventory2OutlinedIcon from "@mui/icons-material/Inventory2Outlined"
+import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined"
+import DeleteOutlineOutlinedIcon from "@mui/icons-material/DeleteOutlineOutlined"
 
 import { ClientStatusBadge } from "@/components/molecules/ContactsTable/ClientStatusBadge"
 import type { ClientStatusType } from "@/types/contact"
@@ -28,8 +30,10 @@ import type {
   ContactTicketsPage,
 } from "@/types/contactDetails"
 import {
+  deleteContactDetails,
   fetchContactDashboard,
   fetchContactDetails,
+  patchContactDetails,
 } from "@/lib/api/contactDetails"
 
 type TabType = "informacoes" | "atividades"
@@ -37,6 +41,22 @@ type TicketProblem = "Produto" | "Entrega" | "Pagamento" | "Reembolso"
 
 type AppFrameOutletContext = {
   onOpenAI: (message?: string) => void
+}
+
+type EditContactFormData = {
+  name: string
+  email: string
+  phone: string
+  status: string
+  birthDate: string
+  age: string
+  gender: string
+  createdAt: string
+  origin: string
+  country: string
+  state: string
+  region: string
+  city: string
 }
 
 const periodOptions: Array<{ label: string; value: ContactPeriod }> = [
@@ -100,7 +120,6 @@ function ContactInfoItem({
   return (
     <div className="flex flex-col gap-1">
       <span className="text-[10px] text-gray-400 font-medium">{label}</span>
-
       <span className="text-sm text-gray-900 break-words">{value ?? "—"}</span>
     </div>
   )
@@ -118,7 +137,6 @@ function PeriodSelect({
   return (
     <div className="flex items-center gap-2 text-xs text-gray-700">
       <CalendarMonthOutlinedIcon sx={{ fontSize: 18 }} />
-
       <span>Data:</span>
 
       <select
@@ -363,13 +381,376 @@ function ContactIdentityCard({
   )
 }
 
+function DeleteConfirmationModal({
+  contactName,
+  deleting,
+  onCancel,
+  onConfirm,
+}: {
+  contactName?: string | null
+  deleting: boolean
+  onCancel: () => void
+  onConfirm: () => Promise<void> | void
+}) {
+  return (
+    <div className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/35 px-4">
+      <div className="w-full max-w-[420px] rounded-2xl border border-red-100 bg-white p-5 shadow-2xl">
+        <div className="flex justify-center">
+          <div className="flex h-11 w-11 items-center justify-center rounded-full bg-red-100 text-red-600">
+            <DeleteOutlineOutlinedIcon sx={{ fontSize: 24 }} />
+          </div>
+        </div>
+
+        <h3 className="mt-3 text-center text-lg font-bold text-gray-900">
+          Remover cliente?
+        </h3>
+
+        <p className="mt-2 text-center text-sm leading-relaxed text-gray-600">
+          Esta ação vai remover{" "}
+          <span className="font-semibold text-gray-900">
+            {contactName || "este cliente"}
+          </span>{" "}
+          da base. Depois de confirmar, você voltará para a lista de contatos.
+        </p>
+
+        <div className="mt-5 flex items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={deleting}
+            className="h-9 min-w-[130px] rounded-lg text-sm font-medium text-gray-900 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={deleting}
+            className="h-9 min-w-[150px] rounded-lg bg-red-500 px-4 text-sm font-semibold text-white transition-colors hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {deleting ? "Removendo..." : "Sim, remover"}
+          </button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function EditContactModal({
+  details,
+  onClose,
+  onConfirm,
+  onDelete,
+}: {
+  details: ContactDetails
+  onClose: () => void
+  onConfirm: (details: ContactDetails) => Promise<void> | void
+  onDelete: () => Promise<void> | void
+}) {
+  const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false)
+
+  const [formData, setFormData] = useState<EditContactFormData>({
+    name: details.name ?? "",
+    email: details.email ?? "",
+    phone: details.phone ?? "",
+    status: details.clientStatus ?? "",
+    birthDate: details.birthDate ?? "",
+    age: details.age != null ? String(details.age) : "",
+    gender: details.gender ?? "",
+    createdAt: details.createdAt ?? "",
+    origin: details.origin ?? "",
+    country: details.country ?? "",
+    state: details.state ?? "",
+    region: details.region ?? "",
+    city: details.city ?? "",
+  })
+
+  function handleChange(event: ChangeEvent<HTMLInputElement>) {
+    const { name, value } = event.target
+
+    setFormData((currentFormData) => ({
+      ...currentFormData,
+      [name]: value,
+    }))
+  }
+
+  async function handleConfirm() {
+    const updatedDetails = {
+      ...details,
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      clientStatus: formData.status,
+      birthDate: formData.birthDate,
+      age: formData.age ? Number(formData.age) : null,
+      gender: formData.gender,
+      createdAt: formData.createdAt,
+      origin: formData.origin,
+      country: formData.country,
+      state: formData.state,
+      region: formData.region,
+      city: formData.city,
+    } as ContactDetails
+
+    try {
+      setSaving(true)
+      await onConfirm(updatedDetails)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  async function handleDeleteConfirm() {
+    try {
+      setDeleting(true)
+      await onDelete()
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const labelClass = "mb-1 block text-xs font-bold text-gray-900"
+
+  const fieldClass =
+    "h-8 w-full rounded-lg border border-gray-300 bg-white px-3 text-xs text-gray-900 outline-none focus:border-purple-400 disabled:cursor-not-allowed disabled:opacity-60"
+
+  const isBusy = saving || deleting
+
+  return (
+    <>
+      <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/40 px-4">
+        <div className="relative w-full max-w-[560px] rounded-xl bg-white px-5 py-4 shadow-2xl">
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={isBusy}
+            className="absolute right-4 top-4 text-gray-900 hover:text-red-500 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+            aria-label="Fechar modal de edição"
+          >
+            <CloseOutlinedIcon sx={{ fontSize: 24 }} />
+          </button>
+
+          <h2 className="text-xl font-bold text-gray-900">
+            Edição de Contato
+          </h2>
+
+          <div className="mt-3 border-t border-gray-200 pt-3">
+            <div className="grid grid-cols-2 gap-x-4 gap-y-3">
+              <div>
+                <label className={labelClass}>Nome do contato</label>
+                <input
+                  name="name"
+                  value={formData.name}
+                  onChange={handleChange}
+                  disabled={isBusy}
+                  className={fieldClass}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Status</label>
+                <input
+                  name="status"
+                  value={formData.status}
+                  onChange={handleChange}
+                  disabled={isBusy}
+                  className={fieldClass}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Email</label>
+                <input
+                  name="email"
+                  value={formData.email}
+                  onChange={handleChange}
+                  disabled={isBusy}
+                  className={fieldClass}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Número de telefone</label>
+                <input
+                  name="phone"
+                  value={formData.phone}
+                  onChange={handleChange}
+                  disabled={isBusy}
+                  className={fieldClass}
+                />
+              </div>
+
+              <div className="grid grid-cols-[1fr_90px] gap-4">
+                <div>
+                  <label className={labelClass}>Data de nascimento</label>
+                  <input
+                    name="birthDate"
+                    value={formData.birthDate}
+                    onChange={handleChange}
+                    disabled={isBusy}
+                    className={fieldClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Idade</label>
+                  <input
+                    name="age"
+                    value={formData.age}
+                    onChange={handleChange}
+                    disabled={isBusy}
+                    className={fieldClass}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Gênero</label>
+                <input
+                  name="gender"
+                  value={formData.gender}
+                  onChange={handleChange}
+                  disabled={isBusy}
+                  className={fieldClass}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Data de cadastro</label>
+                <input
+                  name="createdAt"
+                  value={formData.createdAt}
+                  onChange={handleChange}
+                  disabled={isBusy}
+                  className={fieldClass}
+                />
+              </div>
+
+              <div>
+                <label className={labelClass}>Origem</label>
+                <input
+                  name="origin"
+                  value={formData.origin}
+                  onChange={handleChange}
+                  disabled={isBusy}
+                  className={fieldClass}
+                />
+              </div>
+
+              <div className="col-span-2 grid grid-cols-4 gap-4">
+                <div>
+                  <label className={labelClass}>País</label>
+                  <input
+                    name="country"
+                    value={formData.country}
+                    onChange={handleChange}
+                    disabled={isBusy}
+                    className={fieldClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Estado</label>
+                  <input
+                    name="state"
+                    value={formData.state}
+                    onChange={handleChange}
+                    disabled={isBusy}
+                    className={fieldClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Região</label>
+                  <input
+                    name="region"
+                    value={formData.region}
+                    onChange={handleChange}
+                    disabled={isBusy}
+                    className={fieldClass}
+                  />
+                </div>
+
+                <div>
+                  <label className={labelClass}>Cidade</label>
+                  <input
+                    name="city"
+                    value={formData.city}
+                    onChange={handleChange}
+                    disabled={isBusy}
+                    className={fieldClass}
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 border-t border-gray-200 pt-5">
+            <div className="flex items-center justify-center gap-5">
+              <button
+                type="button"
+                onClick={onClose}
+                disabled={isBusy}
+                className="h-9 min-w-[150px] rounded-lg text-sm font-medium text-gray-900 hover:bg-gray-100 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                Cancelar
+              </button>
+
+              <button
+                type="button"
+                onClick={handleConfirm}
+                disabled={isBusy}
+                className="h-9 min-w-[180px] rounded-lg border border-purple-300 bg-purple-100 text-sm font-medium text-gray-900 hover:bg-purple-200 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving ? "Salvando..." : "Confirmar"}
+              </button>
+            </div>
+          </div>
+
+          <div className="mt-5 border-t border-gray-200 pt-4">
+            <div className="flex justify-center">
+              <button
+                type="button"
+                onClick={() => setShowDeleteConfirmation(true)}
+                disabled={isBusy}
+                className="flex h-7 items-center gap-2 rounded-md bg-red-500 px-4 text-[11px] font-medium text-white hover:bg-red-600 transition-colors disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                <DeleteOutlineOutlinedIcon sx={{ fontSize: 14 }} />
+                Remover Cliente
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {showDeleteConfirmation && (
+        <DeleteConfirmationModal
+          contactName={details.name}
+          deleting={deleting}
+          onCancel={() => setShowDeleteConfirmation(false)}
+          onConfirm={handleDeleteConfirm}
+        />
+      )}
+    </>
+  )
+}
+
 function ContactInfoCard({
   details,
   metrics,
+  onDetailsChange,
+  onDeleteContact,
 }: {
   details: ContactDetails
   metrics: ContactMetrics | null
+  onDetailsChange: (details: ContactDetails) => void
+  onDeleteContact: () => Promise<void> | void
 }) {
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+
   const npsLabel = metrics?.categoriaNpsRecente
 
   const npsConfig =
@@ -394,100 +775,117 @@ function ContactInfoCard({
           : null
 
   return (
-    <div className="border border-purple-100 rounded-xl bg-white shadow-sm h-full min-h-0 overflow-hidden flex flex-col">
-      <div className="shrink-0 px-4 pt-3 pb-2">
-        <div className="relative flex items-center justify-center">
-          <p className="text-sm font-bold text-gray-900">
-            Informações importantes
-          </p>
+    <>
+      <div className="border border-purple-100 rounded-xl bg-white shadow-sm h-full min-h-0 overflow-hidden flex flex-col">
+        <div className="shrink-0 px-4 pt-3 pb-2">
+          <div className="relative flex items-center justify-center">
+            <p className="text-sm font-bold text-gray-900">
+              Informações importantes
+            </p>
 
-          <button
-            type="button"
-            className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-700 hover:text-purple-700 transition-colors"
-            aria-label="Editar informações do contato"
-          >
-            <EditOutlinedIcon sx={{ fontSize: 17 }} />
-          </button>
+            <button
+              type="button"
+              onClick={() => setIsEditModalOpen(true)}
+              className="absolute right-0 top-1/2 -translate-y-1/2 text-gray-700 hover:text-purple-700 transition-colors"
+              aria-label="Editar informações do contato"
+            >
+              <EditOutlinedIcon sx={{ fontSize: 17 }} />
+            </button>
+          </div>
+
+          <div className="h-px bg-gray-200 mt-2" />
         </div>
 
-        <div className="h-px bg-gray-200 mt-2" />
-      </div>
+        <div className="flex-1 min-h-0 overflow-auto px-4 pb-4 pr-3">
+          <div className="flex flex-col gap-3">
+            <ContactInfoItem label="ID Cliente" value={details.id} />
+            <ContactInfoItem label="Email" value={details.email} />
+            <ContactInfoItem label="Número de telefone" value={details.phone} />
 
-      <div className="flex-1 min-h-0 overflow-auto px-4 pb-4 pr-3">
-        <div className="flex flex-col gap-3">
-          <ContactInfoItem label="ID Cliente" value={details.id} />
-          <ContactInfoItem label="Email" value={details.email} />
-          <ContactInfoItem label="Número de telefone" value={details.phone} />
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] text-gray-400 font-medium">
+                Status
+              </span>
 
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-gray-400 font-medium">
-              Status
-            </span>
+              <div>
+                <ClientStatusBadge
+                  status={details.clientStatus as ClientStatusType | null}
+                />
+              </div>
+            </div>
 
-            <div>
-              <ClientStatusBadge
-                status={details.clientStatus as ClientStatusType | null}
-              />
+            <ContactInfoItem label="Gênero" value={details.gender} />
+            <ContactInfoItem
+              label="Data de nascimento"
+              value={details.birthDate}
+            />
+            <ContactInfoItem label="Idade" value={details.age} />
+            <ContactInfoItem label="Data de cadastro" value={details.createdAt} />
+            <ContactInfoItem label="Cidade" value={details.city} />
+            <ContactInfoItem label="Estado" value={details.state} />
+            <ContactInfoItem label="Região" value={details.region} />
+            <ContactInfoItem label="País" value={details.country} />
+            <ContactInfoItem label="Origem" value={details.origin} />
+
+            <div className="flex flex-col gap-1">
+              <span className="text-[10px] text-gray-400 font-medium">Nps</span>
+
+              {npsConfig ? (
+                <>
+                  <span
+                    className={`text-sm pl-8 font-medium ${npsConfig.textClass}`}
+                  >
+                    {npsLabel}
+                  </span>
+
+                  <div className="h-1 rounded-full bg-gray-300 overflow-hidden">
+                    <div
+                      className={`h-full rounded-full ${npsConfig.barClass}`}
+                      style={{ width: `${npsConfig.progress}%` }}
+                    />
+                  </div>
+                </>
+              ) : (
+                <span className="text-xs text-gray-400">
+                  Sem dados de NPS para este contato.
+                </span>
+              )}
             </div>
           </div>
-
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-gray-400 font-medium">
-              Responsável
-            </span>
-
-            {details.responsible ? (
-              <div className="flex items-center gap-2">
-                <div className="w-7 h-7 rounded-full bg-purple-100 flex items-center justify-center text-purple-700 text-xs font-medium shrink-0">
-                  {initials(details.responsible)}
-                </div>
-
-                <span className="text-sm text-gray-900">
-                  {details.responsible}
-                </span>
-              </div>
-            ) : (
-              <span className="text-sm text-gray-900">—</span>
-            )}
-          </div>
-
-          <ContactInfoItem label="Gênero" value={details.gender} />
-          <ContactInfoItem label="Data de nascimento" value={details.birthDate} />
-          <ContactInfoItem label="Idade" value={details.age} />
-          <ContactInfoItem label="Data de cadastro" value={details.createdAt} />
-          <ContactInfoItem label="Cidade" value={details.city} />
-          <ContactInfoItem label="Estado" value={details.state} />
-          <ContactInfoItem label="Região" value={details.region} />
-          <ContactInfoItem label="País" value={details.country} />
-          <ContactInfoItem label="Origem" value={details.origin} />
-
-          <div className="flex flex-col gap-1">
-            <span className="text-[10px] text-gray-400 font-medium">Nps</span>
-
-            {npsConfig ? (
-              <>
-                <span
-                  className={`text-sm pl-8 font-medium ${npsConfig.textClass}`}
-                >
-                  {npsLabel}
-                </span>
-
-                <div className="h-1 rounded-full bg-gray-300 overflow-hidden">
-                  <div
-                    className={`h-full rounded-full ${npsConfig.barClass}`}
-                    style={{ width: `${npsConfig.progress}%` }}
-                  />
-                </div>
-              </>
-            ) : (
-              <span className="text-xs text-gray-400">
-                Sem dados de NPS para este contato.
-              </span>
-            )}
-          </div>
         </div>
       </div>
-    </div>
+
+      {isEditModalOpen && (
+        <EditContactModal
+          details={details}
+          onClose={() => setIsEditModalOpen(false)}
+          onConfirm={async (updatedDetails) => {
+            const savedDetails = await patchContactDetails(details.id, {
+              name: updatedDetails.name,
+              email: updatedDetails.email,
+              phone: updatedDetails.phone,
+              gender: updatedDetails.gender,
+              birthDate: updatedDetails.birthDate,
+              age: updatedDetails.age,
+              createdAt: updatedDetails.createdAt,
+              city: updatedDetails.city,
+              state: updatedDetails.state,
+              region: updatedDetails.region,
+              country: updatedDetails.country,
+              origin: updatedDetails.origin,
+              clientStatus: updatedDetails.clientStatus,
+            })
+
+            onDetailsChange(savedDetails)
+            setIsEditModalOpen(false)
+          }}
+          onDelete={async () => {
+            await onDeleteContact()
+            setIsEditModalOpen(false)
+          }}
+        />
+      )}
+    </>
   )
 }
 
@@ -933,9 +1331,7 @@ function ContactTicketsCard({ tickets }: { tickets: ContactTicketsPage | null })
 
                   <p className="flex items-center gap-2">
                     <span>Problema:</span>
-
                     <TicketProblemIcon problem={ticket.tipo_problema} />
-
                     <span>{ticket.tipo_problema ?? "Não informado"}</span>
                   </p>
                 </div>
@@ -1152,7 +1548,15 @@ export default function ContactDetail() {
           />
 
           <div className="flex-1 min-h-0 overflow-hidden">
-            <ContactInfoCard details={details} metrics={summaryMetrics} />
+            <ContactInfoCard
+              details={details}
+              metrics={summaryMetrics}
+              onDetailsChange={setDetails}
+              onDeleteContact={async () => {
+                await deleteContactDetails(details.id)
+                navigate("/contacts")
+              }}
+            />
           </div>
         </div>
 

@@ -22,7 +22,6 @@ export interface ContactDetails {
   origin: string | null
   clientStatus: string | null
   contactType: string
-  responsible: string | null
 }
 
 export interface ContactCategoryMetric {
@@ -126,3 +125,22 @@ export interface ContactDashboard {
   tickets: ContactTicketsPage
   viewedProducts: ContactViewedProduct[]
 }
+
+export type ContactDetailsPatch = Partial<
+  Pick<
+    ContactDetails,
+    | "name"
+    | "email"
+    | "phone"
+    | "gender"
+    | "birthDate"
+    | "age"
+    | "createdAt"
+    | "city"
+    | "state"
+    | "region"
+    | "country"
+    | "origin"
+    | "clientStatus"
+  >
+>
