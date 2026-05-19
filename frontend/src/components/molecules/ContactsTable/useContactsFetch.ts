@@ -20,6 +20,11 @@ interface Params {
   advanced: ContactAdvancedFilters
 }
 
+function detectSearchField(value: string): "id" | undefined {
+  // UUID prefix: 8 hex chars followed by a hyphen
+  return /^[0-9a-f]{8}-/i.test(value) ? "id" : undefined
+}
+
 export function useContactsFetch({ page, pageSize, activeTab, nameSearch, serverFilters, sortBy, sortDir, refetchKey, advanced }: Params) {
   const [contacts, setContacts] = useState<Contact[]>([])
   const [total,    setTotal]    = useState(0)
@@ -52,6 +57,7 @@ export function useContactsFetch({ page, pageSize, activeTab, nameSearch, server
       fetchContacts({
         page, pageSize, tab: activeTab,
         search: nameSearch || undefined,
+        search_field: detectSearchField(nameSearch),
         purchasesMin, purchasesMax, createdFrom, createdTo, engagements, clientStatuses,
         sortBy, sortDir,
         regioes:                advanced.regioes,

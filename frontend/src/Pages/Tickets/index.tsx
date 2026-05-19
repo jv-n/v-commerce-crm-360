@@ -18,7 +18,7 @@ export default function Tickets() {
   return (
     <div className="relative p-6 h-full flex flex-col gap-5 bg-white min-h-full rounded-xl">
       <div className="flex items-center justify-between">
-        <h1 className="text-3xl font-bold text-gray-900">Tickets</h1>
+        <h1 className="text-[40px] font-bold text-gray-900">Tickets</h1>
 
         <div className="flex items-center gap-2">
           <button

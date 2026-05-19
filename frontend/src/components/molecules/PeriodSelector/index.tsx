@@ -1,5 +1,6 @@
 import { useState } from "react"
 import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md"
+import CalendarTodayOutlinedIcon from "@mui/icons-material/CalendarTodayOutlined"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -59,6 +60,7 @@ export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
     <DropdownMenu open={open} onOpenChange={setOpen}>
       <DropdownMenuTrigger asChild>
         <button className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl border border-transparent text-gray-900 hover:bg-purple-100 hover:border-purple-300 transition-colors">
+          <CalendarTodayOutlinedIcon sx={{ fontSize: 14 }} />
           <span>{currentLabel}</span>
           {open ? <MdKeyboardArrowUp size={14} /> : <MdKeyboardArrowDown size={14} />}
         </button>
@@ -68,7 +70,10 @@ export function PeriodSelector({ value, onChange }: PeriodSelectorProps) {
         {PERIOD_OPTIONS.map((option) => (
           <DropdownMenuItem
             key={option.type}
-            className={cn(value.type === option.type && "bg-muted font-semibold")}
+            className={cn(
+              "focus:bg-purple-100 focus:text-gray-900",
+              value.type === option.type && "bg-[#EACAFF] font-medium focus:bg-[#EACAFF]"
+            )}
             onSelect={() => { onChange({ type: option.type }); setOpen(false) }}
           >
             {option.label}

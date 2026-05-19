@@ -14,6 +14,7 @@ import { StateRankingList } from "./molecules/StateRankingList"
 import { BrazilSvgMap } from "./molecules/BrazilSvgMap"
 import { fetchDashboardMap } from "@/lib/api/dashboard"
 import type { MapItem, PeriodFilter } from "@/types/dashboard"
+import { cn } from "@/lib/utils"
 import { BRAZIL_STATE_PATHS } from "./brazilPaths"
 
 // Maps each state sigla to its Brazilian macroregion
@@ -106,7 +107,10 @@ export function BrazilMapCard({ period }: BrazilMapCardProps) {
               {(["estados", "regioes"] as MapView[]).map(v => (
                 <DropdownMenuItem
                   key={v}
-                  className={view === v ? "font-semibold bg-[#EDE5F2]" : ""}
+                  className={cn(
+                    "focus:bg-purple-100 focus:text-gray-900",
+                    view === v && "bg-[#EACAFF] font-medium focus:bg-[#EACAFF]"
+                  )}
                   onSelect={() => setView(v)}
                 >
                   {v === "estados" ? "Estados" : "Regiões"}

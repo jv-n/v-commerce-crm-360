@@ -39,6 +39,7 @@ export function ContactExpandedRow({ contact }: { contact: Contact }) {
   return (
     <div className="bg-purple-50/40 px-8 py-5 flex gap-8 border-t border-purple-100">
       <div className="flex-1 flex flex-col">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Últimas compras</p>
         {timeline.map((entry, i) => (
           <div key={i} className="flex gap-3">
             {/* Indicador + linha vertical */}
@@ -80,7 +81,7 @@ export function ContactExpandedRow({ contact }: { contact: Contact }) {
               {entry.type === "more" && (
                 <button
                   onClick={() => navigate("/sales", { state: { search: contact.id, searchField: "client_id" } })}
-                  className="text-sm text-purple-700 font-medium hover:bg-[#CFA7FF] rounded-lg px-2 py-0.5 transition-colors text-left"
+                  className="text-sm text-purple-700 font-medium underline hover:bg-[#CFA7FF] rounded-lg px-2 py-0.5 transition-colors text-left"
                 >
                   e mais {entry.count} {entry.count === 1 ? "pedido anterior" : "pedidos anteriores"} →
                 </button>

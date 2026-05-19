@@ -54,7 +54,10 @@ function SelectDropdown<T extends string | number>({
           {options.map(opt => (
             <DropdownMenuItem
               key={String(opt.value)}
-              className={value === opt.value ? "font-semibold bg-[#EDE5F2]" : ""}
+              className={cn(
+                "focus:bg-purple-100 focus:text-gray-900",
+                value === opt.value && "bg-[#EACAFF] font-medium focus:bg-[#EACAFF]"
+              )}
               onSelect={() => onChange(opt.value)}
             >
               {opt.label}

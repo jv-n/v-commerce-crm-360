@@ -191,7 +191,7 @@ export const ContactsTable = forwardRef<ContactsTableHandle, { onCanUndoChange?:
         onTabChange={(tabId) => { pushHistory(); setActiveTab(tabId); setPage(1) }}
         onFiltersChange={handleFiltersChange}
         onSearchChange={(v) => { setNameSearch(v); setPage(1) }}
-        searchPlaceholder="Pesquisar por nome..."
+        searchPlaceholder="Pesquisar por nome ou ID..."
         onSortChange={(sort) => { setSortBy(sort?.key ?? null); setSortDir(sort?.direction ?? "asc"); setPage(1) }}
         onSelectionChange={handleSelectionChange}
         headerClassName="bg-[#EACAFF] [&_th:not(:first-child)_button_svg]:!text-[#9F83B2] [&_th:not(:first-child)_button:hover_svg]:!text-[#6F2B90]"

@@ -18,6 +18,7 @@ interface ContactsParams {
   createdTo?:   string
   engagements?: string[]
   clientStatuses?: string[]
+  search_field?: string
   sortBy?: string | null
   sortDir?: "asc" | "desc"
   // advanced filters — compras / financeiro
@@ -185,6 +186,7 @@ export async function fetchContacts(params: ContactsParams): Promise<ContactsPag
     pageSize: String(params.pageSize),
     tab:      params.tab,
     ...(params.search                    ? { search:           params.search                    } : {}),
+    ...(params.search_field && params.search_field !== "name" ? { search_field: params.search_field } : {}),
     ...(params.purchasesMin != null      ? { purchases_min:    String(params.purchasesMin)      } : {}),
     ...(params.purchasesMax != null      ? { purchases_max:    String(params.purchasesMax)      } : {}),
     ...(params.createdFrom               ? { created_from:     params.createdFrom               } : {}),

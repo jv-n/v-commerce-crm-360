@@ -62,7 +62,7 @@ export function DataTablePagination({
             {rppOpen ? <MdKeyboardArrowUp size={14} /> : <MdKeyboardArrowDown size={14} />}
           </button>
           {rppOpen && (
-            <div className="absolute left-full ml-2 top-0 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-50 min-w-[80px]">
+            <div className="absolute bottom-full mb-1 left-0 bg-white border border-gray-200 rounded-lg shadow-lg overflow-hidden z-50 min-w-[80px]">
               {rowsPerPageOptions.map(n => (
                 <button
                   key={n}
