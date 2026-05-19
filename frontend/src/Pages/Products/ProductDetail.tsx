@@ -87,7 +87,7 @@ function InfoRow({ label, children }: { label: string; children: React.ReactNode
 function StatusBadge({ status }: { status: string | null }) {
   const cls = STATUS_COLORS[status ?? ""] ?? "bg-gray-100 text-gray-600"
   return (
-    <span className={cn("inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-xs font-medium", cls)}>
+    <span className={cn("inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium", cls)}>
       <span className="w-1.5 h-1.5 rounded-full bg-current" />
       {status ?? "—"}
     </span>
@@ -373,7 +373,7 @@ export default function ProductDetail() {
             <div className="flex items-center gap-2 px-4 py-3">
               <button
                 onClick={() => navigate("/products")}
-                className="flex items-center gap-1.5 text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                className="flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium text-gray-700 hover:bg-[#F0DDFD] transition-colors"
               >
                 <ArrowBackIosNewIcon sx={{ fontSize: 13 }} />
                 Catálogo
@@ -635,7 +635,7 @@ export default function ProductDetail() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-700">Status Ticket:</span>
                         <span className={cn(
-                          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium",
+                          "inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium",
                           t.resolvido ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
                         )}>
                           <span className="w-1.5 h-1.5 rounded-full bg-current" />
@@ -734,7 +734,7 @@ export default function ProductDetail() {
                       <div className="flex items-center gap-2">
                         <span className="text-sm text-gray-700">Status Ticket:</span>
                         <span className={cn(
-                          "inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium",
+                          "inline-flex items-center gap-1.5 px-2 py-1 rounded text-xs font-medium",
                           t.resolvido ? "bg-green-100 text-green-700" : "bg-yellow-100 text-yellow-700"
                         )}>
                           <span className="w-1.5 h-1.5 rounded-full bg-current" />

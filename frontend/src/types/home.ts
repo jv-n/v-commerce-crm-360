@@ -23,3 +23,17 @@ export interface ProductBookmark {
 }
 
 export type Bookmark = ContactBookmark | ProductBookmark
+
+export type GoalKind = "product_sales" | "new_clients" | "category_sales"
+
+export interface Goal {
+  id:             string
+  kind:           GoalKind
+  label:          string
+  target:         number
+  current:        number
+  referenceMonth?: string | null   // "YYYY-MM"
+  productId?:     string | null
+  productName?:   string | null
+  category?:      string | null
+}
