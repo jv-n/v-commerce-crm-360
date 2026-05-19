@@ -36,6 +36,8 @@ function formatBRL(value: number): string {
 export function getSaleColumns(
   expandedRowIds: Set<string>,
   onToggleExpand: (id: string) => void,
+  fetchClientOptions: (q: string) => Promise<string[]>,
+  fetchProductOptions: (q: string) => Promise<string[]>,
 ): Column<Sale>[] {
   return [
     {
@@ -68,12 +70,28 @@ export function getSaleColumns(
       key: "client",
       header: "Cliente",
       minWidth: "130px",
+      sortable: true,
+      sortValue: (c) => c.client,
+      filter: {
+        type: "search-select",
+        label: "Cliente",
+        fetchOptions: fetchClientOptions,
+        filterFn: (c, value) => c.client === value,
+      },
       render: (c) => <CellText value={c.client} truncate maxWidth="200px" />,
     },
     {
       key: "product",
       header: "Produto",
       minWidth: "150px",
+      sortable: true,
+      sortValue: (c) => c.product,
+      filter: {
+        type: "search-select",
+        label: "Produto",
+        fetchOptions: fetchProductOptions,
+        filterFn: (c, value) => c.product === value,
+      },
       render: (c) => <CellText value={c.product} truncate maxWidth="220px" />,
     },
     {
@@ -94,18 +112,24 @@ export function getSaleColumns(
       key: "amount",
       header: "Quantidade",
       minWidth: "60px",
+      sortable: true,
+      sortValue: (c) => c.amount,
       render: (c) => <CellText value={c.amount} variant="primary" />,
     },
     {
       key: "value",
       header: "Valor",
       minWidth: "100px",
+      sortable: true,
+      sortValue: (c) => c.value,
       render: (c) => <CellText value={formatBRL(c.value)} />,
     },
     {
       key: "saleDate",
       header: "Data do pedido",
       minWidth: "130px",
+      sortable: true,
+      sortValue: (c) => c.date,
       filter: {
         type: "date-range" as const,
         label: "Data do pedido",

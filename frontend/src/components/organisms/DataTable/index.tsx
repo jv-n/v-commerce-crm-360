@@ -6,6 +6,7 @@ import type {
   SelectFilterDef,
   NumberRangeFilterDef,
   MultiSelectFilterDef,
+  SearchSelectFilterDef,
   ServerPagination,
 } from "./types"
 import {
@@ -26,6 +27,7 @@ import { SelectDropdown } from "./atoms/SelectDropdown"
 import { NumberRangeDropdown } from "./atoms/NumberRangeDropdown"
 import { MultiSelectDropdown } from "./atoms/MultiSelectDropdown"
 import { DateRangeDropdown } from "./atoms/DateRangeDropdown"
+import { SearchSelectDropdown } from "./atoms/SearchSelectDropdown"
 
 function buildServerPageInfo(sp: ServerPagination, dataLength: number) {
   const totalPages = Math.max(1, Math.ceil(sp.total / sp.pageSize))
@@ -271,6 +273,18 @@ export function DataTable<T,>({
           }
           onApply={(from, to) => {
             filters.setFilter(colKey, { type: "date-range", from, to })
+            pagination.resetPage()
+          }}
+          onClear={handleClear}
+        />
+      )
+    } else if (def.type === "search-select") {
+      content = (
+        <SearchSelectDropdown
+          def={def as SearchSelectFilterDef<T>}
+          activeValue={active?.type === "search-select" ? active.value : ""}
+          onSelect={val => {
+            filters.setFilter(colKey, { type: "search-select", value: val })
             pagination.resetPage()
           }}
           onClear={handleClear}

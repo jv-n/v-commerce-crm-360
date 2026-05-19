@@ -18,6 +18,10 @@ interface SalesParams {
   data_to?: string
   search?: string
   search_field?: string
+  nome_cliente?: string
+  nome_produto?: string
+  sortKey?: string
+  sortDir?: "asc" | "desc"
 }
 
 interface RawSale {
@@ -138,6 +142,10 @@ export async function fetchSales(params: SalesParams): Promise<SalesPage> {
     ...(params.data_to          ? { data_to:          params.data_to          } : {}),
     ...(params.search           ? { search:           params.search           } : {}),
     ...(params.search_field && params.search_field !== "all" ? { search_field: params.search_field } : {}),
+    ...(params.nome_cliente     ? { nome_cliente:     params.nome_cliente     } : {}),
+    ...(params.nome_produto     ? { nome_produto:     params.nome_produto     } : {}),
+    ...(params.sortKey          ? { sort_key:         params.sortKey          } : {}),
+    ...(params.sortDir          ? { sort_dir:         params.sortDir          } : {}),
   })
 
   const res = await fetch(`/api/sales/?${query}`)
