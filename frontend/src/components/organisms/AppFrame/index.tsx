@@ -115,7 +115,7 @@ export default function AppFrame() {
                     <SidebarContent>
                         <SidebarGroup>
                             <SidebarGroupContent>
-                                <SidebarMenu className="gap-2">
+                                <SidebarMenu className="gap-4">
                                     {sidebarItems1.map((item) => (
                                         <SidebarMenuItem key={item.name} className="flex align-center justify-center">
                                             <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
@@ -131,7 +131,7 @@ export default function AppFrame() {
                         <SidebarSeparator className="bg-foreground/30" />
                         <SidebarGroup>
                             <SidebarGroupContent>
-                                <SidebarMenu className="gap-2">
+                                <SidebarMenu className="gap-4">
                                     {sidebarItems2.map((item) => (
                                         <SidebarMenuItem key={item.name} className="flex align-center justify-center">
                                             <SidebarMenuButton className={`${itemActive(item.path)} w-8 h-8 transition duration-400 hover:bg-${itemActive(item.path)} hover:ring hover:ring-primary rounded-md flex items-center justify-center`} asChild>
@@ -147,7 +147,7 @@ export default function AppFrame() {
                         <SidebarSeparator className="bg-foreground/30"/>
                         <SidebarGroup>
                             <SidebarGroupContent>
-                                <SidebarMenu className="gap-2">
+                                <SidebarMenu className="gap-4">
                                     {sidebarItems3.map((item) => (
                                         <SidebarMenuItem key={item.name} className="flex align-center justify-center">
                                             {item.nav ? (
