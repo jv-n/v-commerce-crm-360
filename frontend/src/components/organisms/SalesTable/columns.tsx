@@ -1,6 +1,6 @@
 import type { Column } from "@/components/organisms/DataTable/types"
 import { CellText } from "@/components/organisms/DataTable/atoms/CellText"
-import { CellTag }  from "@/components/organisms/DataTable/atoms/CellTag"
+import { CellTag } from "@/components/organisms/DataTable/atoms/CellTag"
 import { StatusBadge } from "./tableComponents/badge"
 import { OpenCircleButton } from "@/components/atoms/open-circle-button"
 import ArrowForwardIcon from "@mui/icons-material/ArrowForward"
@@ -9,31 +9,54 @@ import type { Sale, SaleStatus } from "@/types/sale"
 import type { ProductCategory } from "@/types/product"
 
 const ALL_STATUSES: SaleStatus[] = [
-  "Processando", "Aprovado", "Em rota", "Entregue",
-  "Entregue com Atraso", "Recusado", "Cancelado", "Reembolsado",
+  "Processando",
+  "Aprovado",
+  "Em rota",
+  "Entregue",
+  "Entregue com Atraso",
+  "Recusado",
+  "Cancelado",
+  "Reembolsado",
 ]
 
 const ALL_CATEGORIES = [
-  "Eletronicos", "Brinquedos", "Vestuario", "Esportes",
-  "Casa", "Moveis", "Beleza", "Automotivo", "Indefinida",
+  "Eletronicos",
+  "Brinquedos",
+  "Vestuario",
+  "Esportes",
+  "Casa",
+  "Moveis",
+  "Beleza",
+  "Automotivo",
+  "Indefinida",
 ]
 
 const ALL_PAYMENT_METHODS = ["Boleto", "Pix", "Cartão"]
 
 const CATEGORY_COLORS: Record<ProductCategory, string> = {
-  "Automotivo":  "bg-slate-100 text-slate-700",
-  "Beleza":      "bg-pink-100 text-pink-700",
-  "Brinquedos":  "bg-violet-100 text-violet-700",
-  "Casa":        "bg-amber-100 text-amber-700",
-  "Eletronicos": "bg-blue-100 text-blue-700",
-  "Esportes":    "bg-green-100 text-green-700",
-  "Indefinida":  "bg-gray-100 text-gray-600",
-  "Moveis":      "bg-orange-100 text-orange-700",
-  "Vestuario":   "bg-teal-100 text-teal-700",
+  Automotivo: "bg-slate-100 text-slate-700",
+  Beleza: "bg-pink-100 text-pink-700",
+  Brinquedos: "bg-violet-100 text-violet-700",
+  Casa: "bg-amber-100 text-amber-700",
+  Eletronicos: "bg-blue-100 text-blue-700",
+  Esportes: "bg-green-100 text-green-700",
+  Indefinida: "bg-gray-100 text-gray-600",
+  Moveis: "bg-orange-100 text-orange-700",
+  Vestuario: "bg-teal-100 text-teal-700",
 }
 
+const idButtonClassName =
+  "block truncate rounded-lg px-2 py-0.5 text-[13px] font-medium text-gray-900 transition-colors hover:bg-[#CFA7FF]"
+
 function formatBRL(value: number): string {
-  return value.toLocaleString("pt-BR", { style: "currency", currency: "BRL" })
+  return value.toLocaleString("pt-BR", {
+    style: "currency",
+    currency: "BRL",
+  })
+}
+
+function getSaleClientId(sale: Sale): string | null {
+  return sale.client_id
 }
 
 export function getSaleColumns(
@@ -41,6 +64,7 @@ export function getSaleColumns(
   onToggleExpand: (id: string) => void,
   fetchClientOptions: (q: string) => Promise<string[]>,
   fetchProductOptions: (q: string) => Promise<string[]>,
+  onNavigateContact: (clientId: string) => void
 ): Column<Sale>[] {
   return [
     {
@@ -49,13 +73,22 @@ export function getSaleColumns(
       minWidth: "30px",
       render: (sale) => {
         const isExpanded = expandedRowIds.has(sale.id)
+
         return (
           <div
             onClick={(e) => e.stopPropagation()}
-            className={isExpanded ? "inline-flex rotate-90 transition-transform duration-200" : "inline-flex transition-transform duration-200"}
+            className={
+              isExpanded
+                ? "inline-flex rotate-90 transition-transform duration-200"
+                : "inline-flex transition-transform duration-200"
+            }
           >
             <OpenCircleButton
-              title={isExpanded ? "Fechar histórico do pedido" : "Abrir histórico do pedido"}
+              title={
+                isExpanded
+                  ? "Fechar histórico do pedido"
+                  : "Abrir histórico do pedido"
+              }
               onClick={() => onToggleExpand(sale.id)}
             />
           </div>
@@ -67,7 +100,7 @@ export function getSaleColumns(
       header: "ID do Pedido",
       minWidth: "100px",
       copyId: (c) => c.id,
-      render: (c) => <CellText value={c.id} truncate maxWidth="90px" />
+      render: (c) => <CellText value={c.id} truncate maxWidth="90px" />,
     },
     {
       key: "client",
@@ -81,7 +114,27 @@ export function getSaleColumns(
         fetchOptions: fetchClientOptions,
         filterFn: (c, value) => c.client === value,
       },
-      render: (c) => <CellText value={c.client} truncate maxWidth="200px" />,
+      render: (c) => {
+        const clientId = getSaleClientId(c)
+
+        if (!clientId) {
+          return <CellText value={c.client} truncate maxWidth="200px" />
+        }
+
+        return (
+          <button
+            type="button"
+            className="block max-w-[200px] truncate rounded-lg px-2 py-0.5 text-[13px] font-medium text-gray-900 transition-colors hover:bg-[#CFA7FF]"
+            title={clientId}
+            onClick={(event) => {
+              event.stopPropagation()
+              onNavigateContact(clientId)
+            }}
+          >
+            {c.client}
+          </button>
+        )
+      },
     },
     {
       key: "product",
@@ -107,9 +160,19 @@ export function getSaleColumns(
         options: ALL_CATEGORIES,
         filterFn: (c, value) => c.categoria === value,
       },
-      render: (c) => c.categoria
-        ? <CellTag label={c.categoria} colorClasses={CATEGORY_COLORS[c.categoria as ProductCategory] ?? "bg-gray-100 text-gray-600"} variant="badge" />
-        : <CellText value="—" variant="muted" />,
+      render: (c) =>
+        c.categoria ? (
+          <CellTag
+            label={c.categoria}
+            colorClasses={
+              CATEGORY_COLORS[c.categoria as ProductCategory] ??
+              "bg-gray-100 text-gray-600"
+            }
+            variant="badge"
+          />
+        ) : (
+          <CellText value="—" variant="muted" />
+        ),
     },
     {
       key: "amount",
@@ -138,17 +201,22 @@ export function getSaleColumns(
         label: "Data do pedido",
         filterFn: (c: Sale, from: string | null, to: string | null) => {
           if (!c.date) return true
+
           const [d, m, y] = c.date.split("/")
           const iso = `${y}-${m}-${d}`
+
           if (from && iso < from) return false
-          if (to   && iso > to)   return false
+          if (to && iso > to) return false
+
           return true
         },
       },
       render: (c) =>
-        c.date
-          ? <CellText value={c.date} variant="primary" />
-          : <CellText value="—" variant="muted" />,
+        c.date ? (
+          <CellText value={c.date} variant="primary" />
+        ) : (
+          <CellText value="—" variant="muted" />
+        ),
     },
     {
       key: "status",
