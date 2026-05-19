@@ -1,11 +1,13 @@
 from calendar import monthrange
-from datetime import date, datetime
+from datetime import date, datetime, timezone, timedelta
+
+_BRT = timezone(timedelta(hours=-3))
 
 from fastapi import Depends
 from sqlalchemy import desc, func
 from sqlalchemy.orm import Session
 
-from app.models.contactModel import GoldCliente360
+from app.models.contactModel import GoldCliente360, ContactActivity
 from app.models.saleModel import GoldPedidoDetalhado
 from app.models.ticketModel import GoldTicket360
 from app.schemas.contactDetailSchemas import (
@@ -288,6 +290,7 @@ class ContactDetailService:
         self,
         contact_id: str,
         payload: ContactDetailPatchIn,
+        user_name: str = "Sistema",
     ) -> ContactDetailOut | None:
         gold = (
             self.db.query(GoldCliente360)
@@ -304,31 +307,54 @@ class ContactDetailService:
             update_data = payload.dict(exclude_unset=True)
 
         field_mapping = {
-            "name": "nome_completo",
-            "email": "email",
-            "phone": "telefone",
-            "gender": "genero",
-            "birthDate": "data_nascimento",
-            "age": "idade",
-            "createdAt": "data_cadastro",
-            "city": "cidade",
-            "state": "estado",
-            "region": "regiao",
-            "country": "pais",
-            "origin": "origem",
-            "clientStatus": "segmento_cliente",
+            "name": ("nome_completo", "Nome"),
+            "email": ("email", "Email"),
+            "phone": ("telefone", "Telefone"),
+            "gender": ("genero", "Gênero"),
+            "birthDate": ("data_nascimento", "Data de nascimento"),
+            "age": ("idade", "Idade"),
+            "createdAt": ("data_cadastro", "Data de cadastro"),
+            "city": ("cidade", "Cidade"),
+            "state": ("estado", "Estado"),
+            "region": ("regiao", "Região"),
+            "country": ("pais", "País"),
+            "origin": ("origem", "Origem"),
+            "clientStatus": ("segmento_cliente", "Status"),
         }
 
-        for field_name, value in update_data.items():
-            model_field = field_mapping.get(field_name)
+        now = datetime.now(_BRT).replace(tzinfo=None)
+        activities: list[ContactActivity] = []
 
-            if not model_field:
+        for field_name, value in update_data.items():
+            mapping = field_mapping.get(field_name)
+
+            if not mapping:
                 continue
+
+            model_field, display_label = mapping
 
             if field_name in {"birthDate", "createdAt"}:
                 value = _display_date_to_iso(value)
 
+            old_val = getattr(gold, model_field)
+            old_str = str(old_val) if old_val is not None else "—"
+            new_str = str(value) if value is not None else "—"
+
+            if old_str != new_str:
+                activities.append(ContactActivity(
+                    id_cliente=contact_id,
+                    user_name=user_name,
+                    field_name=display_label,
+                    old_value=old_str,
+                    new_value=new_str,
+                    change_method="Edição direta",
+                    changed_at=now,
+                ))
+
             setattr(gold, model_field, value)
+
+        for act in activities:
+            self.db.add(act)
 
         self.db.commit()
         self.db.refresh(gold)

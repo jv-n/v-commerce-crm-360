@@ -23,6 +23,7 @@ import type { ContactActivity } from "@/lib/api/contacts"
 import { CustomScrollArea } from "@/components/atoms/CustomScrollArea"
 import { ClientStatusBadge } from "@/components/molecules/ContactsTable/ClientStatusBadge"
 import { ContactEditModal } from "./ContactEditModal"
+import { useAuth } from "@/contexts/auth/useAuth"
 
 import type { ClientStatusType } from "@/types/contact"
 import type {
@@ -800,13 +801,16 @@ function ContactInfoCard({
   metrics,
   onDetailsChange,
   onDeleteContact,
+  onActivitiesRefresh,
 }: {
   details: ContactDetails
   metrics: ContactMetrics | null
   onDetailsChange: (details: ContactDetails) => void
   onDeleteContact: () => Promise<void> | void
+  onActivitiesRefresh?: () => void
 }) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
+  const { user } = useAuth()
 
   const npsLabel = metrics?.categoriaNpsRecente
 
@@ -931,10 +935,11 @@ function ContactInfoCard({
               country: updatedDetails.country,
               origin: updatedDetails.origin,
               clientStatus: updatedDetails.clientStatus,
-            })
+            }, user?.name ?? "Sistema")
 
             onDetailsChange(savedDetails)
             setIsEditModalOpen(false)
+            onActivitiesRefresh?.()
           }}
           onDelete={async () => {
             await onDeleteContact()
@@ -1616,6 +1621,11 @@ export default function ContactDetail() {
               onDeleteContact={async () => {
                 await deleteContactDetails(details.id)
                 navigate("/contacts")
+              }}
+              onActivitiesRefresh={() => {
+                if (id) {
+                  fetchContactActivities(id).then(setActivities).catch(() => {})
+                }
               }}
             />
           </div>

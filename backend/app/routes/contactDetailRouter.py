@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, Header, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from app.schemas.contactDetailSchemas import (
@@ -35,10 +35,12 @@ def patch_contact_details(
     contact_id: str,
     payload: ContactDetailPatchIn,
     db: Session = Depends(get_db),
+    x_user_name: str = Header(default="Sistema", alias="X-User-Name"),
 ):
     result = ContactDetailService(db).patch_contact_details(
         contact_id=contact_id,
         payload=payload,
+        user_name=x_user_name,
     )
 
     if not result:

@@ -102,12 +102,14 @@ export async function fetchContactTickets(
 
 export async function patchContactDetails(
   contactId: string,
-  payload: ContactDetailsPatch
+  payload: ContactDetailsPatch,
+  userName = "Sistema"
 ): Promise<ContactDetails> {
   const response = await fetch(`/api/contact-details/${contactId}/details`, {
     method: "PATCH",
     headers: {
       "Content-Type": "application/json",
+      "X-User-Name": userName,
     },
     body: JSON.stringify(payload),
   })
