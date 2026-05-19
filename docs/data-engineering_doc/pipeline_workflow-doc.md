@@ -2,7 +2,7 @@
 
 **Visualização do Workflow:**
 
-![Orquestração](https://imgur.com/a/bhQ4zUW)
+![Orquestração](orquestracao.png)
 
 **Arquivo de configuração do Job:**
 
