@@ -1,4 +1,3 @@
-import CloseIcon from "@mui/icons-material/Close"
 import { MdKeyboardArrowDown, MdKeyboardArrowUp } from "react-icons/md"
 import {
     DropdownMenu,
@@ -59,7 +58,7 @@ function CategorySubMenu({
 
     return (
         <DropdownMenuSub>
-            <DropdownMenuSubTrigger>Por categoria</DropdownMenuSubTrigger>
+            <DropdownMenuSubTrigger className="focus:bg-purple-100 focus:text-gray-900">Por categoria</DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="w-48">
                 <DropdownMenuLabel>Categorias</DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -68,7 +67,10 @@ function CategorySubMenu({
                     {filtered.map(cat => (
                         <DropdownMenuItem
                             key={cat}
-                            className={selected === cat ? "font-semibold bg-[#EDE5F2]" : ""}
+                            className={cn(
+                                "focus:bg-purple-100 focus:text-gray-900",
+                                selected === cat && "bg-[#EACAFF] font-medium focus:bg-[#EACAFF]"
+                            )}
                             onSelect={() => onSelect(cat)}
                         >
                             {cat}
@@ -110,7 +112,7 @@ function ProductSubMenu({
 
     return (
         <DropdownMenuSub>
-            <DropdownMenuSubTrigger>Por produto</DropdownMenuSubTrigger>
+            <DropdownMenuSubTrigger className="focus:bg-purple-100 focus:text-gray-900">Por produto</DropdownMenuSubTrigger>
             <DropdownMenuSubContent className="w-56">
                 <DropdownMenuLabel>Produtos</DropdownMenuLabel>
                 <DropdownMenuSeparator />
@@ -119,7 +121,10 @@ function ProductSubMenu({
                     {results.map(p => (
                         <DropdownMenuItem
                             key={p.id}
-                            className={selected?.id === p.id ? "font-semibold bg-[#EDE5F2]" : ""}
+                            className={cn(
+                                "focus:bg-purple-100 focus:text-gray-900",
+                                selected?.id === p.id && "bg-[#EACAFF] font-medium focus:bg-[#EACAFF]"
+                            )}
                             onSelect={() => onSelect(p)}
                         >
                             {p.name}
@@ -187,24 +192,19 @@ export function FilterSelectType({ onChange }: FilterSelectTypeProps) {
     return (
         <DropdownMenu open={open} onOpenChange={setOpen}>
             <DropdownMenuTrigger asChild>
-                <button className={cn(
-                    "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl border transition-colors",
-                    isActive
-                        ? "bg-purple-100 border-purple-300 text-gray-900 font-medium"
-                        : "border-transparent text-gray-900 hover:bg-purple-100 hover:border-purple-300"
-                )}>
+                <button className="flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl border border-transparent text-gray-900 hover:bg-purple-100 hover:border-purple-300 transition-colors">
                     {label}
-                    {isActive
-                        ? <CloseIcon sx={{ fontSize: 13 }} onClick={clearToDefault} />
-                        : open ? <MdKeyboardArrowUp size={14} /> : <MdKeyboardArrowDown size={14} />
-                    }
+                    {open ? <MdKeyboardArrowUp size={14} /> : <MdKeyboardArrowDown size={14} />}
                 </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
                 <DropdownMenuGroup>
                     <DropdownMenuLabel>Granularidade</DropdownMenuLabel>
                     <DropdownMenuItem
-                        className={granularity === "ALL" ? "font-semibold bg-[#EDE5F2]" : ""}
+                        className={cn(
+                            "focus:bg-purple-100 focus:text-gray-900",
+                            granularity === "ALL" && "bg-[#EACAFF] font-medium focus:bg-[#EACAFF]"
+                        )}
                         onSelect={handleSelectAll}
                     >
                         Total

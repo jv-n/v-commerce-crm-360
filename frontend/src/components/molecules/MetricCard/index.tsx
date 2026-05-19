@@ -1,10 +1,5 @@
 import { TrendBadge } from "@/components/atoms/TrendBadge"
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/atoms/tooltip"
+import { CardInfoTooltip } from "@/components/atoms/CardInfoTooltip"
 import { cn } from "@/lib/utils"
 import type { ReactNode } from "react"
 
@@ -49,13 +44,18 @@ export function MetricCard({
       )}
     >
       {/* Header */}
-      <div className="flex items-center gap-1.5 text-[#A195A9] font-bold text-sm">
-        <span className="[&_svg]:size-4">{icon}</span>
-        {title}
-        {isMock && (
-          <span className="ml-1 rounded bg-muted px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
-            Em breve
-          </span>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5 text-[#A195A9] font-bold text-sm">
+          <span className="[&_svg]:size-4">{icon}</span>
+          {title}
+          {isMock && (
+            <span className="ml-1 rounded bg-muted px-1 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Em breve
+            </span>
+          )}
+        </div>
+        {!isLoading && (
+          <CardInfoTooltip text={`${comparisonLabel}: ${comparisonValue}`} />
         )}
       </div>
 
@@ -64,24 +64,11 @@ export function MetricCard({
         {isLoading ? (
           <div className="h-7 w-24 animate-pulse rounded bg-muted" />
         ) : (
-          <span className="text-2xl font-bold text-secondary-foreground leading-none min-w-0 truncate">
+          <span className="text-2xl font-bold text-gray-900 leading-none min-w-0 truncate">
             {currentValue}
           </span>
         )}
-        {!isLoading && (
-          <TooltipProvider delayDuration={300}>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span className="cursor-default">
-                  <TrendBadge value={trendPercent} />
-                </span>
-              </TooltipTrigger>
-              <TooltipContent side="top">
-                {comparisonLabel}: {comparisonValue}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
-        )}
+        {!isLoading && <TrendBadge value={trendPercent} />}
       </div>
 
       {/* Divider */}
@@ -89,7 +76,7 @@ export function MetricCard({
 
       {/* YoY comparison */}
       {(yoyLabel || isLoading) && (
-        <div className="flex items-center gap-1.5 text-xs text-muted-foreground min-w-0">
+        <div className="flex items-center gap-1.5 text-xs text-gray-900 min-w-0">
           <span className="size-1.5 rounded-full bg-muted-foreground/40 shrink-0" />
           {isLoading ? (
             <div className="h-3 w-32 animate-pulse rounded bg-muted" />

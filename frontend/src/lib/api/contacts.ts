@@ -16,8 +16,9 @@ interface ContactsParams {
   purchasesMax?: number | null
   createdFrom?: string
   createdTo?:   string
-  engagement?: string
+  engagements?: string[]
   clientStatuses?: string[]
+  search_field?: string
   sortBy?: string | null
   sortDir?: "asc" | "desc"
   // advanced filters — compras / financeiro
@@ -185,11 +186,11 @@ export async function fetchContacts(params: ContactsParams): Promise<ContactsPag
     pageSize: String(params.pageSize),
     tab:      params.tab,
     ...(params.search                    ? { search:           params.search                    } : {}),
+    ...(params.search_field && params.search_field !== "name" ? { search_field: params.search_field } : {}),
     ...(params.purchasesMin != null      ? { purchases_min:    String(params.purchasesMin)      } : {}),
     ...(params.purchasesMax != null      ? { purchases_max:    String(params.purchasesMax)      } : {}),
     ...(params.createdFrom               ? { created_from:     params.createdFrom               } : {}),
     ...(params.createdTo                 ? { created_to:       params.createdTo                 } : {}),
-    ...(params.engagement                ? { engagement: params.engagement } : {}),
     ...(params.sortBy                    ? { sort_by:    params.sortBy    } : {}),
     ...(params.sortBy && params.sortDir  ? { sort_dir:   params.sortDir   } : {}),
     ...(params.receitaMin != null            ? { receita_min:          String(params.receitaMin)       } : {}),
@@ -218,6 +219,7 @@ export async function fetchContacts(params: ContactsParams): Promise<ContactsPag
     ...(params.npsRecenteMax != null         ? { nps_recente_max:      String(params.npsRecenteMax)    } : {}),
   })
 
+  params.engagements?.forEach(e  => query.append("engagement",    e))
   params.clientStatuses?.forEach(s => query.append("client_status", s))
   params.regioes?.forEach(r   => query.append("regioes",    r))
   params.origens?.forEach(o   => query.append("origens",    o))
@@ -252,7 +254,6 @@ export async function exportContactsCSV(params: Omit<ContactsParams, "page" | "p
     ...(params.purchasesMax != null      ? { purchases_max:         String(params.purchasesMax)      } : {}),
     ...(params.createdFrom               ? { created_from:           params.createdFrom               } : {}),
     ...(params.createdTo                 ? { created_to:             params.createdTo                 } : {}),
-    ...(params.engagement                ? { engagement:            params.engagement                } : {}),
     ...(params.receitaMin != null        ? { receita_min:           String(params.receitaMin)        } : {}),
     ...(params.receitaMax != null        ? { receita_max:           String(params.receitaMax)        } : {}),
     ...(params.ticketMedioMin != null    ? { ticket_medio_min:      String(params.ticketMedioMin)    } : {}),
@@ -278,6 +279,7 @@ export async function exportContactsCSV(params: Omit<ContactsParams, "page" | "p
     ...(params.npsRecenteMin != null     ? { nps_recente_min:       String(params.npsRecenteMin)     } : {}),
     ...(params.npsRecenteMax != null     ? { nps_recente_max:       String(params.npsRecenteMax)     } : {}),
   })
+  params.engagements?.forEach(e              => query.append("engagement",              e))
   params.clientStatuses?.forEach(s          => query.append("client_status",           s))
   params.regioes?.forEach(r                 => query.append("regioes",                 r))
   params.origens?.forEach(o                 => query.append("origens",                 o))

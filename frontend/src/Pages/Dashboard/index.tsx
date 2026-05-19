@@ -90,17 +90,17 @@ export default function Dashboard() {
       yoyPercent:      metrics?.nps.yoy_pct ?? 0,
       isLoading,
     },
-    // ---- Leads Convertidos ----
+    // ---- Vendas ----
     {
-      title: "Leads Convertidos",
-      icon:  <PersonAddAltOutlinedIcon />,
-      currentValue:    isLoading || !metrics?.leads_convertidos ? "—" : fmtCount(metrics.leads_convertidos.value),
-      trendPercent:    metrics?.leads_convertidos?.trend_pct ?? 0,
+      title: "Vendas",
+      icon:  <ShoppingCartOutlinedIcon />,
+      currentValue:    isLoading ? "—" : fmtBRL(metrics!.vendas.value),
+      trendPercent:    metrics?.vendas.trend_pct ?? 0,
       comparisonLabel: "Período anterior",
-      comparisonValue: isLoading || !metrics?.leads_convertidos ? "—" : fmtCount(metrics.leads_convertidos.prev_value),
+      comparisonValue: isLoading ? "—" : fmtBRL(metrics!.vendas.prev_value),
       yoyLabel,
-      yoyValue:        isLoading || !metrics?.leads_convertidos ? "—" : fmtCount(metrics.leads_convertidos.yoy_value),
-      yoyPercent:      metrics?.leads_convertidos?.yoy_pct ?? 0,
+      yoyValue:        isLoading ? "—" : fmtBRL(metrics!.vendas.yoy_value),
+      yoyPercent:      metrics?.vendas.yoy_pct ?? 0,
       isLoading,
     },
     // ---- Sessões ----
@@ -129,6 +129,19 @@ export default function Dashboard() {
       yoyPercent:      metrics?.clientes.yoy_pct ?? 0,
       isLoading,
     },
+    // ---- Leads Convertidos ----
+    {
+      title: "Leads Convertidos",
+      icon:  <PersonAddAltOutlinedIcon />,
+      currentValue:    isLoading || !metrics?.leads_convertidos ? "—" : fmtCount(metrics.leads_convertidos.value),
+      trendPercent:    metrics?.leads_convertidos?.trend_pct ?? 0,
+      comparisonLabel: "Período anterior",
+      comparisonValue: isLoading || !metrics?.leads_convertidos ? "—" : fmtCount(metrics.leads_convertidos.prev_value),
+      yoyLabel,
+      yoyValue:        isLoading || !metrics?.leads_convertidos ? "—" : fmtCount(metrics.leads_convertidos.yoy_value),
+      yoyPercent:      metrics?.leads_convertidos?.yoy_pct ?? 0,
+      isLoading,
+    },
     // ---- Tickets Solucionados ----
     {
       title: "Tickets Solucionados",
@@ -140,19 +153,6 @@ export default function Dashboard() {
       yoyLabel,
       yoyValue:        isLoading ? "—" : fmtCount(metrics!.tickets.yoy_value),
       yoyPercent:      metrics?.tickets.yoy_pct ?? 0,
-      isLoading,
-    },
-    // ---- Vendas ----
-    {
-      title: "Vendas",
-      icon:  <ShoppingCartOutlinedIcon />,
-      currentValue:    isLoading ? "—" : fmtBRL(metrics!.vendas.value),
-      trendPercent:    metrics?.vendas.trend_pct ?? 0,
-      comparisonLabel: "Período anterior",
-      comparisonValue: isLoading ? "—" : fmtBRL(metrics!.vendas.prev_value),
-      yoyLabel,
-      yoyValue:        isLoading ? "—" : fmtBRL(metrics!.vendas.yoy_value),
-      yoyPercent:      metrics?.vendas.yoy_pct ?? 0,
       isLoading,
     },
   ]

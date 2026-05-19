@@ -11,7 +11,6 @@ import { useContactExport } from "./useContactExport"
 import { TABS, DEFAULT_PAGE_SIZE, EMPTY_FILTERS } from "./types"
 import type { ServerFilters } from "./types"
 import type { ContactAdvancedFilters } from "./AdvancedFiltersDrawer"
-import type { Contact } from "@/types/contact"
 import type { ActiveFilters } from "@/components/organisms/DataTable/types"
 import { cn } from "@/lib/utils"
 import TuneIcon from "@mui/icons-material/Tune"
@@ -48,7 +47,6 @@ export const ContactsTable = forwardRef<ContactsTableHandle, { onCanUndoChange?:
   const [sortDir,         setSortDir]         = useState<"asc" | "desc">("asc")
   const [refetchKey,      setRefetchKey]      = useState(0)
   const [formOpen,        setFormOpen]        = useState(false)
-  const [editingContact,  setEditingContact]  = useState<Contact | null>(null)
   const [nameSearch,      setNameSearch]      = useState("")
   const [filterHistory,   setFilterHistory]   = useState<FilterSnapshot[]>([])
 
@@ -113,7 +111,7 @@ export const ContactsTable = forwardRef<ContactsTableHandle, { onCanUndoChange?:
       setSortBy(null)
       setSortDir("asc")
     },
-    openAdd:    () => { setEditingContact(null); setFormOpen(true) },
+    openAdd:    () => setFormOpen(true),
     openExport: () => setExportOpen(true),
   }), [pushHistory])
 
@@ -128,7 +126,7 @@ export const ContactsTable = forwardRef<ContactsTableHandle, { onCanUndoChange?:
       purchasesMax:   pf?.type === "number-range"  ? pf.max               : null,
       createdFrom:    cf?.type === "date-range"    ? (cf.from ?? "")      : "",
       createdTo:      cf?.type === "date-range"    ? (cf.to   ?? "")      : "",
-      engagement:     ef?.type === "select"        && ef.value !== "" ? ef.value : "",
+      engagements:    ef?.type === "multi-select"   ? ef.values            : [],
       clientStatuses: sf?.type === "multi-select"  ? sf.values            : [],
     })
     setPage(1)
@@ -142,8 +140,8 @@ export const ContactsTable = forwardRef<ContactsTableHandle, { onCanUndoChange?:
       <button
         onClick={() => setDrawerOpen(true)}
         className={cn(
-          "flex items-center gap-1.5 text-sm transition-colors px-2 py-1 rounded-full",
-          advCount > 0 ? "text-purple-700 font-medium hover:bg-[#F7EBFF]" : "text-gray-900 hover:bg-[#F7EBFF]"
+          "flex items-center gap-1.5 text-sm transition-colors px-2 py-1 rounded-lg",
+          advCount > 0 ? "text-purple-700 font-medium hover:bg-[#CFA7FF]" : "text-gray-900 hover:bg-[#CFA7FF]"
         )}
       >
         <TuneIcon sx={{ fontSize: 15 }} />
@@ -193,14 +191,14 @@ export const ContactsTable = forwardRef<ContactsTableHandle, { onCanUndoChange?:
         onTabChange={(tabId) => { pushHistory(); setActiveTab(tabId); setPage(1) }}
         onFiltersChange={handleFiltersChange}
         onSearchChange={(v) => { setNameSearch(v); setPage(1) }}
-        searchPlaceholder="Pesquisar por nome..."
+        searchPlaceholder="Pesquisar por nome ou ID..."
         onSortChange={(sort) => { setSortBy(sort?.key ?? null); setSortDir(sort?.direction ?? "asc"); setPage(1) }}
         onSelectionChange={handleSelectionChange}
         headerClassName="bg-[#EACAFF] [&_th:not(:first-child)_button_svg]:!text-[#9F83B2] [&_th:not(:first-child)_button:hover_svg]:!text-[#6F2B90]"
         filterBarExtra={filterBarExtra}
         rowsPerPageOptions={[10, 25, 50]}
         expandedRowIds={expandedRowId ? new Set([expandedRowId]) : undefined}
-        renderExpandedRow={(c) => <ContactExpandedRow contact={c} onEdit={() => { setEditingContact(c); setFormOpen(true) }} />}
+        renderExpandedRow={(c) => <ContactExpandedRow contact={c} />}
         onRowClick={(c) => setExpandedRowId(prev => prev === c.id ? null : c.id)}
         serverPagination={{
           total, page, pageSize,
@@ -212,7 +210,7 @@ export const ContactsTable = forwardRef<ContactsTableHandle, { onCanUndoChange?:
       <ContactFormSheet
         open={formOpen}
         onClose={() => setFormOpen(false)}
-        contact={editingContact}
+        contact={null}
         onSuccess={() => setRefetchKey(k => k + 1)}
       />
     </>

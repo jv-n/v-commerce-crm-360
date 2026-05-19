@@ -20,7 +20,7 @@ export function CopyIdButton({ id }: CopyIdButtonProps) {
     <button
       onClick={handleCopy}
       title={`Copiar ID: ${id}`}
-      className="opacity-0 group-hover/row:opacity-100 transition-opacity flex items-center justify-center size-5 shrink-0 rounded text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+      className="opacity-0 group-hover/row:opacity-100 transition-opacity flex items-center justify-center size-5 shrink-0 rounded text-gray-400 hover:text-gray-700 hover:bg-[#CFA7FF]"
     >
       {copied
         ? <CheckIcon sx={{ fontSize: 13, color: "#16a34a" }} />

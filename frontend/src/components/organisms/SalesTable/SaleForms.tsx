@@ -76,7 +76,7 @@ function SearchCombobox<T>({
             <li
               key={i}
               onMouseDown={() => { onSelect(item); setOpen(false) }}
-              className="px-3 py-2 cursor-pointer hover:bg-[#F7EBFF] truncate"
+              className="px-3 py-2 cursor-pointer hover:bg-[#CFA7FF] truncate"
             >
               {getLabel(item)}
             </li>

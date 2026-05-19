@@ -314,8 +314,30 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
           onTabChange={handleTabChange}
           onFiltersChange={handleFiltersChange}
           onSearchChange={handleSearchChange}
-          onSortChange={handleSortChange}
-          searchPlaceholder="Buscar por ID do pedido..."
+          searchPlaceholder={
+            searchScope === "client"    ? "Buscar por cliente..."
+            : searchScope === "product" ? "Buscar por produto..."
+            : searchScope === "client_id" ? "ID do cliente..."
+            : "Buscar por cliente ou produto..."
+          }
+          searchPrefix={
+            <div className="relative flex items-center border-r border-gray-200 mr-0.5">
+              <select
+                value={searchScope}
+                onChange={e => { setSearchScope(e.target.value as typeof searchScope); setPage(1) }}
+                className={cn(
+                  "appearance-none text-xs bg-transparent pl-2 pr-5 py-0.5 rounded cursor-pointer outline-none transition-colors hover:bg-[#CFA7FF]",
+                  searchScope !== "all" ? "text-purple-700 font-medium" : "text-gray-700"
+                )}
+              >
+                <option value="all">Todos</option>
+                <option value="client">Cliente</option>
+                <option value="product">Produto</option>
+              </select>
+              <MdKeyboardArrowDown size={12} className="absolute right-0.5 pointer-events-none text-gray-500" />
+            </div>
+          }
+          initialSearchQuery={initSearch}
           headerClassName="bg-[#EACAFF] [&_th:not(:first-child)_button_svg]:!text-[#9F83B2] [&_th:not(:first-child)_button:hover_svg]:!text-[#6F2B90]"
           dividersClassName="divide-[#9F83B2]"
           expandedRowIds={expandedRowIds}

@@ -4,7 +4,6 @@ import { cn } from "@/lib/utils"
 import type { Contact } from "@/types/contact"
 import { fetchContactPedidos, type ContactPedido } from "@/lib/api/contacts"
 import AddIcon             from "@mui/icons-material/Add"
-import EditOutlinedIcon    from "@mui/icons-material/EditOutlined"
 import ShoppingCartOutlinedIcon from "@mui/icons-material/ShoppingCartOutlined"
 import MoreHorizIcon       from "@mui/icons-material/MoreHoriz"
 
@@ -18,7 +17,7 @@ type TimelineEntry =
   | { type: "more";     count: number }
   | { type: "created" }
 
-export function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEdit: () => void }) {
+export function ContactExpandedRow({ contact }: { contact: Contact }) {
   const navigate = useNavigate()
   const [pedidos, setPedidos] = useState<ContactPedido[]>([])
 
@@ -40,6 +39,7 @@ export function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEd
   return (
     <div className="bg-purple-50/40 px-8 py-5 flex gap-8 border-t border-purple-100">
       <div className="flex-1 flex flex-col">
+        <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide mb-3">Últimas compras</p>
         {timeline.map((entry, i) => (
           <div key={i} className="flex gap-3">
             {/* Indicador + linha vertical */}
@@ -81,7 +81,7 @@ export function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEd
               {entry.type === "more" && (
                 <button
                   onClick={() => navigate("/sales", { state: { search: contact.id, searchField: "client_id" } })}
-                  className="text-sm text-purple-700 font-medium hover:bg-[#F7EBFF] rounded-full px-2 py-0.5 transition-colors text-left"
+                  className="text-sm text-purple-700 font-medium underline hover:bg-[#CFA7FF] rounded-lg px-2 py-0.5 transition-colors text-left"
                 >
                   e mais {entry.count} {entry.count === 1 ? "pedido anterior" : "pedidos anteriores"} →
                 </button>
@@ -99,15 +99,6 @@ export function ContactExpandedRow({ contact, onEdit }: { contact: Contact; onEd
         ))}
       </div>
 
-      <div className="flex flex-col gap-2 justify-start pt-0.5">
-        <button
-          onClick={onEdit}
-          className="flex items-center gap-1.5 text-xs font-medium text-purple-700 hover:text-purple-900 bg-white border border-purple-200 px-3 py-1.5 rounded-md shadow-sm hover:bg-purple-50 transition-colors"
-        >
-          <EditOutlinedIcon sx={{ fontSize: 13 }} />
-          Editar contato
-        </button>
-      </div>
     </div>
   )
 }

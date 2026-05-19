@@ -15,7 +15,8 @@ interface Props {
 }
 
 export function BrazilSvgMap({ stateValues, statePedidos, stateLabels, min, max, isLoading }: Props) {
-  const [tooltip, setTooltip] = useState<TooltipState | null>(null)
+  const [tooltip,       setTooltip]       = useState<TooltipState | null>(null)
+  const [hoveredSigla,  setHoveredSigla]  = useState<string | null>(null)
 
   return (
     <div className="relative flex-1 min-h-0">
@@ -23,7 +24,7 @@ export function BrazilSvgMap({ stateValues, statePedidos, stateLabels, min, max,
         viewBox="-25 -28 365 378"
         preserveAspectRatio="xMidYMid meet"
         className="w-full h-full"
-        onMouseLeave={() => setTooltip(null)}
+        onMouseLeave={() => { setTooltip(null); setHoveredSigla(null) }}
       >
         {Object.entries(BRAZIL_STATE_PATHS).map(([sigla, { d }]) => {
           const fill = isLoading ? COLOR_EMPTY : getStateColor(stateValues[sigla], min, max)
@@ -34,8 +35,9 @@ export function BrazilSvgMap({ stateValues, statePedidos, stateLabels, min, max,
               fill={fill}
               stroke="#ffffff"
               strokeWidth={0.5}
-              style={{ cursor: "pointer", transition: "opacity 0.15s" }}
-              onMouseEnter={(e) =>
+              style={{ cursor: "pointer" }}
+              onMouseEnter={(e) => {
+                setHoveredSigla(sigla)
                 setTooltip({
                   label:    stateLabels[sigla]  ?? sigla,
                   pedidos:  statePedidos[sigla] ?? 0,
@@ -43,14 +45,26 @@ export function BrazilSvgMap({ stateValues, statePedidos, stateLabels, min, max,
                   x: e.clientX,
                   y: e.clientY,
                 })
-              }
+              }}
               onMouseMove={(e) =>
                 setTooltip((prev) => prev ? { ...prev, x: e.clientX, y: e.clientY } : null)
               }
-              onMouseLeave={() => setTooltip(null)}
+              onMouseLeave={() => { setTooltip(null); setHoveredSigla(null) }}
             />
           )
         })}
+
+        {/* Hover outline rendered on top so it's never clipped by neighbour fills */}
+        {hoveredSigla && BRAZIL_STATE_PATHS[hoveredSigla] && (
+          <path
+            d={BRAZIL_STATE_PATHS[hoveredSigla].d}
+            fill="none"
+            stroke="#9F83B2"
+            strokeWidth={1.5}
+            strokeLinejoin="round"
+            style={{ pointerEvents: "none" }}
+          />
+        )}
       </svg>
 
       {tooltip && <MapTooltip tooltip={tooltip} />}
