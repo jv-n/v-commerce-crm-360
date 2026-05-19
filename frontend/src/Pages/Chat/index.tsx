@@ -23,6 +23,7 @@ import {
   type ConversationDetail,
 } from "@/lib/api/agent";
 import { MarkdownText } from "@/lib/renderMarkdown";
+import { useAuth } from "@/contexts/auth/useAuth";
 
 // ── Sub-componentes ───────────────────────────────────────────────────────────
 
@@ -133,6 +134,8 @@ export default function Chat() {
   const navigate = useNavigate();
   const location = useLocation();
   const routeState = (location.state ?? {}) as ChatRouteState;
+  const { user } = useAuth();
+  const userName = user?.name ?? "você";
 
   // ── Estado do chat ativo ──────────────────────────────────────────────────
   const [sessionId, setSessionId] = useState(() => routeState.sessionId ?? crypto.randomUUID());
@@ -461,7 +464,7 @@ export default function Chat() {
                       backgroundClip: "text",
                     }}
                   >
-                    Como posso te ajudar hoje?
+                    Olá {userName}, como posso te ajudar hoje?
                   </h2>
                 </div>
               )}
