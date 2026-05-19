@@ -31,8 +31,8 @@ export function FilterPill({
         className={cn(
           "flex items-center gap-1.5 text-sm px-3 py-1.5 rounded-xl border transition-colors",
           isActive
-            ? "bg-purple-100 border-purple-300 text-gray-900 font-medium"
-            : "border-transparent text-gray-900 hover:bg-purple-100 hover:border-purple-300"
+            ? "bg-[#EACAFF] text-black border border-[#B899CC] font-medium"
+            : "text-gray-900 hover:bg-[#F7EBFF]"
         )}
       >
         <span>{isActive ? `${label}: ${activeValue}` : label}</span>
