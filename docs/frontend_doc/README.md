@@ -14,6 +14,7 @@ Documentação das páginas e componentes do V-Commerce CRM 360, construído em 
 | [Contatos](./front_contato-doc.md) | Listagem e filtros da base de clientes |
 | [Contato Específico](./front_contato_especifico-doc.md) | Perfil 360 do cliente com pedidos, tickets e métricas |
 | [Catálogo de Produtos](./front_catalogo-doc.md) | Listagem, filtros e CRUD de produtos |
+| [Produto Específico](./front_produto-especifico.md) | Detalhe do produto com métricas, pedidos, tickets e atividades |
 | [Pedidos](./front_pedidos-doc.md) | Histórico de pedidos com filtros por status e período |
 | [Tickets de Suporte](./front_tickets-doc.md) | Visualização de tickets por cliente, tipo e status |
 | [Agente de IA](./front_aiagent-doc.md) | Interface de chat conversacional integrada ao CRM |
