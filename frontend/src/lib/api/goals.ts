@@ -1,4 +1,10 @@
 import type { Goal } from "@/types/home"
+import { getToken } from "@/lib/api/auth"
+
+function authHeaders(): HeadersInit {
+  const token = getToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 interface GoalRecord {
   id:           string
@@ -25,7 +31,7 @@ function toGoal(r: GoalRecord): Goal {
 }
 
 export async function fetchGoals(): Promise<Goal[]> {
-  const res = await fetch("/api/goals/")
+  const res = await fetch("/api/goals/", { headers: authHeaders() })
   if (!res.ok) throw new Error("Failed to fetch goals")
   const data: GoalRecord[] = await res.json()
   return data.map(toGoal)
@@ -42,7 +48,7 @@ export async function saveGoal(goal: Omit<Goal, "id" | "current">): Promise<Goal
   }
   const res = await fetch("/api/goals/", {
     method:  "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body:    JSON.stringify(body),
   })
   if (!res.ok) throw new Error("Failed to save goal")
@@ -55,7 +61,7 @@ export interface GoalsProgressResult {
 }
 
 export async function fetchGoalsProgress(): Promise<GoalsProgressResult> {
-  const res = await fetch("/api/goals/progress")
+  const res = await fetch("/api/goals/progress", { headers: authHeaders() })
   if (!res.ok) throw new Error("Failed to fetch goals progress")
   const data: Record<string, number | string> = await res.json()
   const referenceMonth = (data["_reference_month"] as string) ?? ""
@@ -67,12 +73,12 @@ export async function fetchGoalsProgress(): Promise<GoalsProgressResult> {
 }
 
 export async function fetchGoalProgress(id: string): Promise<{ current: number; referenceMonth: string }> {
-  const res = await fetch(`/api/goals/${id}/progress`)
+  const res = await fetch(`/api/goals/${id}/progress`, { headers: authHeaders() })
   if (!res.ok) throw new Error("Failed to fetch goal progress")
   const data: { current: number; reference_month: string } = await res.json()
   return { current: data.current, referenceMonth: data.reference_month }
 }
 
 export async function deleteGoal(id: string): Promise<void> {
-  await fetch(`/api/goals/${id}`, { method: "DELETE" })
+  await fetch(`/api/goals/${id}`, { method: "DELETE", headers: authHeaders() })
 }

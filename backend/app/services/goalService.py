@@ -93,34 +93,39 @@ class GoalService:
 
     # ── CRUD ──────────────────────────────────────────────────────────────────
 
-    def get_all(self) -> list[GoalOut]:
-        """Retorna metas sem calcular progresso — rápido."""
-        rows = self.db.query(GoalItem).all()
+    def get_all(self, user_id: str) -> list[GoalOut]:
+        """Retorna metas do usuário sem calcular progresso — rápido."""
+        rows = self.db.query(GoalItem).filter(GoalItem.user_id == user_id).all()
         return [self._to_out(r, 0, None) for r in rows]
 
-    def get_progress(self) -> dict:
-        """Calcula o progresso de todas as metas (queries pesadas).
+    def get_progress(self, user_id: str) -> dict:
+        """Calcula o progresso de todas as metas do usuário (queries pesadas).
         Retorna {id: current, "_reference_month": "YYYY-MM"}.
         """
-        rows = self.db.query(GoalItem).all()
+        rows = self.db.query(GoalItem).filter(GoalItem.user_id == user_id).all()
         if not rows:
             return {}
         currents, ref_month = self._compute_all_currents(rows)
         return {**currents, "_reference_month": ref_month}
 
-    def get_single_progress(self, goal_id: str) -> dict:
-        """Calcula o progresso de uma única meta.
+    def get_single_progress(self, goal_id: str, user_id: str) -> dict:
+        """Calcula o progresso de uma única meta do usuário.
         Retorna {"current": int, "reference_month": "YYYY-MM"}.
         """
-        row = self.db.query(GoalItem).filter(GoalItem.id == goal_id).first()
+        row = (
+            self.db.query(GoalItem)
+            .filter(GoalItem.id == goal_id, GoalItem.user_id == user_id)
+            .first()
+        )
         if not row:
             return {"current": 0, "reference_month": ""}
         currents, ref_month = self._compute_all_currents([row])
         return {"current": currents.get(goal_id, 0), "reference_month": ref_month}
 
-    def add(self, data: GoalCreate) -> GoalOut:
+    def add(self, data: GoalCreate, user_id: str) -> GoalOut:
         row = GoalItem(
             id=str(uuid.uuid4()),
+            user_id=user_id,
             kind=data.kind,
             label=data.label,
             target=data.target,
@@ -133,8 +138,12 @@ class GoalService:
         self.db.refresh(row)
         return self._to_out(row, 0, None)  # progresso é buscado separadamente pelo frontend
 
-    def remove(self, goal_id: str) -> bool:
-        row = self.db.query(GoalItem).filter(GoalItem.id == goal_id).first()
+    def remove(self, goal_id: str, user_id: str) -> bool:
+        row = (
+            self.db.query(GoalItem)
+            .filter(GoalItem.id == goal_id, GoalItem.user_id == user_id)
+            .first()
+        )
         if not row:
             return False
         self.db.delete(row)

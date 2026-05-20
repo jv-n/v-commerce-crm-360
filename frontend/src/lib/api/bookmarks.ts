@@ -1,4 +1,10 @@
 import type { Bookmark } from "@/types/home"
+import { getToken } from "@/lib/api/auth"
+
+function authHeaders(): HeadersInit {
+  const token = getToken()
+  return token ? { Authorization: `Bearer ${token}` } : {}
+}
 
 interface BookmarkRecord {
   id:          string
@@ -26,7 +32,7 @@ function toBookmark(r: BookmarkRecord): Bookmark {
 }
 
 export async function fetchBookmarks(): Promise<Bookmark[]> {
-  const res = await fetch("/api/bookmarks/")
+  const res = await fetch("/api/bookmarks/", { headers: authHeaders() })
   if (!res.ok) throw new Error("Failed to fetch bookmarks")
   const data: BookmarkRecord[] = await res.json()
   return data.map(toBookmark)
@@ -44,12 +50,12 @@ export async function saveBookmark(bookmark: Bookmark): Promise<void> {
   }
   const res = await fetch("/api/bookmarks/", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...authHeaders() },
     body: JSON.stringify(body),
   })
   if (!res.ok) throw new Error("Failed to save bookmark")
 }
 
 export async function deleteBookmark(entityId: string): Promise<void> {
-  await fetch(`/api/bookmarks/${entityId}`, { method: "DELETE" })
+  await fetch(`/api/bookmarks/${entityId}`, { method: "DELETE", headers: authHeaders() })
 }

@@ -3,31 +3,50 @@ from sqlalchemy.orm import Session
 from database.database import get_db
 from app.services.goalService import GoalService
 from app.schemas.goalSchemas import GoalCreate, GoalOut
+from app.core.dependencies import get_current_user
 
 router = APIRouter(prefix="/goals", tags=["goals"])
 
 
 @router.get("/", response_model=list[GoalOut])
-def get_goals(db: Session = Depends(get_db)):
-    return GoalService(db).get_all()
+def get_goals(
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    return GoalService(db).get_all(user["sub"])
 
 
 @router.get("/progress")
-def get_goals_progress(db: Session = Depends(get_db)):
-    return GoalService(db).get_progress()
+def get_goals_progress(
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    return GoalService(db).get_progress(user["sub"])
 
 
 @router.get("/{goal_id}/progress")
-def get_single_goal_progress(goal_id: str, db: Session = Depends(get_db)):
-    return GoalService(db).get_single_progress(goal_id)
+def get_single_goal_progress(
+    goal_id: str,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    return GoalService(db).get_single_progress(goal_id, user["sub"])
 
 
 @router.post("/", response_model=GoalOut)
-def add_goal(data: GoalCreate, db: Session = Depends(get_db)):
-    return GoalService(db).add(data)
+def add_goal(
+    data: GoalCreate,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    return GoalService(db).add(data, user["sub"])
 
 
 @router.delete("/{goal_id}")
-def remove_goal(goal_id: str, db: Session = Depends(get_db)):
-    GoalService(db).remove(goal_id)
+def remove_goal(
+    goal_id: str,
+    db: Session = Depends(get_db),
+    user: dict = Depends(get_current_user),
+):
+    GoalService(db).remove(goal_id, user["sub"])
     return {"ok": True}
