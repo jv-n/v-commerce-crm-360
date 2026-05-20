@@ -115,7 +115,7 @@ Desempenho individual dos agentes de suporte.
 - `nota_media_atendimento` REAL — nota média recebida
 
 #### `gold_satisfacao_nps`
-NPS e satisfação por mês e categoria de produto.
+NPS e satisfação por mês e categoria de produto (tabela pré-agregada — para NPS idêntico ao dashboard use `gold_cliente_360`).
 - `ano_mes` TEXT — período (YYYY-MM)
 - `categoria` TEXT — categoria do produto
 - `total_avaliacoes` INTEGER — total de avaliações
@@ -129,6 +129,96 @@ NPS e satisfação por mês e categoria de produto.
 - `pct_detratores` REAL — % detratores
 - `nps_score` REAL — NPS score = %promotores - %detratores
 - `pct_recomenda` REAL — % de clientes que recomendam
+
+#### `gold_pedidos_detalhado`
+Pedidos individuais enriquecidos — **fonte primária para receita, pedidos e análises temporais idênticas ao dashboard**.
+- `id_pedido` TEXT — identificador único do pedido [PK]
+- `id_cliente` TEXT — identificador do cliente
+- `nome_completo` TEXT — nome completo do cliente
+- `email` TEXT — e-mail do cliente
+- `telefone` TEXT — telefone do cliente
+- `id_produto` TEXT — identificador do produto
+- `nome_produto` TEXT — nome do produto
+- `categoria` TEXT — categoria do produto
+- `ativo` INTEGER — produto ativo? (1 = sim, 0 = não)
+- `data_pedido` TEXT — data do pedido (YYYY-MM-DD) — **use para filtros por período**
+- `ano_mes` TEXT — período no formato YYYY-MM
+- `metodo_pagamento` TEXT — método de pagamento usado
+- `status` TEXT — status do pedido: 'Aprovado', 'Processando', 'Recusado', 'Reembolsado'
+- `quantidade` REAL — quantidade de itens no pedido
+- `valor_pedido` REAL — valor total do pedido (R$)
+- `receita_bruta` REAL — receita bruta do pedido (R$)
+- `valor_reembolsado` REAL — valor reembolsado (R$), preenchido quando status='Reembolsado'
+
+---
+
+## COMO O DASHBOARD CALCULA PERÍODOS DE TEMPO — REGRA CRÍTICA
+
+O dashboard usa **janela rolante em dias** a partir da data de hoje, e NÃO meses calendário. Isso significa que "últimos 3 meses" não é "março + abril + maio" — é os últimos 90 dias corridos a partir de hoje.
+
+| O usuário diz          | Dias usados | Filtro SQL no SQLite                                      |
+|------------------------|-------------|-----------------------------------------------------------|
+| últimas 2 semanas      | 14 dias     | `data_pedido >= date('now','-14 days') AND data_pedido <= date('now')` |
+| último mês             | 30 dias     | `data_pedido >= date('now','-30 days') AND data_pedido <= date('now')` |
+| últimos 3 meses        | 90 dias     | `data_pedido >= date('now','-90 days') AND data_pedido <= date('now')` |
+| semestre               | 180 dias    | `data_pedido >= date('now','-180 days') AND data_pedido <= date('now')` |
+| último ano             | 365 dias    | `data_pedido >= date('now','-365 days') AND data_pedido <= date('now')` |
+
+> ⚠️ **Exemplo prático**: se hoje é 20/05/2026, "últimos 3 meses" começa em 19/02/2026 — NÃO em 01/03/2026.
+> Nunca use `ano_mes = '2026-03'` ou blocos de meses calendário quando o usuário pedir "últimos N meses/semanas". Use sempre `date('now', '-N days')`.
+
+---
+
+## FÓRMULAS DO DASHBOARD — USE ESTAS PARA RESULTADOS CONSISTENTES
+
+Quando o usuário perguntar sobre métricas que aparecem no dashboard, **use sempre as fórmulas abaixo** para garantir que os números batam com o que é exibido na tela.
+
+### Receita líquida (vendas)
+```sql
+SELECT
+    SUM(CASE WHEN status = 'Aprovado' THEN receita_bruta ELSE 0 END)
+  - SUM(CASE WHEN status = 'Reembolsado' THEN valor_reembolsado ELSE 0 END)
+FROM gold_pedidos_detalhado
+WHERE data_pedido >= date('now', '-90 days') AND data_pedido <= date('now')
+-- Ajuste o número de dias conforme a tabela de períodos acima
+```
+> ⚠️ Não use `gold_kpis_vendas_mensal` nem `gold_vendas_mensais` para responder perguntas de receita — elas são pré-agregadas com lógica diferente e divergem do dashboard.
+
+### Total de pedidos
+```sql
+SELECT COUNT(id_pedido)
+FROM gold_pedidos_detalhado
+WHERE data_pedido >= date('now', '-90 days') AND data_pedido <= date('now')
+```
+
+### Clientes ativos no período
+```sql
+SELECT COUNT(DISTINCT id_cliente)
+FROM gold_pedidos_detalhado
+WHERE data_pedido >= date('now', '-90 days') AND data_pedido <= date('now')
+```
+
+### NPS (idêntico ao dashboard)
+```sql
+SELECT
+    categoria_nps_recente,
+    COUNT(id_cliente) AS cnt
+FROM gold_cliente_360
+WHERE data_ultimo_pedido >= date('now', '-90 days')
+  AND data_ultimo_pedido <= date('now')
+  AND categoria_nps_recente != 'Não avaliou'
+GROUP BY categoria_nps_recente
+-- NPS score = (promotores / total − detratores / total) × 100
+```
+> ⚠️ Não use `gold_satisfacao_nps.nps_score` para NPS do dashboard — o campo `categoria_nps_recente` de `gold_cliente_360` é a fonte correta.
+
+### Novos clientes (leads convertidos)
+```sql
+SELECT COUNT(id_cliente)
+FROM gold_cliente_360
+WHERE data_primeiro_pedido >= date('now', '-90 days')
+  AND data_primeiro_pedido <= date('now')
+```
 
 ---
 

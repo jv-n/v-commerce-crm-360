@@ -12,17 +12,20 @@ DEFAULT_DB_PATH = Path(__file__).resolve().parents[1] / "backend" / "database" /
 
 # Descrições das tabelas usadas no list_tables
 TABLE_DESCRIPTIONS: dict[str, str] = {
-    "gold_cliente_360": "Visão 360 de cada cliente: pedidos, receita, tickets, NPS e segmento.",
-    "gold_kpis_vendas_mensal": "KPIs de vendas agregados por mês: receita, pedidos, ticket médio.",
-    "gold_vendas_por_dimensao": "Vendas detalhadas por mês, região e categoria de produto.",
+    # --- Fontes primárias (idênticas ao dashboard) ---
+    "gold_pedidos_detalhado": "[FONTE PRIMÁRIA] Pedidos individuais com status, receita_bruta e valor_reembolsado. Use para receita, contagem de pedidos e análises por período — mesma fonte do dashboard.",
+    "gold_cliente_360": "[FONTE PRIMÁRIA] Visão 360 de cada cliente: pedidos, receita, tickets, NPS (campo categoria_nps_recente) e segmento. Use para NPS e leads convertidos — mesma fonte do dashboard.",
+    # --- Tabelas de suporte e análise ---
     "gold_desempenho_produto": "Desempenho individual de cada produto: receita, avaliações, tickets.",
     "gold_analise_suporte_por_tipo": "Análise de tickets de suporte agrupados por tipo de problema.",
     "gold_analise_suporte_por_agente": "Desempenho dos agentes de suporte: tickets, resolução, nota.",
-    "gold_satisfacao_nps": "Satisfação e NPS por mês e categoria de produto.",
     "gold_analise_suporte_cliente": "Análise de suporte consolidada por cliente.",
-    "gold_pedidos_detalhado": "Pedidos enriquecidos com nome do cliente, produto e categoria.",
     "gold_pedidos_por_status": "Contagem e receita de pedidos agrupados por status.",
-    "gold_vendas_mensais": "Resumo de vendas agregado por mês.",
+    # --- Tabelas PRÉ-AGREGADAS (podem divergir do dashboard) ---
+    "gold_kpis_vendas_mensal": "[PRÉ-AGREGADO] KPIs mensais de vendas. ⚠️ Pode divergir do dashboard — prefira gold_pedidos_detalhado para métricas de receita.",
+    "gold_vendas_mensais": "[PRÉ-AGREGADO] Resumo mensal de vendas. ⚠️ Pode divergir do dashboard — prefira gold_pedidos_detalhado.",
+    "gold_vendas_por_dimensao": "[PRÉ-AGREGADO] Vendas por mês, região e categoria. Útil para análises cruzadas exploratórias.",
+    "gold_satisfacao_nps": "[PRÉ-AGREGADO] NPS e satisfação por mês e categoria. ⚠️ Para NPS idêntico ao dashboard, use gold_cliente_360 com campo categoria_nps_recente.",
 }
 
 
