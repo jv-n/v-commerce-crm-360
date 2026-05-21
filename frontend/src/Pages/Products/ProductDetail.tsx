@@ -73,6 +73,12 @@ const STATUS_COLORS: Record<string, string> = {
   Pendente:    "bg-gray-100 text-gray-600",
 }
 
+function getRatingColor(rating: number): string {
+  if (rating >= 7) return "bg-[#D2F9BE] text-[#257719]"
+  if (rating >= 5) return "bg-[#F9ED9B] text-[#CCA327]"
+  return "bg-[#FFEDEF] text-[#D1293D]"
+}
+
 // ── sub-components ────────────────────────────────────────────────────────────
 
 function InfoRow({ label, children }: { label: string; children: React.ReactNode }) {
@@ -441,9 +447,13 @@ export default function ProductDetail() {
                 </span>
               </InfoRow>
               <InfoRow label="Avaliação interna">
-                <span className="text-base text-gray-900">
-                  {product.rating > 0 ? product.rating.toFixed(1) : "—"}
-                </span>
+                {product.rating > 0 ? (
+                  <span className={cn("inline-flex items-center gap-[5.75px] px-[7.67px] py-[0.96px] rounded-[3.83px] text-sm font-medium", getRatingColor(product.rating))}>
+                    {product.rating.toFixed(1)}
+                  </span>
+                ) : (
+                  <span className="text-base text-gray-900">—</span>
+                )}
               </InfoRow>
               <InfoRow label="Data de cadastro">
                 <span className="text-base text-gray-900">{product.createdAt || "—"}</span>
