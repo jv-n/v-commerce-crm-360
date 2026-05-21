@@ -87,6 +87,29 @@ O agente mantém contexto entre perguntas da mesma sessão, permitindo perguntas
 | Funções internas | `get_session_history(session_id)`, `save_session_history(session_id, messages)`, `clear_session_history(session_id)` |
 | Observação | Por ser em memória, o histórico é perdido quando o processo reinicia. Em produção, substituir por Redis ou banco de dados persistente. |
 
+### Limpeza do histórico antes de salvar (`_clean_messages_for_history`)
+
+O Gemini exige que cada `function_call` no histórico seja imediatamente seguido de um `function_response`. Quando o histórico é truncado na janela de 20 mensagens e o corte cai no meio de um par tool_call → tool_response, a próxima requisição recebe um erro `400 INVALID_ARGUMENT`.
+
+Para evitar isso, a função `_clean_messages_for_history()` é aplicada antes de salvar o histórico: ela remove todas as partes de tool call e tool response, mantendo apenas `TextPart` (respostas em texto do modelo) e `UserPromptPart` (mensagens do usuário):
+
+```python
+def _clean_messages_for_history(messages: list[ModelMessage]) -> list[ModelMessage]:
+    cleaned = []
+    for msg in messages:
+        if isinstance(msg, ModelResponse):
+            text_parts = [p for p in msg.parts if isinstance(p, TextPart)]
+            if text_parts:
+                cleaned.append(ModelResponse(parts=text_parts, ...))
+        elif isinstance(msg, ModelRequest):
+            user_parts = [p for p in msg.parts if isinstance(p, UserPromptPart)]
+            if user_parts:
+                cleaned.append(ModelRequest(parts=user_parts))
+    return cleaned
+```
+
+O resultado é um histórico enxuto com apenas o diálogo pergunta/resposta, sem rastros de tool calls — compatível com qualquer tamanho de janela.
+
 ---
 
 ## Resposta da função `chat()`
