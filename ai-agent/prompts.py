@@ -210,7 +210,7 @@ O dashboard usa **janela rolante em dias** a partir da data de hoje, e NÃO mese
 | semestre               | 180 dias    | `data_pedido >= date('now','-180 days') AND data_pedido <= date('now')` |
 | último ano             | 365 dias    | `data_pedido >= date('now','-365 days') AND data_pedido <= date('now')` |
 
-> ⚠️ **Exemplo prático**: se hoje é 20/05/2026, "últimos 3 meses" começa em 19/02/2026 — NÃO em 01/03/2026.
+> **Exemplo prático**: se hoje é 20/05/2026, "últimos 3 meses" começa em 19/02/2026 — NÃO em 01/03/2026.
 > Nunca use `ano_mes = '2026-03'` ou blocos de meses calendário quando o usuário pedir "últimos N meses/semanas". Use sempre `date('now', '-N days')`.
 
 ---
@@ -244,8 +244,8 @@ WHERE data_pedido >= date('now', '-90 days')
 GROUP BY strftime('%Y-%m', data_pedido)
 ORDER BY ano_mes
 ```
-> ⚠️ Não confunda as duas fórmulas: o **card** subtrai reembolsados; o **gráfico** mostra só os aprovados. Usar a fórmula errada causa divergência nos valores mensais.
-> ⚠️ Não use `gold_kpis_vendas_mensal` nem `gold_vendas_mensais` para receita — elas são pré-agregadas com lógica diferente.
+> Não confunda as duas fórmulas: o **card** subtrai reembolsados; o **gráfico** mostra só os aprovados. Usar a fórmula errada causa divergência nos valores mensais.
+> Não use `gold_kpis_vendas_mensal` nem `gold_vendas_mensais` para receita — elas são pré-agregadas com lógica diferente.
 
 ### Total de pedidos (card de Pedidos)
 O card de Pedidos conta TODOS os status. O percentual de cada status (Aprovado, Recusado…) é calculado sobre esse total.
@@ -288,7 +288,7 @@ GROUP BY categoria
 ORDER BY total_receita DESC
 LIMIT 10
 ```
-> ⚠️ Sem o filtro `status = 'Aprovado'`, os números de quantidade e receita por categoria ficam inflados e divergem do dashboard.
+> Sem o filtro `status = 'Aprovado'`, os números de quantidade e receita por categoria ficam inflados e divergem do dashboard.
 
 ### NPS (idêntico ao dashboard)
 ```sql
@@ -302,7 +302,7 @@ WHERE data_ultimo_pedido >= date('now', '-90 days')
 GROUP BY categoria_nps_recente
 -- NPS score = (promotores / total − detratores / total) × 100
 ```
-> ⚠️ Não use `gold_satisfacao_nps.nps_score` para NPS do dashboard — o campo `categoria_nps_recente` de `gold_cliente_360` é a fonte correta.
+> Não use `gold_satisfacao_nps.nps_score` para NPS do dashboard — o campo `categoria_nps_recente` de `gold_cliente_360` é a fonte correta.
 
 ### Novos clientes (leads convertidos)
 ```sql
@@ -336,8 +336,8 @@ LIMIT 10
 -- Por número de pedidos (mesmo JOIN, trocar ORDER BY):
 -- ORDER BY total_pedidos DESC
 ```
-> ⚠️ Se usar `receita_bruta` ou filtrar `status='Aprovado'`, os valores ficam menores que o dashboard (exclui pedidos em processamento, recusados e reembolsados que o dashboard inclui).
-> ⚠️ Para regiões em vez de estados, usar `c.regiao` no GROUP BY e SELECT.
+> Se usar `receita_bruta` ou filtrar `status='Aprovado'`, os valores ficam menores que o dashboard (exclui pedidos em processamento, recusados e reembolsados que o dashboard inclui).
+> Para regiões em vez de estados, usar `c.regiao` no GROUP BY e SELECT.
 
 ### Tickets Solucionados
 ```sql
@@ -374,7 +374,7 @@ GROUP BY categoria
 ORDER BY abandono_medio DESC
 LIMIT 5
 ```
-> ℹ️ `gold_engajamento_produto_digital` não tem coluna de data — é acumulado total, sem filtro por período.
+> `gold_engajamento_produto_digital` não tem coluna de data — é acumulado total, sem filtro por período.
 
 ---
 
