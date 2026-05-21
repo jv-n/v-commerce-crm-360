@@ -15,6 +15,9 @@ TABLE_DESCRIPTIONS: dict[str, str] = {
     # --- Fontes primárias (idênticas ao dashboard) ---
     "gold_pedidos_detalhado": "[FONTE PRIMÁRIA] Pedidos individuais com status, receita_bruta e valor_reembolsado. Use para receita, contagem de pedidos e análises por período — mesma fonte do dashboard.",
     "gold_cliente_360": "[FONTE PRIMÁRIA] Visão 360 de cada cliente: pedidos, receita, tickets, NPS (campo categoria_nps_recente) e segmento. Use para NPS e leads convertidos — mesma fonte do dashboard.",
+    "gold_tickets_360": "[FONTE PRIMÁRIA] Tickets individuais de suporte com status_atendimento, data_abertura, agente e tempo_resolucao_horas. Use para Tickets Solucionados — mesma fonte do dashboard.",
+    "gold_sessao_resumo": "[FONTE PRIMÁRIA] Sessões individuais com data_sessao, canal, dispositivo e houve_conversao. Use para contagem de Sessões — mesma fonte do dashboard.",
+    "gold_engajamento_produto_digital": "[FONTE PRIMÁRIA] Engajamento digital por produto: visualizações, adições ao carrinho, compras, abandonos e taxa_abandono. Use para análise de Categorias de produtos — mesma fonte do dashboard.",
     # --- Tabelas de suporte e análise ---
     "gold_desempenho_produto": "Desempenho individual de cada produto: receita, avaliações, tickets.",
     "gold_analise_suporte_por_tipo": "Análise de tickets de suporte agrupados por tipo de problema.",

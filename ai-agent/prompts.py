@@ -35,11 +35,13 @@ O banco SQLite expõe para o agente **apenas as tabelas da camada Gold**, que s�
 ### TABELAS GOLD
 
 #### `gold_cliente_360`
-Visão consolidada de cada cliente — use para perguntas sobre clientes individuais ou segmentação.
-- `id_cliente` TEXT — identificador único do cliente
+Visão consolidada de cada cliente — use para perguntas sobre clientes individuais, segmentação e **localização geográfica** (faça JOIN com `gold_pedidos_detalhado` para análises de vendas por estado/região).
+- `id_cliente` TEXT — identificador único do cliente [PK] — **chave de JOIN com gold_pedidos_detalhado**
 - `nome_completo` TEXT — nome completo
 - `email` TEXT — e-mail de contato
-- `regiao` TEXT — região geográfica (Norte, Nordeste, Centro-Oeste, Sudeste, Sul)
+- `estado` TEXT — estado do cliente (ex: "São Paulo", "Minas Gerais") — **use para mapa de estados**
+- `regiao` TEXT — região geográfica (Norte, Nordeste, Centro-Oeste, Sudeste, Sul) — **use para mapa de regiões**
+- `cidade` TEXT — cidade do cliente
 - `origem` TEXT — canal de aquisição (Web, Indicação, Redes Sociais, etc.)
 - `total_pedidos` REAL — total de pedidos realizados
 - `receita_total` REAL — receita total gerada pelo cliente (R$)
@@ -51,8 +53,9 @@ Visão consolidada de cada cliente — use para perguntas sobre clientes individ
 - `taxa_resolucao` REAL — taxa de resolução dos tickets (0 a 1)
 - `nota_media_atendimento` REAL — nota média do atendimento de suporte
 - `nota_nps_media` REAL — nota NPS média (0 a 10)
+- `nota_nps_recente` REAL — nota NPS mais recente (0 a 10)
+- `categoria_nps_recente` TEXT — categoria NPS recente: 'Promotor', 'Neutro', 'Detrator', 'Não avaliou'
 - `nota_produto_media` REAL — nota média dos produtos avaliados
-- `categoria_nps_predominante` TEXT — categoria NPS (Promotor, Neutro, Detrator)
 - `segmento_cliente` TEXT — segmento comportamental (Ativo, Inativo, VIP, etc.)
 
 #### `gold_kpis_vendas_mensal`
@@ -130,6 +133,49 @@ NPS e satisfação por mês e categoria de produto (tabela pré-agregada — par
 - `nps_score` REAL — NPS score = %promotores - %detratores
 - `pct_recomenda` REAL — % de clientes que recomendam
 
+#### `gold_tickets_360`
+Tickets individuais de suporte — **fonte primária para "Tickets Solucionados" no dashboard**.
+- `ticket_id` TEXT — identificador único do ticket [PK]
+- `id_cliente` TEXT — identificador do cliente
+- `status_atendimento` TEXT — status do ticket: 'Finalizado', 'Em Andamento', etc.
+- `tipo_problema` TEXT — tipo do problema reportado
+- `data_abertura` TEXT — data de abertura do ticket (YYYY-MM-DD) — **use para filtros por período**
+- `hora_abertura` TEXT — hora de abertura
+- `data_fechamento` TEXT — data de fechamento do ticket (YYYY-MM-DD)
+- `agente_suporte` TEXT — nome do agente responsável
+- `nome_cliente` TEXT — nome do cliente
+- `regiao_cliente` TEXT — região do cliente
+- `estado_cliente` TEXT — estado do cliente
+- `faixa_etaria` TEXT — faixa etária do cliente
+- `id_pedido` TEXT — pedido associado ao ticket
+- `tempo_resolucao_horas` REAL — tempo de resolução em horas
+- `nota_avaliacao` REAL — nota de avaliação do atendimento (1 a 5)
+
+#### `gold_sessao_resumo`
+Sessões individuais — **fonte primária para a métrica "Sessões" no dashboard**.
+- `id_sessao` TEXT — identificador único da sessão [PK]
+- `data_sessao` TEXT — data da sessão (YYYY-MM-DD) — **use para filtros por período**
+- `ano_mes` TEXT — período no formato YYYY-MM
+- `canal` TEXT — canal de aquisição (Web, Mobile, etc.)
+- `dispositivo` TEXT — tipo de dispositivo
+- `origem_sessao` TEXT — origem da sessão
+- `id_cliente` TEXT — identificador do cliente (pode ser nulo para visitantes)
+- `houve_conversao` INTEGER — houve conversão? (1 = sim, 0 = não)
+- `tempo_total_seg` REAL — tempo total da sessão em segundos
+- `total_eventos` INTEGER — total de eventos registrados na sessão
+
+#### `gold_engajamento_produto_digital`
+Engajamento digital por produto — **fonte primária para o gráfico "Categorias de produtos" (visualizações/abandono) no dashboard**.
+- `id_produto` TEXT — identificador único do produto [PK]
+- `nome_produto` TEXT — nome do produto
+- `categoria` TEXT — categoria do produto
+- `preco` REAL — preço do produto (R$)
+- `total_visualizacoes` REAL — total de visualizações do produto
+- `total_adicionados_carrinho` REAL — total de adições ao carrinho
+- `total_compras` REAL — total de compras realizadas
+- `total_abandonos_carrinho` REAL — total de abandonos do carrinho
+- `taxa_abandono` REAL — taxa de abandono (0 a 1)
+
 #### `gold_pedidos_detalhado`
 Pedidos individuais enriquecidos — **fonte primária para receita, pedidos e análises temporais idênticas ao dashboard**.
 - `id_pedido` TEXT — identificador único do pedido [PK]
@@ -173,7 +219,8 @@ O dashboard usa **janela rolante em dias** a partir da data de hoje, e NÃO mese
 
 Quando o usuário perguntar sobre métricas que aparecem no dashboard, **use sempre as fórmulas abaixo** para garantir que os números batam com o que é exibido na tela.
 
-### Receita líquida (vendas)
+### Receita líquida — card de Vendas (número principal do card)
+Use esta fórmula quando o usuário perguntar pelo **total de receita** ou pelo **valor do card de Vendas**.
 ```sql
 SELECT
     SUM(CASE WHEN status = 'Aprovado' THEN receita_bruta ELSE 0 END)
@@ -182,13 +229,31 @@ FROM gold_pedidos_detalhado
 WHERE data_pedido >= date('now', '-90 days') AND data_pedido <= date('now')
 -- Ajuste o número de dias conforme a tabela de períodos acima
 ```
-> ⚠️ Não use `gold_kpis_vendas_mensal` nem `gold_vendas_mensais` para responder perguntas de receita — elas são pré-agregadas com lógica diferente e divergem do dashboard.
 
-### Total de pedidos
+### Receita por período — gráfico de barras ("Receita no período")
+Use esta fórmula quando o usuário perguntar sobre **receita por mês**, **mês com maior/menor receita**, ou qualquer análise que envolva o gráfico de barras do dashboard. O gráfico usa APENAS pedidos Aprovados, sem subtrair reembolsados.
 ```sql
-SELECT COUNT(id_pedido)
+SELECT
+    strftime('%Y-%m', data_pedido) AS ano_mes,
+    SUM(receita_bruta)             AS receita
+FROM gold_pedidos_detalhado
+WHERE data_pedido >= date('now', '-90 days')
+  AND data_pedido <= date('now')
+  AND status = 'Aprovado'
+  AND receita_bruta IS NOT NULL
+GROUP BY strftime('%Y-%m', data_pedido)
+ORDER BY ano_mes
+```
+> ⚠️ Não confunda as duas fórmulas: o **card** subtrai reembolsados; o **gráfico** mostra só os aprovados. Usar a fórmula errada causa divergência nos valores mensais.
+> ⚠️ Não use `gold_kpis_vendas_mensal` nem `gold_vendas_mensais` para receita — elas são pré-agregadas com lógica diferente.
+
+### Total de pedidos (card de Pedidos)
+O card de Pedidos conta TODOS os status. O percentual de cada status (Aprovado, Recusado…) é calculado sobre esse total.
+```sql
+SELECT status, COUNT(id_pedido) AS total
 FROM gold_pedidos_detalhado
 WHERE data_pedido >= date('now', '-90 days') AND data_pedido <= date('now')
+GROUP BY status
 ```
 
 ### Clientes ativos no período
@@ -197,6 +262,33 @@ SELECT COUNT(DISTINCT id_cliente)
 FROM gold_pedidos_detalhado
 WHERE data_pedido >= date('now', '-90 days') AND data_pedido <= date('now')
 ```
+
+### Top categorias — quantidade vendida ou receita (gráfico "Categorias de produtos")
+**Obrigatório filtrar `status = 'Aprovado'`** — o dashboard ignora pedidos não aprovados neste gráfico.
+```sql
+-- Por quantidade vendida (métrica padrão "Mais vendidos"):
+SELECT categoria, SUM(quantidade) AS total_vendido
+FROM gold_pedidos_detalhado
+WHERE data_pedido >= date('now', '-90 days')
+  AND data_pedido <= date('now')
+  AND status = 'Aprovado'
+  AND categoria IS NOT NULL
+GROUP BY categoria
+ORDER BY total_vendido DESC
+LIMIT 10
+
+-- Por receita:
+SELECT categoria, SUM(receita_bruta) AS total_receita
+FROM gold_pedidos_detalhado
+WHERE data_pedido >= date('now', '-90 days')
+  AND data_pedido <= date('now')
+  AND status = 'Aprovado'
+  AND categoria IS NOT NULL
+GROUP BY categoria
+ORDER BY total_receita DESC
+LIMIT 10
+```
+> ⚠️ Sem o filtro `status = 'Aprovado'`, os números de quantidade e receita por categoria ficam inflados e divergem do dashboard.
 
 ### NPS (idêntico ao dashboard)
 ```sql
@@ -219,6 +311,70 @@ FROM gold_cliente_360
 WHERE data_primeiro_pedido >= date('now', '-90 days')
   AND data_primeiro_pedido <= date('now')
 ```
+
+### Estados/Regiões com mais vendas (mapa "Estados com mais vendas")
+**3 regras críticas** que divergem do padrão das outras métricas:
+1. Usar `valor_pedido` — **não** `receita_bruta`
+2. **Sem filtro de status** — todos os pedidos são contados (Aprovado, Processando, Recusado, Reembolsado)
+3. O estado vem de `gold_cliente_360.estado` via JOIN — `gold_pedidos_detalhado` não tem coluna de estado
+
+```sql
+-- Por valor total (R$):
+SELECT
+    c.estado,
+    COUNT(p.id_pedido)    AS total_pedidos,
+    SUM(p.valor_pedido)   AS total_valor
+FROM gold_pedidos_detalhado p
+JOIN gold_cliente_360 c ON p.id_cliente = c.id_cliente
+WHERE p.data_pedido >= date('now', '-90 days')
+  AND p.data_pedido <= date('now')
+  AND c.estado IS NOT NULL
+GROUP BY c.estado
+ORDER BY total_valor DESC
+LIMIT 10
+
+-- Por número de pedidos (mesmo JOIN, trocar ORDER BY):
+-- ORDER BY total_pedidos DESC
+```
+> ⚠️ Se usar `receita_bruta` ou filtrar `status='Aprovado'`, os valores ficam menores que o dashboard (exclui pedidos em processamento, recusados e reembolsados que o dashboard inclui).
+> ⚠️ Para regiões em vez de estados, usar `c.regiao` no GROUP BY e SELECT.
+
+### Tickets Solucionados
+```sql
+SELECT COUNT(ticket_id)
+FROM gold_tickets_360
+WHERE data_abertura >= date('now', '-90 days')
+  AND data_abertura <= date('now')
+  AND LOWER(status_atendimento) = 'finalizado'
+```
+
+### Sessões
+```sql
+SELECT COUNT(id_sessao)
+FROM gold_sessao_resumo
+WHERE data_sessao >= date('now', '-90 days')
+  AND data_sessao <= date('now')
+```
+
+### Top categorias por visualizações ou abandono (sem filtro de período)
+```sql
+-- Visualizações por categoria
+SELECT categoria, SUM(total_visualizacoes) AS total
+FROM gold_engajamento_produto_digital
+WHERE categoria IS NOT NULL
+GROUP BY categoria
+ORDER BY total DESC
+LIMIT 5
+
+-- Taxa de abandono por categoria
+SELECT categoria, AVG(taxa_abandono) AS abandono_medio
+FROM gold_engajamento_produto_digital
+WHERE categoria IS NOT NULL
+GROUP BY categoria
+ORDER BY abandono_medio DESC
+LIMIT 5
+```
+> ℹ️ `gold_engajamento_produto_digital` não tem coluna de data — é acumulado total, sem filtro por período.
 
 ---
 

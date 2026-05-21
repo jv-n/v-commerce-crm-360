@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.messages import ModelMessage
+from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse, TextPart, UserPromptPart
 
 # Garante que o módulo pode ser importado tanto como package
 # quanto diretamente pelo backend FastAPI
@@ -126,10 +126,37 @@ def get_session_history(session_id: str) -> list[ModelMessage]:
     return _session_history.get(session_id, [])
 
 
+def _clean_messages_for_history(messages: list[ModelMessage]) -> list[ModelMessage]:
+    """
+    Remove partes de tool call e tool response do histórico antes de salvar.
+
+    O Gemini exige que cada function_call seja imediatamente seguido de um
+    function_response. Se o slice do histórico cortar no meio de um par
+    tool_call → tool_response, a próxima requisição recebe um 400
+    INVALID_ARGUMENT. Manter apenas TextPart e UserPromptPart elimina
+    completamente esse problema.
+    """
+    cleaned: list[ModelMessage] = []
+    for msg in messages:
+        if isinstance(msg, ModelResponse):
+            text_parts = [p for p in msg.parts if isinstance(p, TextPart)]
+            if text_parts:
+                cleaned.append(ModelResponse(parts=text_parts, model_name=msg.model_name, timestamp=msg.timestamp))
+        elif isinstance(msg, ModelRequest):
+            user_parts = [p for p in msg.parts if isinstance(p, UserPromptPart)]
+            if user_parts:
+                cleaned.append(ModelRequest(parts=user_parts))
+    return cleaned
+
+
 def save_session_history(session_id: str, messages: list[ModelMessage]) -> None:
-    #Persiste o histórico de mensagens de uma sessão mantendo as ultimas 20 mensagens
-    # Limita para não crescer indefinidamente
-    _session_history[session_id] = messages[-20:]
+    """Persiste o histórico de mensagens de uma sessão.
+
+    Limita a 20 mensagens e remove tool calls/responses para evitar
+    o erro 400 INVALID_ARGUMENT do Gemini em conversas multi-turno.
+    """
+    cleaned = _clean_messages_for_history(messages)
+    _session_history[session_id] = cleaned[-20:]
 
 
 def clear_session_history(session_id: str) -> None:
