@@ -122,7 +122,7 @@ export default function Login() {
 
             <button
               type="submit"
-              className="mt-2 self-center px-10 py-2 rounded-md border border-gray-400 text-sm font-medium text-gray-800 bg-white hover:bg-gray-50 active:bg-gray-100 transition-colors"
+              className="mt-2 self-center px-10 py-2 rounded-md border border-[#D1B1E5] text-sm font-medium text-gray-800 bg-[#F7EBFF] hover:bg-[#F0DDFD] transition-colors"
             >
               Acessar
             </button>
