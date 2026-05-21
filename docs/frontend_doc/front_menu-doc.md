@@ -31,7 +31,7 @@ A tela de Menu é composta pelo layout global do `AppFrame`, que combina um `Sid
 
 ## Layout
 
-![tela_menu](image.png)
+![Layout da Tela de Menu](./images/tela_menu.png)
 
 ---
 
