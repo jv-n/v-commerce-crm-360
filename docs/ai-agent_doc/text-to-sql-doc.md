@@ -74,10 +74,10 @@ Tabelas já sumarizadas, úteis para análises exploratórias mas que podem dive
 
 | Tabela | Aviso |
 |---|---|
-| `gold_kpis_vendas_mensal` | ⚠️ Pode divergir do dashboard — preferir `gold_pedidos_detalhado` para métricas de receita |
-| `gold_vendas_mensais` | ⚠️ Pode divergir do dashboard — preferir `gold_pedidos_detalhado` |
+| `gold_kpis_vendas_mensal` | Pode divergir do dashboard — preferir `gold_pedidos_detalhado` para métricas de receita |
+| `gold_vendas_mensais` | Pode divergir do dashboard — preferir `gold_pedidos_detalhado` |
 | `gold_vendas_por_dimensao` | Útil para análises cruzadas exploratórias por mês/região/categoria |
-| `gold_satisfacao_nps` | ⚠️ Para NPS idêntico ao dashboard, usar `gold_cliente_360.categoria_nps_recente` |
+| `gold_satisfacao_nps` | Para NPS idêntico ao dashboard, usar `gold_cliente_360.categoria_nps_recente` |
 
 ### Tabelas de análise e suporte
 
@@ -156,7 +156,7 @@ Tabelas já sumarizadas, úteis para análises exploratórias mas que podem dive
 | `total_compras` | REAL | — |
 | `total_abandonos_carrinho` | REAL | — |
 | `taxa_abandono` | REAL | 0 a 1 |
-| ⚠️ Sem coluna de data | — | Dados acumulados totais, sem filtro por período |
+| Sem coluna de data | — | Dados acumulados totais, sem filtro por período |
 
 ---
 
@@ -199,7 +199,7 @@ WHERE data_pedido >= date('now', '-90 days') AND data_pedido <= date('now')
 GROUP BY strftime('%Y-%m', data_pedido)
 ORDER BY ano_mes
 ```
-> ⚠️ O **card** subtrai reembolsados; o **gráfico** mostra só os aprovados. Usar a fórmula errada causa divergência nos valores mensais. Nunca usar `gold_kpis_vendas_mensal` nem `gold_vendas_mensais` para receita.
+> O **card** subtrai reembolsados; o **gráfico** mostra só os aprovados. Usar a fórmula errada causa divergência nos valores mensais. Nunca usar `gold_kpis_vendas_mensal` nem `gold_vendas_mensais` para receita.
 
 ### Total de pedidos por status (card de Pedidos)
 ```sql
@@ -219,7 +219,7 @@ WHERE data_ultimo_pedido >= date('now', '-90 days')
 GROUP BY categoria_nps_recente
 -- NPS score = (promotores / total − detratores / total) × 100
 ```
-> ⚠️ Não usar `gold_satisfacao_nps.nps_score` — a fonte correta é `gold_cliente_360.categoria_nps_recente`.
+> Não usar `gold_satisfacao_nps.nps_score` — a fonte correta é `gold_cliente_360.categoria_nps_recente`.
 
 ### Novos clientes (leads convertidos)
 ```sql
