@@ -151,10 +151,9 @@ export function getSaleColumns(
       header: "Categoria",
       minWidth: "100px",
       filter: {
-        type: "select",
+        type: "multi-select",
         label: "Categoria",
         options: ALL_CATEGORIES,
-        filterFn: (c, value) => c.categoria === value,
       },
       render: (c) =>
         c.categoria ? (
@@ -219,10 +218,10 @@ export function getSaleColumns(
       header: "Status",
       minWidth: "100px",
       filter: {
-        type: "select",
+        type: "multi-select",
         label: "Status do pedido",
         options: ALL_STATUSES,
-        filterFn: (c, value) => c.status === (value as SaleStatus),
+        renderOption: (value) => <StatusBadge status={value as SaleStatus} />,
       },
       render: (c) => <StatusBadge status={c.status} />,
     },
@@ -231,10 +230,9 @@ export function getSaleColumns(
       header: "Tipo de pagamento",
       minWidth: "130px",
       filter: {
-        type: "select",
+        type: "multi-select",
         label: "Tipo de pagamento",
         options: ALL_PAYMENT_METHODS,
-        filterFn: (c, value) => c.payment_method === value,
       },
       render: (c) => <CellText value={c.payment_method} variant="primary" />,
     },

@@ -10,8 +10,6 @@ import type { Sale } from "@/types/sale"
 import type { Tab, ActiveFilters } from "@/components/organisms/DataTable/types"
 import { SaleFormSheet } from "./SaleForms"
 import { SaleExpandedRow } from "./SaleExpandedRow"
-import { cn } from "@/lib/utils"
-import { MdKeyboardArrowDown } from "react-icons/md"
 
 // ── Table ──────────────────────────────────────────────────────────────────────
 
@@ -59,9 +57,8 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
   ({ onCanUndoChange }, ref) => {
     const location   = useLocation()
     const navigate = useNavigate()
-    const navState   = location.state as { search?: string; searchField?: string } | null
+    const navState   = location.state as { search?: string } | null
     const initSearch = navState?.search ?? ""
-    const initField  = (navState?.searchField ?? "all") as "all" | "client" | "product" | "client_id"
 
     const [activeTab,      setActiveTab]      = useState("all")
     const [page,           setPage]           = useState(1)
@@ -77,7 +74,6 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
     const [search,         setSearch]         = useState(initSearch)
     const [expandedRowIds, setExpandedRowIds] = useState<Set<string>>(new Set())
     const [sort,           setSort]           = useState<SaleSort>(null)
-    const [searchScope,    setSearchScope]    = useState<"all" | "client" | "product" | "client_id">(initField)
     const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
     const searchRef   = useRef("")
 
@@ -108,7 +104,7 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
 
     const fetchClientOptions = useCallback(async (q: string): Promise<string[]> => {
       const res = await fetchContacts({ page: 1, pageSize: 10, tab: "all", search: q, sortBy: null, sortDir: "asc" })
-      return res.data.map(c => c.name).filter(Boolean)
+      return res.data.map(c => c.name).filter((n): n is string => Boolean(n))
     }, [])
 
     const fetchProductOptions = useCallback(async (q: string): Promise<string[]> => {
@@ -224,7 +220,7 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
         page, pageSize, tab: activeTab,
         status, metodo_pagamento, categoria, data_from, data_to,
         nome_cliente, nome_produto,
-        search, search_field: search ? searchScope : undefined,
+        search, search_field: search ? "sale_id" : undefined,
         sortKey: sort?.key, sortDir: sort?.direction,
       })
         .then((res) => {
@@ -235,7 +231,7 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
         .catch(console.error)
         .finally(() => { if (!cancelled) setLoading(false) })
       return () => { cancelled = true }
-    }, [page, pageSize, activeTab, status, metodo_pagamento, categoria, data_from, data_to, nome_cliente, nome_produto, search, searchScope, sort, refetchKey])
+    }, [page, pageSize, activeTab, status, metodo_pagamento, categoria, data_from, data_to, nome_cliente, nome_produto, search, sort, refetchKey])
 
     // ── Handlers ──────────────────────────────────────────────────────────────
     const handleTabChange = (tabId: string) => {
@@ -270,10 +266,10 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
     }
 
     const handleFiltersChange = (active: ActiveFilters) => {
-      const sf = active["status"]
-      const pf = active["paymentMethod"]
-      const cf = active["categoria"]
-      const df = active["saleDate"]
+      const sf  = active["status"]
+      const pf  = active["paymentMethod"]
+      const cf  = active["categoria"]
+      const df  = active["saleDate"]
       const clF = active["client"]
       const prF = active["product"]
       pushHistory()
@@ -281,13 +277,13 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
       setLoading(true)
       setServerFilters(prev => ({
         ...prev,
-        status:           sf?.type === "select"        && sf.value  ? sf.value  : "",
-        metodo_pagamento: pf?.type === "select"        && pf.value  ? pf.value  : "",
-        categoria:        cf?.type === "select"        && cf.value  ? cf.value  : "",
-        data_from:        df?.type === "date-range"    && df.from   ? df.from   : "",
-        data_to:          df?.type === "date-range"    && df.to     ? df.to     : "",
-        nome_cliente:     clF?.type === "search-select" && clF.value ? clF.value : "",
-        nome_produto:     prF?.type === "search-select" && prF.value ? prF.value : "",
+        status:           sf?.type === "multi-select"   && sf.values.length  ? sf.values.join(",")  : "",
+        metodo_pagamento: pf?.type === "multi-select"   && pf.values.length  ? pf.values.join(",")  : "",
+        categoria:        cf?.type === "multi-select"   && cf.values.length  ? cf.values.join(",")  : "",
+        data_from:        df?.type === "date-range"     && df.from           ? df.from              : "",
+        data_to:          df?.type === "date-range"     && df.to             ? df.to                : "",
+        nome_cliente:     clF?.type === "search-select" && clF.value         ? clF.value            : "",
+        nome_produto:     prF?.type === "search-select" && prF.value         ? prF.value            : "",
       }))
       setPage(1)
     }
@@ -332,29 +328,7 @@ export const SalesTable = forwardRef<SalesTableHandle, { onCanUndoChange?: (can:
           onFiltersChange={handleFiltersChange}
           onSearchChange={handleSearchChange}
           onSortChange={handleSortChange}
-          searchPlaceholder={
-            searchScope === "client"    ? "Buscar por cliente..."
-            : searchScope === "product" ? "Buscar por produto..."
-            : searchScope === "client_id" ? "ID do cliente..."
-            : "Buscar por cliente ou produto..."
-          }
-          searchPrefix={
-            <div className="relative flex items-center border-r border-gray-200 mr-0.5">
-              <select
-                value={searchScope}
-                onChange={e => { setSearchScope(e.target.value as typeof searchScope); setPage(1) }}
-                className={cn(
-                  "appearance-none text-xs bg-transparent pl-2 pr-5 py-0.5 rounded cursor-pointer outline-none transition-colors hover:bg-[#CFA7FF]",
-                  searchScope !== "all" ? "text-purple-700 font-medium" : "text-gray-700"
-                )}
-              >
-                <option value="all">Todos</option>
-                <option value="client">Cliente</option>
-                <option value="product">Produto</option>
-              </select>
-              <MdKeyboardArrowDown size={12} className="absolute right-0.5 pointer-events-none text-gray-500" />
-            </div>
-          }
+          searchPlaceholder="Buscar por ID do pedido..."
           initialSearchQuery={initSearch}
           headerClassName="bg-[#EACAFF] [&_th:not(:first-child)_button_svg]:!text-[#9F83B2] [&_th:not(:first-child)_button:hover_svg]:!text-[#6F2B90]"
           dividersClassName="divide-[#9F83B2]"
