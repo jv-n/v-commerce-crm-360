@@ -10,6 +10,7 @@ Documentação das páginas e componentes do V-Commerce CRM 360, construído em 
 |---|---|
 | [Login](./front_login-doc.md) | Autenticação de usuários e controle de acesso |
 | [Menu / Sidebar](./front_menu-doc.md) | Navegação lateral e estrutura do AppFrame |
+| [Home](./front_home-doc.md) | Favoritos (bookmarks) e metas (goals) do usuário |
 | [Dashboard](./front_dashboard-doc.md) | KPIs de vendas, receita e visão geral do negócio |
 | [Contatos](./front_contato-doc.md) | Listagem e filtros da base de clientes |
 | [Contato Específico](./front_contato_especifico-doc.md) | Perfil 360 do cliente com pedidos, tickets e métricas |

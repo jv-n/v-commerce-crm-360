@@ -20,13 +20,19 @@ Documentação da API e serviços do V-Commerce CRM 360, construído em **FastAP
 | Router | Prefixo | Descrição |
 |---|---|---|
 | `agentRouter` | `/agent` | Endpoints do agente de IA (chat e health check) |
-| `contactRouter` | `/contacts` | Listagem e perfil de clientes |
-| `conversationRouter` | `/conversations` | Histórico de conversas do agente |
-| `mentionRouter` | `/mentions` | Menções em conversas |
-| `productRouter` | `/products` | CRUD de produtos do catálogo |
+| `authRouter` | `/auth` | Login e geração de JWT |
+| `bookmarkRouter` | `/bookmarks` | Favoritos do usuário (autenticado) |
+| `contactDetailRouter` | `/contact-details` | Perfil 360, métricas, pedidos e tickets de um contato |
+| `contactRouter` | `/contacts` | Listagem, CRUD e exportação de contatos |
+| `conversationRouter` | `/conversations` | Histórico de conversas do agente de IA |
+| `dashboardRouter` | `/dashboard` | KPIs, receita, pedidos, top categorias e mapa |
+| `goalRouter` | `/goals` | Metas de negócio do usuário (autenticado) |
+| `mentionRouter` | `/mentions` | Autocomplete de menções `@` no chat |
+| `productRouter` | `/products` | Listagem e CRUD de produtos do catálogo |
 | `reviewRouter` | `/reviews` | Avaliações pós-compra |
 | `saleRouter` | `/sales` | Pedidos e histórico de vendas |
-| `userRouter` | `/users` | Autenticação e gestão de usuários |
+| `ticketRouter` | `/tickets` | Tickets de suporte |
+| `userRouter` | `/users` | Gestão de usuários e perfil autenticado |
 
 ---
 
