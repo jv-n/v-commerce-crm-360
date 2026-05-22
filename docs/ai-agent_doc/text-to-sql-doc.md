@@ -11,7 +11,7 @@ O processo é **agentic**: o modelo não gera a query de uma vez. Ele raciocina 
 ## Fluxo de tradução
 
 ```
-Pergunta do usuário (linguagem natural)
+Pergunta do usuário
            ↓
    Gemini recebe a pergunta + system prompt + histórico da sessão
            ↓
