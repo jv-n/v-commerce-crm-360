@@ -59,11 +59,14 @@ class SaleService:
         if tab in _TAB_STATUSES:
             query = query.filter(GoldPedidoDetalhado.status.in_(_TAB_STATUSES[tab]))
         if status:
-            query = query.filter(GoldPedidoDetalhado.status == status)
+            values = [s.strip() for s in status.split(",") if s.strip()]
+            query = query.filter(GoldPedidoDetalhado.status.in_(values))
         if metodo_pagamento:
-            query = query.filter(GoldPedidoDetalhado.metodo_pagamento == metodo_pagamento)
+            values = [m.strip() for m in metodo_pagamento.split(",") if m.strip()]
+            query = query.filter(GoldPedidoDetalhado.metodo_pagamento.in_(values))
         if categoria:
-            query = query.filter(GoldPedidoDetalhado.categoria == categoria)
+            values = [c.strip() for c in categoria.split(",") if c.strip()]
+            query = query.filter(GoldPedidoDetalhado.categoria.in_(values))
         if ano_mes:
             query = query.filter(GoldPedidoDetalhado.ano_mes == ano_mes)
         if data_from:
