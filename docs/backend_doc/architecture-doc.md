@@ -49,12 +49,18 @@ Request HTTP
 | Router | Prefixo | Arquivo |
 |---|---|---|
 | Agent | `/agent` | `agentRouter.py` |
+| Auth | `/auth` | `authRouter.py` |
+| Bookmarks | `/bookmarks` | `bookmarkRouter.py` |
+| Contact Details | `/contact-details` | `contactDetailRouter.py` |
 | Contacts | `/contacts` | `contactRouter.py` |
 | Conversations | `/conversations` | `conversationRouter.py` |
+| Dashboard | `/dashboard` | `dashboardRouter.py` |
+| Goals | `/goals` | `goalRouter.py` |
 | Mentions | `/mentions` | `mentionRouter.py` |
 | Products | `/products` | `productRouter.py` |
 | Reviews | `/reviews` | `reviewRouter.py` |
 | Sales | `/sales` | `saleRouter.py` |
+| Tickets | `/tickets` | `ticketRouter.py` |
 | Users | `/users` | `userRouter.py` |
 
 ---
