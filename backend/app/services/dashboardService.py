@@ -110,14 +110,7 @@ class DashboardService:
             .where(GoldPedidoDetalhado.status == "Aprovado")
         ).scalar() or 0.0
 
-        reembolsado = self.db.execute(
-            select(func.sum(GoldPedidoDetalhado.valor_reembolsado))
-            .where(GoldPedidoDetalhado.data_pedido >= start)
-            .where(GoldPedidoDetalhado.data_pedido <= end)
-            .where(GoldPedidoDetalhado.status == "Reembolsado")
-        ).scalar() or 0.0
-
-        return round(float(aprovado) - float(reembolsado), 2)
+        return round(float(aprovado), 2)
 
     def _clientes(self, start: str, end: str) -> int:
         return (

@@ -14,6 +14,11 @@ import os
 DB_PATH = os.path.join(os.path.dirname(__file__), "vcommerce.db")
 
 
+def _table_exists(cur: sqlite3.Cursor, table: str) -> bool:
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table,))
+    return cur.fetchone() is not None
+
+
 def _column_exists(cur: sqlite3.Cursor, table: str, column: str) -> bool:
     cur.execute(f"PRAGMA table_info({table})")
     return any(row[1] == column for row in cur.fetchall())
@@ -24,11 +29,18 @@ def run():
     cur = conn.cursor()
 
     # ── bookmarks ─────────────────────────────────────────────────────────────
-    # Recria a tabela para:
-    #   1. Adicionar coluna user_id
-    #   2. Trocar UNIQUE(entity_id) → UNIQUE(user_id, entity_id)
-    if not _column_exists(cur, "bookmarks", "user_id"):
+    bookmarks_exists = _table_exists(cur, "bookmarks")
+    bookmarks_new_exists = _table_exists(cur, "bookmarks_new")
+
+    if not bookmarks_exists and bookmarks_new_exists:
+        # Migração anterior foi interrompida após o DROP TABLE bookmarks mas antes do RENAME
+        cur.execute("ALTER TABLE bookmarks_new RENAME TO bookmarks")
+        conn.commit()
+        print("[migrate] bookmarks: recuperado de migração incompleta anterior.")
+    elif bookmarks_exists and not _column_exists(cur, "bookmarks", "user_id"):
         cur.executescript("""
+            DROP TABLE IF EXISTS bookmarks_new;
+
             CREATE TABLE bookmarks_new (
                 id          TEXT PRIMARY KEY,
                 user_id     TEXT,

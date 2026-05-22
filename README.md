@@ -19,49 +19,71 @@ v-commerce-crm-360/
 │   ├── alembic/                        # Migrations do banco de dados
 │   ├── app/
 │   │   ├── core/
-│   │   │   └── security.py
+│   │   │   ├── dependencies.py         # Injeções compartilhadas (auth, db, etc.)
+│   │   │   └── security.py             # Hash de senha e geração/validação de JWT
 │   │   ├── models/                     # Models SQLAlchemy
+│   │   │   ├── bookmarkModel.py
 │   │   │   ├── contactModel.py
 │   │   │   ├── conversationModel.py
-│   │   │   ├── orderModel.py
+│   │   │   ├── goalModel.py
 │   │   │   ├── productModel.py
 │   │   │   ├── reviewModel.py
 │   │   │   ├── saleModel.py
+│   │   │   ├── sessionModel.py
+│   │   │   ├── ticketModel.py
 │   │   │   └── userModel.py
 │   │   ├── routes/                     # Routers FastAPI
 │   │   │   ├── agentRouter.py
+│   │   │   ├── authRouter.py
+│   │   │   ├── bookmarkRouter.py
+│   │   │   ├── contactDetailRouter.py
 │   │   │   ├── contactRouter.py
 │   │   │   ├── conversationRouter.py
+│   │   │   ├── dashboardRouter.py
+│   │   │   ├── goalRouter.py
 │   │   │   ├── mentionRouter.py
 │   │   │   ├── productRouter.py
 │   │   │   ├── reviewRouter.py
 │   │   │   ├── saleRouter.py
+│   │   │   ├── ticketRouter.py
 │   │   │   └── userRouter.py
 │   │   ├── schemas/                    # Schemas Pydantic
 │   │   │   ├── agentSchemas.py
+│   │   │   ├── authSchemas.py
+│   │   │   ├── bookmarkSchemas.py
+│   │   │   ├── contactDetailSchemas.py
 │   │   │   ├── contactSchemas.py
 │   │   │   ├── conversationSchemas.py
-│   │   │   ├── orderSchemas.py
+│   │   │   ├── dashboardSchemas.py
+│   │   │   ├── goalSchemas.py
 │   │   │   ├── productSchemas.py
 │   │   │   ├── reviewSchemas.py
 │   │   │   ├── salesSchemas.py
+│   │   │   ├── ticketSchemas.py
 │   │   │   └── userSchemas.py
 │   │   ├── services/                   # Lógica de negócio
+│   │   │   ├── authService.py
+│   │   │   ├── bookmarkService.py
+│   │   │   ├── contactDetailService.py
 │   │   │   ├── contactService.py
 │   │   │   ├── conversationService.py
-│   │   │   ├── orderService.py
+│   │   │   ├── dashboardService.py
+│   │   │   ├── goalService.py
 │   │   │   ├── productService.py
 │   │   │   ├── reviewService.py
 │   │   │   ├── saleService.py
+│   │   │   ├── ticketService.py
 │   │   │   └── userService.py
 │   │   ├── config.py
 │   │   └── main.py
 │   ├── database/
 │   │   ├── database.py
 │   │   └── seed.py                     # Script de população do banco
+│   ├── tests/                          # Testes pytest
 │   ├── .env.example
 │   ├── Dockerfile
 │   ├── alembic.ini
+│   ├── pytest.ini
 │   └── requirements.txt
 │
 ├── frontend/                           # React + TypeScript (Vite)
@@ -70,16 +92,22 @@ v-commerce-crm-360/
 │   │   ├── Pages/                      # Páginas da aplicação
 │   │   │   ├── Chat/
 │   │   │   ├── Contacts/
+│   │   │   ├── Dashboard/
 │   │   │   ├── Home/
 │   │   │   ├── Login/
 │   │   │   ├── Products/
-│   │   │   └── Sales/
+│   │   │   ├── Sales/
+│   │   │   ├── Tickets/
+│   │   │   └── Unauthorized/
 │   │   ├── components/
 │   │   │   ├── atoms/                  # Componentes base (Button, Input, Label...)
 │   │   │   ├── molecules/              # Composições (ContactsTable, ProductsTable...)
-│   │   │   └── organisms/             # Estruturas completas (DataTable, AppFrame...)
+│   │   │   └── organisms/              # Estruturas completas (AppFrame, ProtectedRoute...)
 │   │   ├── contexts/
-│   │   │   └── AuthContext.tsx
+│   │   │   └── auth/
+│   │   │       ├── AuthContext.tsx     # Provider que mantém o usuário em estado
+│   │   │       ├── context.ts          # createContext + tipos
+│   │   │       └── useAuth.tsx         # Hook de consumo do contexto
 │   │   ├── hooks/
 │   │   ├── lib/
 │   │   │   ├── api/                    # Clientes HTTP por entidade
@@ -121,7 +149,7 @@ v-commerce-crm-360/
 
 ---
 
-## 2. Exportar os CSVs para o repositório local
+## 1. Exportar os CSVs para o repositório local
 
 Após rodar o pipeline, baixe os CSVs gerados e coloque-os nas pastas corretas:
 
@@ -141,19 +169,33 @@ data-engineering/gold-data-csvs/
 
 ---
 
-## 3. Popular o banco de dados
+## 2. Popular o banco de dados
 
 Com os CSVs nas pastas corretas, rode o script de seed (as dependências já estão no `requirements.txt` do backend):
 
 ```bash
 python backend/database/seed.py
-``` 
+```
 
-## 4. Rodar com Docker (recomendado)
+### Credenciais padrão (criadas pelo seed)
+
+Após o seed, é possível autenticar na tela de login com qualquer um dos usuários abaixo:
+
+| E-mail | Senha | Papel |
+|---|---|---|
+| `gustavo.admin@vcommerce.com` | `admin123` | `admin` |
+| `joao.vendas@vcommerce.com` | `vendas123` | `sales` |
+| `maria.suporte@vcommerce.com` | `support123` | `support` |
+
+> Esses usuários são apenas para ambiente local — não use em produção.
+
+---
+
+## 3. Rodar com Docker (recomendado)
 
 Requer **Docker** e **Docker Compose** instalados.
 
-### 4.1. Configurar o `.env` do backend
+### 3.1. Configurar o `.env` do backend
 
 Crie o arquivo `backend/.env` a partir do exemplo:
 
@@ -173,12 +215,12 @@ GEMINI_API_KEY=sua-chave-aqui
 
 > **Importante:** deixe a variável `DATABASE_URL` fora do `.env` (ou remova-a se estiver lá). O `config.py` resolve o caminho do banco automaticamente com `Path(__file__)`, e uma URL com caminho absoluto do host vai quebrar dentro do container.
 
-### 4.2. Subir os containers
+### 3.2. Subir os containers
 
 Na raiz do repositório:
 
 ```bash
-docker compose up --buildgit stash
+docker compose up --build
 ```
 
 Na primeira execução o Docker vai baixar as imagens base e instalar as dependências — pode demorar alguns minutos. Nas próximas vezes, você pode subir sem o flag `--build` **somente se não houver mudanças no código ou nas dependências**. Sempre que houver alteração de código, Dockerfile, `requirements.txt`, `package.json` ou qualquer outra dependência, rode novamente com `--build`.
@@ -195,7 +237,7 @@ Serviços disponíveis após o boot:
 | API Docs | http://localhost:8000/docs                 |
 | Frontend | http://localhost:5173                      |
 
-### 4.3. Popular o banco (primeira vez)
+### 3.3. Popular o banco (primeira vez)
 
 Se o banco ainda não foi gerado pelo seed, rode dentro do container do backend:
 
@@ -203,15 +245,15 @@ Se o banco ainda não foi gerado pelo seed, rode dentro do container do backend:
 docker compose exec backend python database/seed.py
 ```
 
-### 4.4. Verificar se o banco está acessível
+### 3.4. Verificar se o banco está acessível
 
 ```bash
 curl http://localhost:8000/agent/health
 ```
 
-O campo `"database"` deve retornar `"ok"`. Se retornar `"banco não encontrado"`, repita o passo 4.3.
+O campo `"database"` deve retornar `"ok"`. Se retornar `"banco não encontrado"`, repita o passo 3.3.
 
-### 4.5. Ver logs em tempo real
+### 3.5. Ver logs em tempo real
 
 ```bash
 # Todos os serviços
@@ -224,7 +266,7 @@ docker compose logs -f backend
 docker compose logs -f frontend
 ```
 
-### 4.6. Parar os containers
+### 3.6. Parar os containers
 
 ```bash
 # Para e mantém os containers (sobe rápido depois com `docker compose up`)
@@ -236,7 +278,7 @@ docker compose down
 
 ---
 
-## 5. Rodar o backend manualmente (sem Docker)
+## 4. Rodar o backend manualmente (sem Docker)
 
 **Windows:**
 ```bash
@@ -260,9 +302,9 @@ A API ficará disponível em `http://localhost:8000`. Documentação interativa 
 
 ---
 
-## 6. Rodar o frontend manualmente (sem Docker)
+## 5. Rodar o frontend manualmente (sem Docker)
 
-Requer **Node.js v22+**. Para instalar via CLI:
+Requer **Node.js v20 LTS ou superior** (a imagem oficial usada no Docker é `node:20-alpine`, então qualquer versão a partir de 20 funciona). Para instalar via CLI:
 
 ```bash
 winget install OpenJS.NodeJS.LTS
