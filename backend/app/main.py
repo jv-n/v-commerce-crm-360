@@ -24,11 +24,11 @@ from app.models.bookmarkModel import BookmarkItem      # noqa: F401 — registra
 from app.models.goalModel import GoalItem              # noqa: F401 — registra goals no metadata
 from database.database import Base
 
+Base.metadata.create_all(bind=engine, checkfirst=True)
+
 # Migração: adiciona user_id em bookmarks e goals (idempotente)
 from database.migrate_user_scope import run as _run_migration
 _run_migration()
-
-Base.metadata.create_all(bind=engine, checkfirst=True)
 
 # Índices nas tabelas gold para acelerar queries de metas (IF NOT EXISTS = idempotente)
 from sqlalchemy import text
