@@ -23,7 +23,7 @@ export async function loginUser(email: string, password: string): Promise<AuthUs
 
     if(!res.ok){
         const err = await res.json().catch(() => ({}))
-        throw new Error(err.detail ?? "Email ou sernha incorretos.")
+        throw new Error(err.detail ?? "Email ou senha incorretos.")
     }
     const data: LoginResponse = await res.json()
 
