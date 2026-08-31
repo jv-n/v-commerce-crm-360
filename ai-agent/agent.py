@@ -12,12 +12,13 @@ e implementamos os diferenciais que estavam no case:
 - Extração de metadados das queries executadas 
 """
 
+import asyncio
 import re
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
-
+import griffe
 from pydantic_ai import Agent, RunContext
 from pydantic_ai.messages import ModelMessage, ModelRequest, ModelResponse, TextPart, UserPromptPart
 
@@ -41,7 +42,7 @@ class AgentDeps:
 
 # Factory do agente
 
-def build_agent(model: str = "google-gla:gemini-2.5-flash") -> Agent[AgentDeps, str]:
+def build_agent(model: str = "google:gemini-3.6-flash") -> Agent[AgentDeps, str]:
     
     #Constrói e retorna o agente PydanticAI configurado com as ferramentas SQL.
     
@@ -49,7 +50,7 @@ def build_agent(model: str = "google-gla:gemini-2.5-flash") -> Agent[AgentDeps, 
         model=model,
         deps_type=AgentDeps,
         system_prompt=SYSTEM_PROMPT,
-        result_type=str,
+        output_type=str,
     )
 
     # Ferramenta 1: Listar tabelas 
@@ -168,7 +169,7 @@ def clear_session_history(session_id: str) -> None:
 _agent_instance: Agent[AgentDeps, str] | None = None
 
 
-def get_agent(model: str = "google-gla:gemini-2.5-flash") -> Agent[AgentDeps, str]:
+def get_agent(model: str = "google:gemini-3.6-flash") -> Agent[AgentDeps, str]:
     """
     Retorna a instância singleton do agente.
     Na primeira chamada, cria e configura o agente.
@@ -196,12 +197,35 @@ async def chat(
     # Recupera histórico da sessão 
     history = get_session_history(session_id)
 
-    # Executa o agente
-    result = await agent.run(
-        message,
-        deps=deps,
-        message_history=history if history else None,
-    )
+    # Executa o agente (com retry para 503 de sobrecarga temporária do Gemini)
+    last_exc: Exception | None = None
+    result = None
+    for attempt in range(3):
+        try:
+            result = await agent.run(
+                message,
+                deps=deps,
+                message_history=history if history else None,
+            )
+            break
+        except Exception as exc:
+            last_exc = exc
+            msg = str(exc)
+            if "503" in msg or "UNAVAILABLE" in msg:
+                wait = 3 * (attempt + 1)  # 3s, 6s, 9s
+                await asyncio.sleep(wait)
+                deps.executed_queries.clear()
+                continue
+            if "429" in msg or "RESOURCE_EXHAUSTED" in msg:
+                # Extrai o tempo de retry indicado pelo Gemini (ex: "retry in 30.3s")
+                m = re.search(r'retry[^\d]*(\d+)', msg, re.IGNORECASE)
+                wait = int(m.group(1)) + 2 if m else 35
+                await asyncio.sleep(wait)
+                deps.executed_queries.clear()
+                continue
+            raise
+    if result is None:
+        raise last_exc
 
     # Persiste o histórico atualizado
     save_session_history(session_id, result.all_messages())
